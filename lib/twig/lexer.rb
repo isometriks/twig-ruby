@@ -16,6 +16,11 @@ module Twig
     STATE_STRING = 3
     STATE_INTERPOLATION = 4
 
+    # @param [Environment] environment
+    def initialize(environment)
+      @environment = environment
+    end
+
     # @param [Twig::Source] source
     def tokenize(source)
       @source = source
@@ -39,9 +44,13 @@ module Twig
         when STATE_VAR
           lex_var
         else
-          raise "Unkown state: #{@state}"
+          raise "Unknown state: #{@state}"
         end
       end
+
+      push_token(Token::EOF_TYPE)
+
+      TokenStream.new(@tokens, @source)
     end
 
     private
@@ -59,16 +68,14 @@ module Twig
       position = @positions[@position]
 
       while position.begin(0) < @cursor
-        if @position == @positions.length - 1
-          return
-        end
+        return if @position == @positions.length - 1
 
         @position += 1
         position = @positions[@position]
       end
 
       # Push the template text first
-      text = textContent = @code[@cursor...(position.begin(0) - @cursor)]
+      text = textContent = @code[@cursor, (position.begin(0) - @cursor)]
 
       # TODO: Trim
 
@@ -86,7 +93,9 @@ module Twig
     end
 
     def lex_var
-      if @brackets.empty? && (match = @code[@cursor...].match(lex_var_regex))
+      match = @code[@cursor...].match(lex_var_regex)
+
+      if @brackets.empty? && match
         push_token(Token::VAR_END_TYPE)
         move_cursor(match.to_s)
         pop_state
@@ -104,29 +113,21 @@ module Twig
         push_token(Token::NAME_TYPE, match.to_s)
         move_cursor(match.to_s)
       end
-
-      p @tokens.inspect
-      p "==========="
-      p "\n\n"
     end
 
     def push_token(type, value = "")
-      if Token::TEXT_TYPE == type && value.empty?
-        return
-      end
+      return if type == Token::TEXT_TYPE && value.empty?
 
       @tokens << Token.new(type, value, @lineno)
     end
 
     def push_state(state)
-      @states << state
+      @states << @state
       @state = state
     end
 
     def pop_state
       if @states.empty?
-        p "FINISHED?????"
-        p @tokens.inspect
         raise "Cannot pop state without a previous state."
       end
 
@@ -145,7 +146,7 @@ module Twig
     end
 
     def lex_tokens_start
-      return @lex_tokens_start if @lex_tokens_start
+      return @lex_tokens_start if defined?(@lex_tokens_start)
 
       lex_open = escape_and_pipe([TAG_VARIABLE[0], TAG_BLOCK[0], TAG_COMMENT[0]])
       whitespace = escape_and_pipe([WHITESPACE_TRIM, WHITESPACE_LINE_TRIM])
@@ -154,21 +155,14 @@ module Twig
     end
 
     def lex_var_regex
-      return @lex_var_regex if @lex_var_regex
+      return @lex_var_regex if defined?(@lex_var_regex)
 
-      regex = <<-EOT
-        ^\\s*
-        (?:
-          #{Regexp.escape(WHITESPACE_TRIM + TAG_VARIABLE[1])}\\s*
-          |
-          #{Regexp.escape(WHITESPACE_LINE_TRIM + TAG_VARIABLE[1])}
-          [#{Regexp.escape(WHITESPACE_LINE_CHARS)}]*
-          |
-          #{Regexp.escape(TAG_VARIABLE[1])}
-        )     
-      EOT
+      trim_tag = Regexp.escape(WHITESPACE_TRIM + TAG_VARIABLE[1])
+      trim_line_tag = Regexp.escape(WHITESPACE_LINE_TRIM + TAG_VARIABLE[1])
+      whitespace_chars = Regexp.escape(WHITESPACE_LINE_CHARS)
+      tag_end = Regexp.escape(TAG_VARIABLE[1])
 
-      @lex_var_regex = Regexp.new(regex, "x")
+      @lex_var_regex = /\A\s*(?:#{trim_tag}\s*|#{trim_line_tag}[#{whitespace_chars}]*|#{tag_end})/x
     end
   end
 end

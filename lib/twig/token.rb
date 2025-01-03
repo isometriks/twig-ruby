@@ -16,10 +16,25 @@ module Twig
     ARROW_TYPE = 12
     SPREAD_TYPE = 13
 
-    def initialize(type, value, line)
+    attr_reader :type, :value, :lineno
+
+    def initialize(type, value, lineno)
       @type = type
       @value = value
-      @line = line
+      @lineno = lineno
+    end
+
+    def test(type, values = nil)
+      if values.nil? && !type.is_a?(Integer)
+        values = type
+        type = NAME_TYPE
+      end
+
+      @type == type && (
+        values.nil? ||
+          (values.is_a?(Array) && values.include?(@value)) ||
+          (@value == values)
+      )
     end
   end
 end
