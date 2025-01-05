@@ -4,7 +4,7 @@ require 'twig'
 module Twig
   class TwigTest < Minitest::Test
     def test_name_variable_lexing
-      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! I am {{ other }}')
+      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! I am {{ a + b }}')
       environment = Environment.new(loader)
       lexer = Lexer.new(environment)
 
@@ -20,7 +20,9 @@ module Twig
         [Token::VAR_END_TYPE, ''],
         [Token::TEXT_TYPE, '! I am '],
         [Token::VAR_START_TYPE, ''],
-        [Token::NAME_TYPE, 'other'],
+        [Token::NAME_TYPE, 'a'],
+        [Token::OPERATOR_TYPE, '+'],
+        [Token::NAME_TYPE, 'b'],
         [Token::VAR_END_TYPE, ''],
         [Token::EOF_TYPE, ''],
       ]
@@ -28,20 +30,23 @@ module Twig
 
     def test_node_must_accept_nodes
       assert_raises do
-        Node::Node.new([Hash.new])
+        Node::Node.new({ 0 => Hash.new })
       end
 
-      Node::Node.new([Node::Node.new])
+      Node::Nodes.new({ 0 => Node::TextNode.new("test") })
     end
     
     def test_parse
       loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! I am {{ other }}')
       environment = Environment.new(loader)
       lexer = Lexer.new(environment)
-      tokens = lexer.tokenize(loader.get_source_context('hello'))
       parser = Parser.new(environment)
+      compiler = Compiler.new(environment)
 
-      puts parser.parse(tokens).inspect
+      tokens = lexer.tokenize(loader.get_source_context('hello'))
+      nodes = parser.parse(tokens)
+
+      raise "\n\n" + compiler.compile(nodes).source
     end
   end
 end

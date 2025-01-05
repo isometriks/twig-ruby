@@ -3,13 +3,14 @@ module Twig
     class Node
       attr_reader :tag, :attributes
 
-      # @param [Array<Node::Node>] nodes
+      # @param [Hash<Node::Node>] nodes
       # @param [Hash] attributes
       # @param [Integer] lineno
-      def initialize(nodes = [], attributes = {}, lineno = 0)
+      def initialize(nodes = {}, attributes = {}, lineno = 0)
         nodes.
-          detect { |node| !node.class.ancestors.include?(self.class) }
-          &.then { |node| raise "#{node.inspect} does not extend from #{self.class.name}"}
+          values.
+          detect { |node| !node.class.ancestors.include?(Node) }
+          &.then { |node| raise "#{node.inspect} does not extend from #{Node.name}"}
 
         @nodes = nodes
         @attributes = attributes
@@ -17,11 +18,20 @@ module Twig
         @tag = nil
       end
 
+      def node(name)
+        @nodes[name]
+      end
+
       # @param [String] tag
       def tag=(tag)
         raise 'Cannot only set node tag once' if @tag.present?
 
         @tag = tag
+      end
+
+      # @param [Compiler] compiler
+      def compile(compiler)
+        @nodes.values.each { |node| compiler.subcompile(node) }
       end
     end
   end

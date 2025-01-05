@@ -8,7 +8,7 @@ module Twig
     WHITESPACE_LINE_CHARS = " \t\0\x0B".freeze
     INTERPOLATION = %w[#{ }]
 
-    REGEX_NAME = /[a-zA-Z_][a-zA-Z0-9_]*/
+    REGEX_NAME = /\A[a-zA-Z_][a-zA-Z0-9_]*/
 
     STATE_DATA = 0
     STATE_BLOCK = 1
@@ -107,12 +107,85 @@ module Twig
     def lex_expression
       @code[@cursor..].match(/\A\s+/) do |match|
         move_cursor(match.to_s)
+
+        if @cursor >= @end
+          raise "Unclosed #{@state == STATE_BLOCK ? 'block' : 'variable'}"
+        end
       end
 
-      if (match = @code[@cursor..].match(REGEX_NAME))
+      # Spread operator
+      if code_at?(0, '.') && (@cursor + 2 < @end) && code_at?(1, '.') && code_at?(2, '.')
+        push_token(Token::SPREAD_TYPE)
+        move_cursor('...')
+      # Arrow function
+      elsif code_at?(0, '=') && (@cursor + 1 < @end) && code_at?(1, '>')
+        push_token(Token::ARROW_TYPE)
+        move_cursor('=>')
+      elsif (match = @code[@cursor..].match(operator_regex))
+        push_token(Token::OPERATOR_TYPE, match.to_s.gsub('/\s+/', ' '))
+        move_cursor(match.to_s)
+      elsif (match = @code[@cursor..].match(REGEX_NAME))
         push_token(Token::NAME_TYPE, match.to_s)
         move_cursor(match.to_s)
       end
+
+      <<-TEMP
+        // operators
+        elseif (preg_match($this->regexes['operator'], $this->code, $match, 0, $this->cursor)) {
+            $this->pushToken(Token::OPERATOR_TYPE, preg_replace('/\s+/', ' ', $match[0]));
+            $this->moveCursor($match[0]);
+        }
+        // names
+        elseif (preg_match(self::REGEX_NAME, $this->code, $match, 0, $this->cursor)) {
+            $this->pushToken(Token::NAME_TYPE, $match[0]);
+            $this->moveCursor($match[0]);
+        }
+        // numbers
+        elseif (preg_match(self::REGEX_NUMBER, $this->code, $match, 0, $this->cursor)) {
+            $this->pushToken(Token::NUMBER_TYPE, 0 + str_replace('_', '', $match[0]));
+            $this->moveCursor($match[0]);
+        }
+        // punctuation
+        elseif (str_contains(self::PUNCTUATION, $this->code[$this->cursor])) {
+            // opening bracket
+            if (str_contains('([{', $this->code[$this->cursor])) {
+                $this->brackets[] = [$this->code[$this->cursor], $this->lineno];
+            }
+            // closing bracket
+            elseif (str_contains(')]}', $this->code[$this->cursor])) {
+                if (!$this->brackets) {
+                    throw new SyntaxError(\sprintf('Unexpected "%s".', $this->code[$this->cursor]), $this->lineno, $this->source);
+                }
+
+                [$expect, $lineno] = array_pop($this->brackets);
+                if ($this->code[$this->cursor] != strtr($expect, '([{', ')]}')) {
+                    throw new SyntaxError(\sprintf('Unclosed "%s".', $expect), $lineno, $this->source);
+                }
+            }
+
+            $this->pushToken(Token::PUNCTUATION_TYPE, $this->code[$this->cursor]);
+            ++$this->cursor;
+        }
+        // strings
+        elseif (preg_match(self::REGEX_STRING, $this->code, $match, 0, $this->cursor)) {
+            $this->pushToken(Token::STRING_TYPE, $this->stripcslashes(substr($match[0], 1, -1), substr($match[0], 0, 1)));
+            $this->moveCursor($match[0]);
+        }
+        // opening double quoted string
+        elseif (preg_match(self::REGEX_DQ_STRING_DELIM, $this->code, $match, 0, $this->cursor)) {
+            $this->brackets[] = ['"', $this->lineno];
+            $this->pushState(self::STATE_STRING);
+            $this->moveCursor($match[0]);
+        }
+        // inline comment
+        elseif (preg_match(self::REGEX_INLINE_COMMENT, $this->code, $match, 0, $this->cursor)) {
+            $this->moveCursor($match[0]);
+        }
+        // unlexable
+        else {
+            throw new SyntaxError(\sprintf('Unexpected character "%s".', $this->code[$this->cursor]), $this->lineno, $this->source);
+        }
+      TEMP
     end
 
     def push_token(type, value = "")
@@ -139,6 +212,12 @@ module Twig
       @lineno += text.scan("\n").count
     end
 
+    # @param [Integer] seek
+    # @param [String] char
+    def code_at?(seek, char)
+      @code[@cursor + seek] == char
+    end
+
     def escape_and_pipe(tokens)
       tokens.
         map { |token| Regexp.escape(token) }.
@@ -163,6 +242,41 @@ module Twig
       tag_end = Regexp.escape(TAG_VARIABLE[1])
 
       @lex_var_regex = /\A\s*(?:#{trim_tag}\s*|#{trim_line_tag}[#{whitespace_chars}]*|#{tag_end})/x
+    end
+
+    def operator_regex
+      return @operator_regex if defined?(@operator_regex)
+
+      unary, binary = @environment.get_operators
+      operators = ([:'='] + unary.keys + binary.keys).
+        map { |op| [op, op.length] }.
+        to_h.
+        sort_by { |_, length| -length }.
+        to_h
+
+      chain = []
+
+      operators.keys.each do |operator|
+        regex = Regexp.escape(operator)
+
+        # an operator that ends with a character must be followed by
+        # a whitespace, a parenthesis, an opening map [ or sequence {
+        if operator[-1].match(/\w/)
+          regex << '(?=[\s()\[{])'
+        end
+
+        # an operator that begins with a character must not have a dot or pipe before
+        if operator[0].match(/\w/)
+          regex = '(?<![\.\|])' + regex
+        end
+
+        # an operator with a space can be any amount of whitespaces
+        regex.gsub!(/\s+/, '\s+')
+
+        chain << regex
+      end
+
+      @operator_regex = Regexp.new('\A(?:' + chain.join('|') + ')')
     end
   end
 end

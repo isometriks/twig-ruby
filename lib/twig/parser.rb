@@ -10,29 +10,31 @@ module Twig
       @stream = stream
 
       body = subparse(test, drop_needle)
+
+      Node::ModuleNode.new(body)
     end
 
     # @return [Node::Node]
     def subparse(test, drop_needle = false)
       lineno = current_token.lineno
-      rv = []
+      rv = {}
 
       until stream.eof?
         case current_token.type
         when Token::TEXT_TYPE
           token = stream.next
-          rv << Node::TextNode.new(token.value, token.lineno)
+          rv[rv.length] = Node::TextNode.new(token.value, token.lineno)
         when Token::VAR_START_TYPE
           token = stream.next
           var_name = stream.next.value
-          rv << Node::TextNode.new("{{ variable: #{var_name} }}", current_token.lineno)
+          rv[rv.length] = Node::TextNode.new("{{ variable: #{var_name} }}", current_token.lineno)
           stream.expect(Token::VAR_END_TYPE)
         else
           raise "Unable to parse token of type #{current_token.type}"
         end
       end
 
-      Node::Node.new(rv)
+      Node::Nodes.new(rv)
     end
 
     private
