@@ -50,9 +50,19 @@ module Twig
     # @param [String] string
     # @return [Compiler]
     def raw(string)
-      @source << string
+      @source << string.to_s
 
       self
+    end
+
+    def repr(value)
+      if value.is_a?(Integer) || value.is_a?(Float)
+        raw(value)
+      elsif value.is_a?(TrueClass) || value.is_a?(FalseClass)
+        raw(value ? 'true' : 'false')
+      elsif value.is_a?(String)
+        string(value)
+      end
     end
 
     # @param [Integer] step

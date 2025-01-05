@@ -4,7 +4,7 @@ require 'twig'
 module Twig
   class TwigTest < Minitest::Test
     def test_name_variable_lexing
-      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! I am {{ a + b }}')
+      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! I am {{ a + (50 * 2) }}')
       environment = Environment.new(loader)
       lexer = Lexer.new(environment)
 
@@ -22,7 +22,11 @@ module Twig
         [Token::VAR_START_TYPE, ''],
         [Token::NAME_TYPE, 'a'],
         [Token::OPERATOR_TYPE, '+'],
-        [Token::NAME_TYPE, 'b'],
+        [Token::PUNCTUATION_TYPE, '('],
+        [Token::NUMBER_TYPE, 50.0],
+        [Token::OPERATOR_TYPE, '*'],
+        [Token::NUMBER_TYPE, 2.0],
+        [Token::PUNCTUATION_TYPE, ')'],
         [Token::VAR_END_TYPE, ''],
         [Token::EOF_TYPE, ''],
       ]
@@ -37,7 +41,7 @@ module Twig
     end
     
     def test_parse
-      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! I am {{ other }}')
+      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! {{ true }} I am {{ 2 + 5 + 8.4 }}')
       environment = Environment.new(loader)
       lexer = Lexer.new(environment)
       parser = Parser.new(environment)

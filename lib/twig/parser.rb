@@ -26,9 +26,10 @@ module Twig
           rv[rv.length] = Node::TextNode.new(token.value, token.lineno)
         when Token::VAR_START_TYPE
           token = stream.next
-          var_name = stream.next.value
-          rv[rv.length] = Node::TextNode.new("{{ variable: #{var_name} }}", current_token.lineno)
+          expr = expression_parser.parse_expression
           stream.expect(Token::VAR_END_TYPE)
+
+          rv[rv.length] = Node::PrintNode.new(expr, token.lineno)
         else
           raise "Unable to parse token of type #{current_token.type}"
         end
@@ -37,16 +38,21 @@ module Twig
       Node::Nodes.new(rv)
     end
 
-    private
+    # @return [Token]
+    def current_token
+      @stream.current
+    end
 
     # @return [TokenStream]
     def stream
       @stream
     end
 
-    # @return [Token]
-    def current_token
-      @stream.current
+    # @return [ExpressionParser]
+    def expression_parser
+      @expression_parser ||= ExpressionParser.new(self, @environment)
     end
+
+    private
   end
 end

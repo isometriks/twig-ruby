@@ -29,7 +29,7 @@ module Twig
       token = current
 
       unless token.test(type, value)
-        raise "Expected #{type} but got #{token.type}"
+        raise "Expected #{type} but got #{token.type} #{message}"
       end
 
       self.next

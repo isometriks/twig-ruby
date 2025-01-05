@@ -11,9 +11,12 @@ module Twig
     end
 
     def self.display
+      parts = []
       new.call do |yielded|
-        puts yielded
+        parts << yielded
       end
+
+      parts.join
     end
   end
 end

@@ -17,10 +17,12 @@ require_relative 'twig/loader/array_loader'
 require_relative 'twig/node/node'
 require_relative 'twig/node/nodes'
 require_relative 'twig/node/module_node'
+require_relative 'twig/node/print_node'
 require_relative 'twig/node/text_node'
 
 require_relative 'twig/expression_parser'
 require_relative 'twig/node/expression/expression'
+require_relative 'twig/node/expression/constant_expression'
 require_relative 'twig/node/expression/binary/binary'
 
 module Twig

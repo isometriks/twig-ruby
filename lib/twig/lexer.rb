@@ -7,8 +7,17 @@ module Twig
     WHITESPACE_LINE_TRIM = "~".freeze
     WHITESPACE_LINE_CHARS = " \t\0\x0B".freeze
     INTERPOLATION = %w[#{ }]
+    OPENING_BRACKET = '([{'.split(//)
+    CLOSING_BRACKET = ')}]'.split(//)
+    PUNCTUATION = OPENING_BRACKET + CLOSING_BRACKET + '?:.,|'.split(//)
+
+    REGEX_LNUM = /[0-9]+(_[0-9]+)*/
+    REGEX_FRAC = /\.#{REGEX_LNUM}/
+    REGEX_EXPONENT = /[eE][+-]?#{REGEX_LNUM}/
+    REGEX_DNUM = /#{REGEX_LNUM}(?:#{REGEX_FRAC})?/
 
     REGEX_NAME = /\A[a-zA-Z_][a-zA-Z0-9_]*/
+    REGEX_NUMBER = /\A(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
 
     STATE_DATA = 0
     STATE_BLOCK = 1
@@ -127,6 +136,27 @@ module Twig
       elsif (match = @code[@cursor..].match(REGEX_NAME))
         push_token(Token::NAME_TYPE, match.to_s)
         move_cursor(match.to_s)
+      elsif (match = @code[@cursor..].match(REGEX_NUMBER))
+        value = match.to_s.tr('_', '')
+        value = value.to_i.to_s == value ? value.to_i : value.to_f
+        push_token(Token::NUMBER_TYPE, value)
+        move_cursor(match.to_s)
+      elsif code_at?(0, PUNCTUATION)
+        # opening bracket
+        if code_at?(0, OPENING_BRACKET)
+          @brackets << [code_at, @lineno]
+        elsif code_at?(0, CLOSING_BRACKET)
+          raise "Unexpected closing bracket: #{code_at} on #{@lineno}" if @brackets.empty?
+
+          expect, lineno = @brackets.pop
+
+          unless code_at?(0, expect.tr(OPENING_BRACKET.join, CLOSING_BRACKET.join))
+            raise "Unclosed bracket: #{code_at} on #{lineno}"
+          end
+        end
+
+        push_token(Token::PUNCTUATION_TYPE, code_at)
+        @cursor += 1
       end
 
       <<-TEMP
@@ -213,9 +243,24 @@ module Twig
     end
 
     # @param [Integer] seek
-    # @param [String] char
+    # @return [String]
+    def code_at(seek = 0)
+      @code[@cursor + seek]
+    end
+
+    # @param [Integer] seek
+    # @param [String | Array] char
     def code_at?(seek, char)
-      @code[@cursor + seek] == char
+      dest = code_at(seek)
+
+      case char
+      when Array
+        char.include?(dest)
+      when String
+        dest == char
+      else
+        raise "Invalid char: #{char.inspect}"
+      end
     end
 
     def escape_and_pipe(tokens)
