@@ -54,6 +54,10 @@ module Twig
         ['{{ 8 / 3 }}', '2'],
         ['{{ 5.0 / 2 }}', '2.5'],
         ['{{ a + b }}', '5', { a: 3, b: 2 }],
+        ['{{ "hey" }}', 'hey'],
+        ['{{ "hey"|capitalize }}', 'Hey'],
+        ['{{ "hello " ~ \'world\' }}', 'hello world'],
+        ['{{ "hello "|capitalize ~ "world" }}', 'Hello world'],
       ].
         each do |input, expected, context|
           assert_equal(expected, compile_and_run(input, context || {}))

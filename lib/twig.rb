@@ -33,6 +33,7 @@ require_relative 'twig/node/expression/constant'
 require_relative 'twig/node/expression/filter'
 require_relative 'twig/node/expression/name'
 require_relative 'twig/node/expression/binary/binary'
+require_relative 'twig/node/expression/binary/concat_binary'
 
 module Twig
 end

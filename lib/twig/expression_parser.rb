@@ -64,6 +64,8 @@ module Twig
         parser.stream.next
 
         node = Node::Expression::Constant.new(token.value, token.lineno)
+      when Token::STRING_TYPE, Token::INTERPOLATION_START_TYPE
+        node = parse_string_expression
       else
         raise "Unexpected token type: #{token.type}"
       end
@@ -147,6 +149,34 @@ module Twig
       end
 
       node
+    end
+
+    def parse_string_expression
+      stream = parser.stream
+      nodes = []
+
+      # a string cannot be followed by another string in a single expression
+      next_can_be_string = true
+
+      loop do
+        if next_can_be_string && (token = stream.next_if(Token::STRING_TYPE))
+          nodes << Node::Expression::Constant.new(token.value, token.lineno)
+          next_can_be_string = false
+        elsif stream.next_if(Token::INTERPOLATION_START_TYPE)
+          nodes << parse_expression
+          stream.expect(Token::INTERPOLATION_END_TYPE)
+          next_can_be_string = true
+        else
+          break
+        end
+      end
+
+      expr = nodes.shift
+      nodes.each do |node|
+        expr = Node::Expression::Binary::ConcatBinary(expr, node, node.lineno)
+      end
+
+      expr
     end
 
     # @return [Hash]

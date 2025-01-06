@@ -43,6 +43,10 @@ module Twig
       current.test(primary, secondary)
     end
 
+    def next_if(primary, secondary = nil)
+      current.test(primary, secondary) ? self.next : nil
+    end
+
     def eof?
       current.type == Token::EOF_TYPE
     end

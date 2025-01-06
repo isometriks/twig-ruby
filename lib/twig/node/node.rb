@@ -3,7 +3,7 @@ module Twig
     # @!attribute [r] source_context
     #   @return [Source] source_context
     class Node
-      attr_reader :tag, :attributes, :source_context
+      attr_reader :tag, :attributes, :source_context, :lineno
 
       # @param [Hash<Node::Node>] nodes
       # @param [Hash] attributes

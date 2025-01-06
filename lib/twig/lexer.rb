@@ -17,6 +17,7 @@ module Twig
     REGEX_DNUM = /#{REGEX_LNUM}(?:#{REGEX_FRAC})?/
 
     REGEX_NAME = /\A[a-zA-Z_][a-zA-Z0-9_]*/
+    REGEX_STRING = /\A"([^#"\\]*(?:\\\\.[^#"\\]*)*)"|'([^'\\]*(?:\\\\.[^'\\]*)*)'/s
     REGEX_NUMBER = /\A(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
 
     STATE_DATA = 0
@@ -92,6 +93,8 @@ module Twig
       move_cursor(textContent + position.to_s)
 
       case @positions[@position][1]
+      when TAG_BLOCK[0]
+        # @todo
       when TAG_VARIABLE[0]
         push_token(Token::VAR_START_TYPE)
         push_state(STATE_VAR)
@@ -157,50 +160,12 @@ module Twig
 
         push_token(Token::PUNCTUATION_TYPE, code_at)
         @cursor += 1
+      elsif (match = @code[@cursor..].match(REGEX_STRING))
+        push_token(Token::STRING_TYPE, match.to_s[1...-1])
+        move_cursor(match.to_s)
       end
 
       <<-TEMP
-        // operators
-        elseif (preg_match($this->regexes['operator'], $this->code, $match, 0, $this->cursor)) {
-            $this->pushToken(Token::OPERATOR_TYPE, preg_replace('/\s+/', ' ', $match[0]));
-            $this->moveCursor($match[0]);
-        }
-        // names
-        elseif (preg_match(self::REGEX_NAME, $this->code, $match, 0, $this->cursor)) {
-            $this->pushToken(Token::NAME_TYPE, $match[0]);
-            $this->moveCursor($match[0]);
-        }
-        // numbers
-        elseif (preg_match(self::REGEX_NUMBER, $this->code, $match, 0, $this->cursor)) {
-            $this->pushToken(Token::NUMBER_TYPE, 0 + str_replace('_', '', $match[0]));
-            $this->moveCursor($match[0]);
-        }
-        // punctuation
-        elseif (str_contains(self::PUNCTUATION, $this->code[$this->cursor])) {
-            // opening bracket
-            if (str_contains('([{', $this->code[$this->cursor])) {
-                $this->brackets[] = [$this->code[$this->cursor], $this->lineno];
-            }
-            // closing bracket
-            elseif (str_contains(')]}', $this->code[$this->cursor])) {
-                if (!$this->brackets) {
-                    throw new SyntaxError(\sprintf('Unexpected "%s".', $this->code[$this->cursor]), $this->lineno, $this->source);
-                }
-
-                [$expect, $lineno] = array_pop($this->brackets);
-                if ($this->code[$this->cursor] != strtr($expect, '([{', ')]}')) {
-                    throw new SyntaxError(\sprintf('Unclosed "%s".', $expect), $lineno, $this->source);
-                }
-            }
-
-            $this->pushToken(Token::PUNCTUATION_TYPE, $this->code[$this->cursor]);
-            ++$this->cursor;
-        }
-        // strings
-        elseif (preg_match(self::REGEX_STRING, $this->code, $match, 0, $this->cursor)) {
-            $this->pushToken(Token::STRING_TYPE, $this->stripcslashes(substr($match[0], 1, -1), substr($match[0], 0, 1)));
-            $this->moveCursor($match[0]);
-        }
         // opening double quoted string
         elseif (preg_match(self::REGEX_DQ_STRING_DELIM, $this->code, $match, 0, $this->cursor)) {
             $this->brackets[] = ['"', $this->lineno];
