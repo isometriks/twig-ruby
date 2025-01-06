@@ -1,7 +1,9 @@
 module Twig
   # Base class for compiled templates
   class Template
-    def initialize
+    # @param [Environment] environment
+    def initialize(environment)
+      @environment = environment
       @parents = {}
       @blocks = {}
     end
@@ -17,6 +19,13 @@ module Twig
       end
 
       parts.join
+    end
+
+    private
+
+    # @return [Environment]
+    def env
+      @environment
     end
   end
 end

@@ -22,7 +22,7 @@ module Twig
       extensions.key?(extension.to_s)
     end
 
-    def get_operators
+    def operators
       all_unary, all_binary = {}, {}
 
       extensions.values.map(&:operators).each do |unary, binary|
@@ -31,6 +31,14 @@ module Twig
       end
 
       [all_unary, all_binary]
+    end
+
+    def filters
+      @filters = extensions.values.map(&:filters).reduce({}, :merge)
+    end
+
+    def filter(name)
+      filters[name.to_sym]
     end
   end
 end

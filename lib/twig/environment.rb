@@ -18,8 +18,13 @@ module Twig
     end
 
     # @return [Array]
-    def get_operators
-      @extension_set.get_operators
+    def operators
+      @extension_set.operators
+    end
+
+    # @return [Filter]
+    def filter(name)
+      @extension_set.filter(name)
     end
 
     private

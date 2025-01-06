@@ -16,6 +16,12 @@ module Twig
           }
         ]
       end
+
+      def filters
+        {
+          capitalize: Filter.new('capitalize', -> (string) { string.capitalize }),
+        }
+      end
     end
   end
 end

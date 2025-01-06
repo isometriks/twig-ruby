@@ -1,6 +1,8 @@
 module Twig
+  # @!attribute [r] environment
+  #   @return [Environment]
   class Compiler
-    attr_reader :source
+    attr_reader :source, :environment
 
     # @param [Environment] environment
     def initialize(environment)
@@ -50,17 +52,26 @@ module Twig
     # @param [String] string
     # @return [Compiler]
     def raw(string)
-      @source << string.to_s
+      @source << string
 
       self
     end
 
     def repr(value)
-      if value.is_a?(Integer) || value.is_a?(Float)
-        raw(value)
-      elsif value.is_a?(TrueClass) || value.is_a?(FalseClass)
+      case value
+      when Integer, Float
+        raw(value.to_s)
+      when TrueClass, FalseClass
         raw(value ? 'true' : 'false')
-      elsif value.is_a?(String)
+      when NilClass
+        raw('nil')
+      when Array, Hash
+        raw('Marshal.load(').
+          raw(Marshal.dump(value).inspect).
+          raw(')')
+      when String
+        string(value)
+      else
         string(value)
       end
     end

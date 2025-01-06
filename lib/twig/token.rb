@@ -24,6 +24,7 @@ module Twig
       @lineno = lineno
     end
 
+    # @param [Symbol | String] type
     def test(type, values = nil)
       if values.nil? && !type.is_a?(Symbol)
         values = type

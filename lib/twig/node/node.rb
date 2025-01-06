@@ -7,10 +7,11 @@ module Twig
       # @param [Hash] attributes
       # @param [Integer] lineno
       def initialize(nodes = {}, attributes = {}, lineno = 0)
-        nodes.
+        invalid = nodes.
           values.
           detect { |node| !node.class.ancestors.include?(Node) }
-          &.then { |node| raise "#{node.inspect} does not extend from #{Node.name}"}
+
+        raise "#{invalid.inspect} does not extend from #{Node.name}" if invalid
 
         @nodes = nodes
         @attributes = attributes

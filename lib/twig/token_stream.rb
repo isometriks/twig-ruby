@@ -37,6 +37,10 @@ module Twig
       token
     end
 
+    def test(primary, secondary)
+      current.test(primary, secondary)
+    end
+
     def eof?
       current.type == Token::EOF_TYPE
     end

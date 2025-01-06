@@ -292,7 +292,7 @@ module Twig
     def operator_regex
       return @operator_regex if defined?(@operator_regex)
 
-      unary, binary = @environment.get_operators
+      unary, binary = @environment.operators
       operators = ([:'='] + unary.keys + binary.keys).
         map { |op| [op, op.length] }.
         to_h.

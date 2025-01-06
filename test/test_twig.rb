@@ -41,7 +41,7 @@ module Twig
     end
     
     def test_parse
-      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name }}! {{ true }} I am {{ 2 + 5 + 8.4 }}')
+      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name|capitalize }}')
       environment = Environment.new(loader)
       lexer = Lexer.new(environment)
       parser = Parser.new(environment)
