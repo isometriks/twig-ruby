@@ -1,6 +1,8 @@
 module Twig
+  # @!attribute [r] source
+  #   @return [Source]
   class TokenStream
-    attr_reader :tokens
+    attr_reader :tokens, :source
 
     # @param [Array<Token>] tokens
     # @param [Source] source

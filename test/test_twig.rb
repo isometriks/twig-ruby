@@ -9,7 +9,7 @@ module Twig
       lexer = Lexer.new(environment)
 
       tokens = lexer.
-        tokenize(loader.get_source_context('hello')).
+        tokenize(loader.get_source_context(:hello)).
         tokens.
         map { |token| [token.type, token.value] }
 
@@ -37,20 +37,52 @@ module Twig
         Node::Node.new({ 0 => Hash.new })
       end
 
-      Node::Nodes.new({ 0 => Node::TextNode.new("test") })
+      Node::Nodes.new({ 0 => Node::TextNode.new('test') })
     end
     
-    def test_parse
-      loader = Loader::ArrayLoader.new(hello: 'Hello {{ name|capitalize }}')
+    def test_filter
+      template = 'Hello {{ name|capitalize }}'
+      context = { name: 'world' }
+
+      assert_equal('Hello World', compile_and_run(template, context))
+    end
+
+    def test_math
+      [
+        ['{{ 5 + 5 }}', '10'],
+        ['{{ 5 + 1 * 2 }}', '7'],
+        ['{{ 8 / 3 }}', '2'],
+        ['{{ 5.0 / 2 }}', '2.5'],
+        ['{{ a + b }}', '5', { a: 3, b: 2 }],
+      ].
+        each do |input, expected, context|
+          assert_equal(expected, compile_and_run(input, context || {}))
+        end
+    end
+
+    private
+
+    def compile_and_run(template_contents, context = {})
+      template_key = :test
+      loader = Loader::ArrayLoader.new([[template_key, template_contents]].to_h)
       environment = Environment.new(loader)
       lexer = Lexer.new(environment)
       parser = Parser.new(environment)
       compiler = Compiler.new(environment)
 
-      tokens = lexer.tokenize(loader.get_source_context('hello'))
+      tokens = lexer.tokenize(loader.get_source_context(template_key))
       nodes = parser.parse(tokens)
 
-      raise "\n\n" + compiler.compile(nodes).source
+      # Create the class in memory
+      eval(compiler.compile(nodes).source)
+
+      template_class = environment.template_class(template_key)
+      template = Kernel.const_get(template_class).new(environment)
+
+      result = template.render(context)
+      Twig.send(:remove_const, template_class.split('::').last)
+
+      result
     end
   end
 end

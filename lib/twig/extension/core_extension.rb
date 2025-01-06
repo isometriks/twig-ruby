@@ -19,7 +19,7 @@ module Twig
 
       def filters
         {
-          capitalize: Filter.new('capitalize', -> (string) { string.capitalize }),
+          capitalize: TwigFilter.new('capitalize', -> (string) { string.capitalize }),
         }
       end
     end

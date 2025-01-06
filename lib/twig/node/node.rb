@@ -1,7 +1,9 @@
 module Twig
   module Node
+    # @!attribute [r] source_context
+    #   @return [Source] source_context
     class Node
-      attr_reader :tag, :attributes
+      attr_reader :tag, :attributes, :source_context
 
       # @param [Hash<Node::Node>] nodes
       # @param [Hash] attributes
@@ -33,6 +35,12 @@ module Twig
       # @param [Compiler] compiler
       def compile(compiler)
         @nodes.values.each { |node| compiler.subcompile(node) }
+      end
+
+      # @param [Source] source
+      def source_context=(source)
+        @source_context = source
+        @nodes.values.each { |node| node.source_context = source }
       end
     end
   end

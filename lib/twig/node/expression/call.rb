@@ -1,7 +1,7 @@
 module Twig
   module Node
     module Expression
-      class CallExpression < Expression
+      class Call < Expression
 
         private
 

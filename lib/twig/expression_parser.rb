@@ -50,20 +50,20 @@ module Twig
 
         case token.value
         when 'true', 'TRUE'
-          node = Node::Expression::ConstantExpression.new(true, token.lineno)
+          node = Node::Expression::Constant.new(true, token.lineno)
         when 'false', 'FALSE'
-          node = Node::Expression::ConstantExpression.new(false, token.lineno)
+          node = Node::Expression::Constant.new(false, token.lineno)
         when 'null', 'NULL'
-          node = Node::Expression::ConstantExpression.new(nil, token.lineno)
+          node = Node::Expression::Constant.new(nil, token.lineno)
         else
           # @todo lots missing here
           # @todo should be a context variable
-          node = Node::Expression::ConstantExpression.new(token.value, token.lineno)
+          node = Node::Expression::Name.new(token.value, token.lineno)
         end
       when Token::NUMBER_TYPE
         parser.stream.next
 
-        node = Node::Expression::ConstantExpression.new(token.value, token.lineno)
+        node = Node::Expression::Constant.new(token.value, token.lineno)
       else
         raise "Unexpected token type: #{token.type}"
       end
@@ -136,7 +136,7 @@ module Twig
           arguments = parse_only_arguments
         end
 
-        filter = environment.filter(token.value) or raise "Filter #{token.value} not found"
+        filter = environment.filter(token.value) or raise "TwigFilter #{token.value} not found"
         node = filter.node_class.new(node, filter, arguments, token.lineno)
 
         unless parser.stream.test(Token::PUNCTUATION_TYPE, '|')

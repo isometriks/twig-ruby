@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   # @!attribute [r] environment
   #   @return [Environment]
@@ -101,7 +103,7 @@ module Twig
     # @return [Compiler]
     def reset(indentation = 0)
       @last_line = nil
-      @source = ''
+      @source = +''
       @debug_info = []
       @source_offset = 0
       # source code starts at 1 (as we then increment it when we encounter new lines)

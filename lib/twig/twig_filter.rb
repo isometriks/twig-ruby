@@ -1,5 +1,5 @@
 module Twig
-  class Filter < Callable
+  class TwigFilter < Callable
     def initialize(name, callable = nil, options = {})
       super
       
@@ -8,7 +8,7 @@ module Twig
         is_safe_callback: nil,
         pre_escape: nil,
         preserves_safety: nil,
-        node_class: Node::Expression::FilterExpression,
+        node_class: Node::Expression::Filter,
       }.merge(@options)
     end
 

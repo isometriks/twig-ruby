@@ -1,13 +1,13 @@
 module Twig
   module Node
     module Expression
-      class FilterExpression < CallExpression
+      class Filter < Call
         # @param [Node] node
-        # @param [Filter|ConstantExpression] filter
+        # @param [TwigFilter|Constant] filter
         def initialize(node, filter, arguments, lineno)
-          if filter.is_a?(Filter)
+          if filter.is_a?(TwigFilter)
             name = filter.name
-            filter_name = ConstantExpression.new(name, lineno)
+            filter_name = Constant.new(name, lineno)
           else
             name = filter.attributes[:value]
             filter_name = filter
@@ -35,7 +35,7 @@ module Twig
           end
 
           if name == "raw"
-            raise 'Cannot create raw filter via FilterExpression'
+            raise 'Cannot create raw filter via expression'
           end
 
           unless attributes.key?(:twig_callable)

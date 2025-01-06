@@ -3,13 +3,13 @@ module Twig
     class ArrayLoader < Base
       # @param [Hash<String>] templates
       def initialize(templates)
-        @templates = templates.transform_keys(&:to_s)
+        @templates = templates.transform_keys(&:to_sym)
       end
 
       def get_source_context(name)
-        raise "LoaderError: Template #{name} is not defined" unless @templates[name]
+        raise "LoaderError: Template #{name} is not defined" unless @templates[name.to_sym]
 
-        ::Twig::Source.new(@templates[name], name)
+        ::Twig::Source.new(@templates[name.to_sym], name)
       end
 
       def exists?(name)

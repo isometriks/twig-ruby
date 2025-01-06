@@ -1,7 +1,7 @@
 module Twig
   module Node
     module Expression
-      class ConstantExpression < Expression
+      class Constant < Expression
         def initialize(value, lineno)
           super({}, { value: }, lineno)
         end

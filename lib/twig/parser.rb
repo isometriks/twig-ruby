@@ -1,5 +1,9 @@
 module Twig
+  # @!attribute [r] stream
+  #   @return [TokenStream]
   class Parser
+    attr_reader :stream
+
     # @param [Environment] environment
     def initialize(environment)
       @environment = environment
@@ -11,12 +15,12 @@ module Twig
 
       body = subparse(test, drop_needle)
 
-      Node::ModuleNode.new(body)
+      Node::ModuleNode.new(body, stream.source)
     end
 
     # @return [Node::Node]
     def subparse(test, drop_needle = false)
-      lineno = current_token.lineno
+      #lineno = current_token.lineno
       rv = {}
 
       until stream.eof?
@@ -40,19 +44,12 @@ module Twig
 
     # @return [Token]
     def current_token
-      @stream.current
-    end
-
-    # @return [TokenStream]
-    def stream
-      @stream
+      stream.current
     end
 
     # @return [ExpressionParser]
     def expression_parser
       @expression_parser ||= ExpressionParser.new(self, @environment)
     end
-
-    private
   end
 end

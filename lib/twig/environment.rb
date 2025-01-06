@@ -8,6 +8,10 @@ module Twig
       add_extension(Extension::CoreExtension.new)
     end
 
+    def template_class(name)
+      "Twig::Compiled_#{::Digest::SHA256.hexdigest(name.to_s)}"
+    end
+
     def render(name)
       loader.get_source_context(name).code
     end
@@ -22,9 +26,35 @@ module Twig
       @extension_set.operators
     end
 
-    # @return [Filter]
+    # @return [TwigFilter]
     def filter(name)
       @extension_set.filter(name)
+    end
+
+    # @param [Source] source
+    def tokenize(source)
+      lexer.tokenize(source)
+    end
+
+    # @param [TokenStream] stream
+    def parse(stream)
+      parser.parse(stream)
+    end
+
+    # @param [Node::Node] node
+    def compile(node)
+      compiler.compile(node).source
+    end
+
+    # @param [Source] source
+    def compile_source(source)
+      compile(parse(tokenize(source)))
+    end
+
+    # @return [String]
+    def load_and_compile(name)
+      source = loader.get_source_context(name)
+      compile_source(source)
     end
 
     private
@@ -32,6 +62,18 @@ module Twig
     # @return [Twig::Loader::Base]
     def loader
       @loader
+    end
+
+    def lexer
+      @lexer ||= Lexer.new(self)
+    end
+
+    def parser
+      @parser ||= Parser.new(self)
+    end
+
+    def compiler
+      @compiler ||= Compiler.new(self)
     end
   end
 end

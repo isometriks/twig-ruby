@@ -1,14 +1,16 @@
 module Twig
   module Node
     class ModuleNode < Node
-      def initialize(body)
+      def initialize(body, source)
         super({ body: })
+
+        self.source_context = source
       end
 
       def compile(compiler)
         class_begin = <<~CLASS
-          class Whatever < ::Twig::Template
-            def call
+          class #{compiler.environment.template_class(source_context.name)} < ::Twig::Template
+            def call(context)
         CLASS
 
         class_end = <<~CLASS

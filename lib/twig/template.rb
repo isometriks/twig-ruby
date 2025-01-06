@@ -8,13 +8,14 @@ module Twig
       @blocks = {}
     end
 
-    def call
+    def call(context = {})
       raise "call is not implemented"
     end
 
-    def self.display
+    def render(context = {})
       parts = []
-      new.call do |yielded|
+
+      self.call(context.transform_keys(&:to_sym)) do |yielded|
         parts << yielded
       end
 
