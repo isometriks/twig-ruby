@@ -16,7 +16,7 @@ module Twig
         def compile_arguments(compiler)
           compiler.
             raw(".call(").
-            subcompile(node(:node)).
+            subcompile(nodes[:node]).
             raw(")")
         end
       end

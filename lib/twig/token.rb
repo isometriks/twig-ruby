@@ -37,5 +37,9 @@ module Twig
           (@value == values)
       )
     end
+
+    def debug
+      [type, value]
+    end
   end
 end

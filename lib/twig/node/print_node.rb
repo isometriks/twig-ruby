@@ -8,7 +8,7 @@ module Twig
       def compile(compiler)
         compiler.
           write('yield ').
-          subcompile(node(:expr)).
+          subcompile(nodes[:expr]).
           raw("\n")
       end
     end

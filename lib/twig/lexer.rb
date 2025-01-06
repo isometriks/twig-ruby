@@ -50,7 +50,7 @@ module Twig
         when STATE_DATA
           lex_data
         when STATE_BLOCK
-          raise "no block parse yet"
+          lex_block
         when STATE_VAR
           lex_var
         else
@@ -69,6 +69,7 @@ module Twig
       # If no matches are left we return the rest of the template as simple text token
       if @position == @positions.length - 1
         push_token(Token::TEXT_TYPE, @code[@cursor..])
+        @cursor = @end
 
         return
       end
@@ -94,13 +95,53 @@ module Twig
 
       case @positions[@position][1]
       when TAG_BLOCK[0]
-        # @todo
+        if (match = @code[@cursor...].match(lex_block_raw_regex))
+          move_cursor(match.to_s)
+          lex_raw_data
+        elsif (match = @code[@cursor...].match(lex_block_line_regex))
+          move_cursor(match[0].to_s)
+          @lineno = match[1].to_i
+        else
+          push_token(Token::BLOCK_START_TYPE)
+          push_state(STATE_BLOCK)
+          @current_var_block_line = @lineno
+        end
       when TAG_VARIABLE[0]
         push_token(Token::VAR_START_TYPE)
         push_state(STATE_VAR)
         @current_var_block_line = @lineno
       else
         raise "Invalid start token #{@positions[@position]}"
+      end
+    end
+
+    def lex_raw_data
+      unless (match = @code[@cursor...].match(lex_raw_data_regex))
+        raise "Uexpected end of file. Unclosed 'verbatim' block"
+      end
+
+      text = @code[@cursor, match.begin(0)]
+      move_cursor(@code[@cursor, (match.begin(0) + match.to_s.length)])
+
+      # trim
+      if match[1]
+        text = if match[1] == WHITESPACE_TRIM
+                 text.gsub(/ *$/, '') # space trim
+               else
+                 text.rstrip # line trim
+               end
+      end
+
+      push_token(Token::TEXT_TYPE, text)
+    end
+
+    def lex_block
+      if @brackets.empty? && (match = @code[@cursor..].match(lex_block_regex))
+        push_token(Token::BLOCK_END_TYPE)
+        move_cursor(match.to_s)
+        pop_state
+      else
+        lex_expression
       end
     end
 
@@ -228,30 +269,62 @@ module Twig
       end
     end
 
-    def escape_and_pipe(tokens)
-      tokens.
-        map { |token| Regexp.escape(token) }.
-        join("|")
-    end
-
     def lex_tokens_start
-      return @lex_tokens_start if defined?(@lex_tokens_start)
-
-      lex_open = escape_and_pipe([TAG_VARIABLE[0], TAG_BLOCK[0], TAG_COMMENT[0]])
-      whitespace = escape_and_pipe([WHITESPACE_TRIM, WHITESPACE_LINE_TRIM])
-
-      @lex_tokens_start = Regexp.new("(#{lex_open})(#{whitespace})?", "xm")
+      @lex_tokens_start ||=
+        /
+          (#{Regexp.union([TAG_VARIABLE[0], TAG_BLOCK[0], TAG_COMMENT[0]])})
+          (#{Regexp.union([WHITESPACE_TRIM, WHITESPACE_LINE_TRIM])})?
+        /xm
     end
 
     def lex_var_regex
-      return @lex_var_regex if defined?(@lex_var_regex)
+      @lex_var_regex ||=
+        /\A\s*(?:
+          #{Regexp.union(
+            WHITESPACE_TRIM + TAG_VARIABLE[1] + '\s*',
+            WHITESPACE_LINE_TRIM + TAG_VARIABLE[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            TAG_VARIABLE[1]
+          )}
+        )/x
+    end
 
-      trim_tag = Regexp.escape(WHITESPACE_TRIM + TAG_VARIABLE[1])
-      trim_line_tag = Regexp.escape(WHITESPACE_LINE_TRIM + TAG_VARIABLE[1])
-      whitespace_chars = Regexp.escape(WHITESPACE_LINE_CHARS)
-      tag_end = Regexp.escape(TAG_VARIABLE[1])
+    def lex_block_raw_regex
+      @lex_block_raw_regex ||=
+        /\A\s*verbatim\s*(?:
+          #{Regexp.union(
+            WHITESPACE_TRIM + TAG_BLOCK[1] + '\s*',
+            WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            TAG_BLOCK[1]
+          )}
+        )/sx
+    end
 
-      @lex_var_regex = /\A\s*(?:#{trim_tag}\s*|#{trim_line_tag}[#{whitespace_chars}]*|#{tag_end})/x
+    def lex_block_line_regex
+      @lex_block_line_regex ||= /\A\s*line\s+(\d+)\s*#{Regexp.escape(TAG_BLOCK[1])}/s
+    end
+
+    def lex_block_regex
+      @lex_block_regex ||=
+        /\A\s*(?:
+          #{Regexp.union(
+            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\s*\n?/,
+            WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            /#{TAG_BLOCK[1]}\n?/
+          )}
+        )/x
+    end
+
+    def lex_raw_data_regex
+      @lex_raw_data_regex ||=
+        /
+          #{TAG_BLOCK[0]}
+          (#{Regexp.union(WHITESPACE_TRIM, WHITESPACE_LINE_TRIM)})?\s*endverbatim\s*
+          (?:#{Regexp.union(
+            WHITESPACE_TRIM + TAG_BLOCK[1] + '\s*',
+            WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            TAG_BLOCK[1]
+          )})
+        /sx
     end
 
     def operator_regex

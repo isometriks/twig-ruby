@@ -5,6 +5,9 @@ module Twig
     class Node
       attr_reader :tag, :attributes, :source_context, :lineno
 
+      # @param [Array<Node>]
+      attr_reader :nodes
+
       # @param [Hash<Node::Node>] nodes
       # @param [Hash] attributes
       # @param [Integer] lineno
@@ -21,13 +24,9 @@ module Twig
         @tag = nil
       end
 
-      def node(name)
-        @nodes[name]
-      end
-
       # @param [String] tag
       def tag=(tag)
-        raise 'Cannot only set node tag once' if @tag.present?
+        raise 'Cannot only set node tag once' if @tag
 
         @tag = tag
       end

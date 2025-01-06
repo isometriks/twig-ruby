@@ -22,6 +22,16 @@ module Twig
       parts.join
     end
 
+    def yield_block(name)
+      parts = []
+
+      public_send(:"block_#{name}") do |yielded|
+        parts << yielded
+      end
+
+      parts.join
+    end
+
     private
 
     # @return [Environment]

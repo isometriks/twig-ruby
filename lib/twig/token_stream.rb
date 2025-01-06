@@ -50,5 +50,15 @@ module Twig
     def eof?
       current.type == Token::EOF_TYPE
     end
+
+    def debug
+      lines = []
+
+      tokens.each do |token|
+        lines << token.debug
+      end
+
+      lines.map { |type, value| "#{type}(#{value})" }.join("\n")
+    end
   end
 end

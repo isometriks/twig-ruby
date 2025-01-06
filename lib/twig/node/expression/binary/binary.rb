@@ -11,14 +11,14 @@ module Twig
           def compile(compiler)
             compiler.
               raw('(').
-              subcompile(node(:left)).
+              subcompile(nodes[:left]).
               raw(' ')
 
             operator(compiler)
 
             compiler.
               raw(' ').
-              subcompile(node(:right)).
+              subcompile(nodes[:right]).
               raw(')')
           end
 

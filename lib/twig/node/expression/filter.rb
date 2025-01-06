@@ -28,7 +28,7 @@ module Twig
         end
 
         def compile(compiler)
-          name = node(:filter).attributes[:value]
+          name = nodes[:filter].attributes[:value]
 
           if name != attributes[:name]
             raise 'Changing the value of a "filter" node is not supported'

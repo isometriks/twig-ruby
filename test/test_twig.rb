@@ -11,7 +11,7 @@ module Twig
       tokens = lexer.
         tokenize(loader.get_source_context(:hello)).
         tokens.
-        map { |token| [token.type, token.value] }
+        map(&:debug)
 
       assert_equal tokens, [
         [Token::TEXT_TYPE, 'Hello '],
@@ -58,6 +58,11 @@ module Twig
         ['{{ "hey"|capitalize }}', 'Hey'],
         ['{{ "hello " ~ \'world\' }}', 'hello world'],
         ['{{ "hello "|capitalize ~ "world" }}', 'Hello world'],
+        ['{% verbatim %} what up {% endverbatim %}', ' what up '],
+        ["{% verbatim %} what up\n  {%- endverbatim %}", " what up\n"], # Leave line break for -
+        ["{% verbatim %} what up\n  {%~ endverbatim %}", " what up"], # Strip all for ~
+        ["before\n{% line 10 %}\nafter", "before\n\nafter"],
+        ["{% block test %}hello{% endblock %}", "hello"],
       ].
         each do |input, expected, context|
           assert_equal(expected, compile_and_run(input, context || {}))
