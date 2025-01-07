@@ -5,7 +5,7 @@ module Twig
       @loader = loader
       @extension_set = ExtensionSet.new
 
-      add_extension(Extension::CoreExtension.new)
+      add_extension(Extension::Core.new)
     end
 
     def template_class(name)

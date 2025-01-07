@@ -1,6 +1,6 @@
 module Twig
   module Extension
-    class CoreExtension < Base
+    class Core < Base
       def operators
         binary = Node::Expression::Binary
         
