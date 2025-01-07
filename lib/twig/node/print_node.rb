@@ -1,6 +1,6 @@
 module Twig
   module Node
-    class PrintNode < Node
+    class PrintNode < Node::Base
       def initialize(expr, lineno)
         super({ expr: }, {}, lineno)
       end

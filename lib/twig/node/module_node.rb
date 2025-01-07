@@ -1,6 +1,6 @@
 module Twig
   module Node
-    class ModuleNode < Node
+    class ModuleNode < Node::Base
       def initialize(body, blocks, source)
         super({
           body:,

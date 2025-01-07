@@ -34,7 +34,7 @@ module Twig
 
     def test_node_must_accept_nodes
       assert_raises do
-        Node::Node.new({ 0 => Hash.new })
+        Node::Nodes.new({ 0 => Hash.new })
       end
 
       Node::Nodes.new({ 0 => Node::TextNode.new('test') })

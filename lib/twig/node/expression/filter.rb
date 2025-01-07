@@ -2,7 +2,7 @@ module Twig
   module Node
     module Expression
       class Filter < Call
-        # @param [Node] node
+        # @param [Node::Base] node
         # @param [TwigFilter|Constant] filter
         def initialize(node, filter, arguments, lineno)
           if filter.is_a?(TwigFilter)

@@ -22,7 +22,7 @@ module Twig
     end
 
     # @param [Proc] test
-    # @return [Node::Node]
+    # @return [Node::Base]
     def subparse(test, drop_needle: false)
       lineno = current_token.lineno
       rv = {}

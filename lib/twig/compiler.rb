@@ -11,7 +11,7 @@ module Twig
       @environment = environment
     end
 
-    # @param [Node::Node] node
+    # @param [Node::Base] node
     # @param [Integer] indentation
     # @return [Compiler]
     def compile(node, indentation = 0)
@@ -21,7 +21,7 @@ module Twig
       self
     end
 
-    # @param [Node::Node] node
+    # @param [Node::Base] node
     # @param [Boolean] raw
     # @return [Compiler]
     def subcompile(node, raw = true)

@@ -1,6 +1,6 @@
 module Twig
   module Node
-    class Block < Node
+    class Block < Node::Base
       def initialize(name, body, lineno)
         super({ body: }, { name: }, lineno)
       end

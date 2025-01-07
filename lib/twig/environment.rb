@@ -46,7 +46,7 @@ module Twig
       parser.parse(stream)
     end
 
-    # @param [Node::Node] node
+    # @param [Node::Base] node
     def compile(node)
       compiler.compile(node).source
     end

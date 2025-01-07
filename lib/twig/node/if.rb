@@ -1,6 +1,6 @@
 module Twig
   module Node
-    class If < Node
+    class If < Node::Base
       def initialize(tests, else_node, lineno)
         nodes = { tests: }
         nodes[:else] = else_node if else_node
