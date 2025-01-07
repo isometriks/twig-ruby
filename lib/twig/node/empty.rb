@@ -1,6 +1,6 @@
 module Twig
   module Node
-    class EmptyNode < Node::Base
+    class Empty < Node::Base
       def initialize(lineno = 0)
         super({}, {}, lineno)
       end

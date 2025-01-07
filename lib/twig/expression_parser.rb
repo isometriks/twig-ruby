@@ -133,7 +133,7 @@ module Twig
         token = parser.stream.expect(Token::NAME_TYPE)
 
         unless parser.stream.test(Token::PUNCTUATION_TYPE, '(')
-          arguments = Node::EmptyNode.new
+          arguments = Node::Empty.new
         else
           arguments = parse_only_arguments
         end

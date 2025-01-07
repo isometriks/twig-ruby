@@ -11,7 +11,7 @@ module Twig
         lineno = token.lineno
         stream = parser.stream
         name = stream.expect(Token::NAME_TYPE).value
-        block = Node::Block.new(name, Node::EmptyNode.new, lineno)
+        block = Node::Block.new(name, Node::Empty.new, lineno)
 
         parser.set_block(name, block)
         parser.push_local_scope
