@@ -96,6 +96,28 @@ module Twig
       node
     end
 
+    def parse_subscript_expression(node)
+      if parser.stream.next.value == "."
+        return parse_subscript_expression_dot(node)
+      end
+
+      parse_subscript_expression_array(node)
+    end
+
+    def parse_subscript_expression_dot(node)
+      stream = parser.stream
+      token = stream.current
+      lineno = token.lineno
+      arguments = Node::Expression::Array.new({}, lineno)
+      token = stream.next
+
+      if token.type == Token::NAME_TYPE
+        attribute = Node::Expression::Constant.new(token.value, token.lineno)
+      end
+
+      Node::Expression::GetAttribute.new(node, attribute, arguments, nil, token.lineno)
+    end
+
     private
 
     # @return [Parser]

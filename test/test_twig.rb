@@ -71,6 +71,22 @@ module Twig
         end
     end
 
+    def test_file
+      loader = Twig::Loader::File.new([__dir__ + '/fixtures/'])
+      environment = Twig::Environment.new(loader)
+
+      puts environment.load_and_compile('full.html.twig')
+
+      # Create the class in memory
+      eval(environment.load_and_compile('full.html.twig'))
+
+      template_class = environment.template_class('full.html.twig')
+      template = Kernel.const_get(template_class).new(environment)
+
+      result = template.render({ user: { "name" => { "last" => "Blanchette" } } })
+      puts result
+    end
+
     private
 
     def compile_and_run(template_contents, context = {})

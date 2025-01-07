@@ -12,6 +12,7 @@ module Twig
         (0...nodes[:tests].nodes.length).step(2).each do |i|
           if i.zero?
             compiler.
+              raw("\n").
               write('if (')
           else
             compiler.
@@ -40,7 +41,7 @@ module Twig
 
         compiler.
           outdent.
-          write("end\n")
+          write("end\n\n")
       end
     end
   end

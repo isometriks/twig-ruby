@@ -1,0 +1,11 @@
+<html>
+  <body>
+    Hello World!
+
+    {% if user %}
+      Welcome back {{ user.name.last }}
+    {% else %}
+      <a href="/login">Log In</a>
+    {% endif %}
+  </body>
+</html>
