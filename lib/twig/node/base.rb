@@ -20,7 +20,11 @@ module Twig
         raise "#{invalid.inspect} does not extend from #{Node::Base.name}" if invalid
 
         @nodes = nodes
+        @nodes.default_proc = -> (_hash, key) { raise "Node '#{key}' does not exist" }
+
         @attributes = attributes
+        @attributes.default_proc = -> (_hash, key) { raise "Attribute '#{key}' does not exist" }
+
         @lineno = lineno
         @tag = nil
       end
