@@ -16,6 +16,10 @@ module Twig
       loader.get_source_context(name).code
     end
 
+    def extension(name)
+      @extension_set.extensions[name]
+    end
+
     # @param [Extension::Base] extension
     def add_extension(extension)
       @extension_set.add(extension)

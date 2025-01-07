@@ -20,7 +20,8 @@ module Twig
 
       def filters
         {
-          capitalize: TwigFilter.new('capitalize', -> (string) { string.capitalize }),
+          capitalize: TwigFilter.new('capitalize', [self, :capitalize]),
+          upper: TwigFilter.new('upper', [self, :upper]),
         }
       end
 
@@ -29,6 +30,14 @@ module Twig
           TokenParser::Block.new,
           TokenParser::If.new,
         ]
+      end
+
+      def capitalize(string)
+        string.capitalize
+      end
+
+      def upper(string)
+        string.upcase
       end
     end
   end
