@@ -2,7 +2,7 @@ require 'spec_helper'
 
 RSpec.describe Twig::Environment do
   let(:templates) { { hello: "Hello {{ name }}" } }
-  let(:loader) { Twig::Loader::ArrayLoader.new(templates) }
+  let(:loader) { Twig::Loader::Array.new(templates) }
   let(:environment) { Twig::Environment.new(loader) }
 
   it "does cool shit" do
