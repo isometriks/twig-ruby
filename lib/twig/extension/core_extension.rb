@@ -23,6 +23,13 @@ module Twig
           capitalize: TwigFilter.new('capitalize', -> (string) { string.capitalize }),
         }
       end
+
+      def token_parsers
+        [
+          TokenParser::Block.new,
+          TokenParser::If.new,
+        ]
+      end
     end
   end
 end

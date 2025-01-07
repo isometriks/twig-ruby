@@ -8,6 +8,10 @@ module Twig
       def filters
         {}
       end
+
+      def token_parsers
+        []
+      end
     end
   end
 end

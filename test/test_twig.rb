@@ -63,6 +63,8 @@ module Twig
         ["{% verbatim %} what up\n  {%~ endverbatim %}", " what up"], # Strip all for ~
         ["before\n{% line 10 %}\nafter", "before\n\nafter"],
         ["{% block test %}hello{% endblock %}", "hello"],
+        ["{% if a %}Hello true{% else %}Hello false{% endif %}", "Hello true", { a: true }],
+        ["{% if a %}a{% elsif b %}b{% else %}c{% endif %}", "b", { a: false, b: true }],
       ].
         each do |input, expected, context|
           assert_equal(expected, compile_and_run(input, context || {}))

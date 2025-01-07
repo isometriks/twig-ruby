@@ -34,11 +34,23 @@ module Twig
     end
 
     def filters
-      @filters = extensions.values.map(&:filters).reduce({}, :merge)
+      @filters ||= extensions.values.map(&:filters).reduce({}, :merge)
     end
 
     def filter(name)
       filters[name.to_sym]
+    end
+
+    def token_parsers
+      @token_parsers ||= extensions.
+        values.map(&:token_parsers).reduce([], :concat).
+        map { |token_parser| [token_parser.tag.to_sym, token_parser] }.
+        to_h
+    end
+
+    # @return [TokenParser::Base|nil]
+    def token_parser(name)
+      token_parsers[name.to_sym]
     end
   end
 end

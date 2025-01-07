@@ -21,6 +21,7 @@ module Twig
       Node::ModuleNode.new(body, Node::Nodes.new(@blocks), stream.source)
     end
 
+    # @param [Proc] test
     # @return [Node::Node]
     def subparse(test, drop_needle: false)
       lineno = current_token.lineno
@@ -50,9 +51,10 @@ module Twig
           end
 
           # @todo Check that there is a token parser for this token value
-          # subparser = env.token_parser(token.value)
+          subparser = @environment.token_parser(token.value)
 
-          subparser = TokenParser::Block.new
+          raise "Unexpected #{token.value} tag" unless subparser
+
           stream.next
           subparser.parser = self
           node = subparser.parse(token)

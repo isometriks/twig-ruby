@@ -23,11 +23,8 @@ module Twig
           name = attributes[:name]
 
           compiler.
-            raw('(context.key?(').
-            string(name).
-            raw('.to_sym) ? context[').
-            string(name).
-            raw('.to_sym]').
+            raw("(context.key?(:#{name})").
+            raw(" ? context[:#{name}]").
             raw(' : raise("#{').
             string(name).
             raw('} does not exist"))')

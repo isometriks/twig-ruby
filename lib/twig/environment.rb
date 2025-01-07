@@ -31,6 +31,11 @@ module Twig
       @extension_set.filter(name)
     end
 
+    # @return [TokenParser::Base]
+    def token_parser(name)
+      @extension_set.token_parser(name)
+    end
+
     # @param [Source] source
     def tokenize(source)
       lexer.tokenize(source)
