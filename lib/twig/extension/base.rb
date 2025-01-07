@@ -1,6 +1,6 @@
 module Twig
   module Extension
-    class Extension
+    class Base
       def operators
         [{}, {}]
       end

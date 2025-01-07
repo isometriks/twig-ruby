@@ -1,6 +1,6 @@
 module Twig
   # @!attribute [r] extensions
-  #   @return [Hash<String, Extension::Extension>]
+  #   @return [Hash<String, Extension::Base>]
   class ExtensionSet
     attr_reader :extensions
 
@@ -8,7 +8,7 @@ module Twig
       @extensions = {}
     end
 
-    # @param [Extension::Extension] extension
+    # @param [Extension::Base] extension
     def add(extension)
       raise "Extension #{extension.class.name} already added" if has?(extension)
 
