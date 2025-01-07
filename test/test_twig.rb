@@ -37,7 +37,7 @@ module Twig
         Node::Nodes.new({ 0 => Hash.new })
       end
 
-      Node::Nodes.new({ 0 => Node::TextNode.new('test') })
+      Node::Nodes.new({ 0 => Node::Text.new('test') })
     end
     
     def test_filter

@@ -1,6 +1,6 @@
 module Twig
   module Node
-    class TextNode < Node::Base
+    class Text < Node::Base
       # @param [String] data
       # @param [Integer] lineno
       def initialize(data, lineno = 0)

@@ -18,7 +18,7 @@ module Twig
 
       body = subparse(test, drop_needle:)
 
-      Node::ModuleNode.new(body, Node::Nodes.new(@blocks), stream.source)
+      Node::Module.new(body, Node::Nodes.new(@blocks), stream.source)
     end
 
     # @param [Proc] test
@@ -31,13 +31,13 @@ module Twig
         case current_token.type
         when Token::TEXT_TYPE
           token = stream.next
-          rv[rv.length] = Node::TextNode.new(token.value, token.lineno)
+          rv[rv.length] = Node::Text.new(token.value, token.lineno)
         when Token::VAR_START_TYPE
           token = stream.next
           expr = expression_parser.parse_expression
           stream.expect(Token::VAR_END_TYPE)
 
-          rv[rv.length] = Node::PrintNode.new(expr, token.lineno)
+          rv[rv.length] = Node::Print.new(expr, token.lineno)
         when Token::BLOCK_START_TYPE
           stream.next
           token = current_token
