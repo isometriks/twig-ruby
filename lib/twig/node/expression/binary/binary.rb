@@ -2,7 +2,7 @@ module Twig
   module Node
     module Expression
       module Binary
-        class Binary < Expression
+        class Binary < Expression::Base
           def initialize(left, right, lineno)
             super({ left:, right: }, {}, lineno)
           end

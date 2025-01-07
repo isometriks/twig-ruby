@@ -14,7 +14,7 @@ module Twig
       @environment = environment
     end
 
-    # @return [Node::Expression::Expression]
+    # @return [Node::Expression::Base]
     def parse_expression(precedence = 0)
       # @todo parse arrow
 
@@ -30,7 +30,7 @@ module Twig
 
         expr1 = parse_expression(next_precedence)
 
-        # @type [Node::Expression::Expression::Binary]
+        # @type [Node::Expression::Base::Binary]
         expr = operator[:class].new(expr, expr1, token.lineno)
         expr.attributes[:operator] = "binary_#{token.value}"
 
@@ -40,7 +40,7 @@ module Twig
       expr
     end
 
-    # @return [Node::Expression::Expression]
+    # @return [Node::Expression::Base]
     def parse_primary_expression
       token = parser.current_token
 
@@ -73,8 +73,8 @@ module Twig
       parse_post_fix_expression(node)
     end
 
-    # @param [Node::Expression::Expression] node
-    # @return [Node::Expression::Expression]
+    # @param [Node::Expression::Base] node
+    # @return [Node::Expression::Base]
     def parse_post_fix_expression(node)
       loop do
         token = parser.current_token
@@ -103,7 +103,7 @@ module Twig
       @parser
     end
 
-    # @return [Node::Expression::Expression]
+    # @return [Node::Expression::Base]
     def get_primary
       token = parser.current_token
       unary = false

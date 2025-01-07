@@ -1,7 +1,7 @@
 module Twig
   module Node
     module Expression
-      class Name < Expression
+      class Name < Expression::Base
         SPECIAL_VARS = {
           '_self' => 'get_template_name',
           '_context' => 'context',
