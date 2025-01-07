@@ -2,6 +2,7 @@ require 'digest'
 
 %w[
   .
+  error
   extension
   loader
   node

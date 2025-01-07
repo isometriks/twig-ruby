@@ -190,12 +190,14 @@ module Twig
         if code_at?(0, OPENING_BRACKET)
           @brackets << [code_at, @lineno]
         elsif code_at?(0, CLOSING_BRACKET)
-          raise "Unexpected closing bracket: #{code_at} on #{@lineno}" if @brackets.empty?
+          if @brackets.empty?
+            raise Error::Syntax.new("Unexpected closing bracket: #{code_at}", @lineno, @source)
+          end
 
           expect, lineno = @brackets.pop
 
           unless code_at?(0, expect.tr(OPENING_BRACKET.join, CLOSING_BRACKET.join))
-            raise "Unclosed bracket: #{code_at} on #{lineno}"
+            raise Error::Syntax.new("Unclosed bracket: #{code_at}", lineno, @source)
           end
         end
 
