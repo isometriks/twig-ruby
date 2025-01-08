@@ -42,7 +42,9 @@ module Twig
           stream.next
           token = current_token
 
-          raise "A block must start with a tag name" unless token.type == Token::NAME_TYPE
+          unless token.type == Token::NAME_TYPE
+            raise Error::Syntax.new("A block must start with a tag name.", token.lineno, stream.source)
+          end
 
           if test&.call(token)
             stream.next if drop_needle
@@ -53,7 +55,9 @@ module Twig
           # @todo Check that there is a token parser for this token value
           subparser = @environment.token_parser(token.value)
 
-          raise "Unexpected #{token.value} tag" unless subparser
+          unless subparser
+            raise Error::Syntax.new("Unexpected '#{token.value}' tag.", token.lineno, stream.source)
+          end
 
           stream.next
           subparser.parser = self

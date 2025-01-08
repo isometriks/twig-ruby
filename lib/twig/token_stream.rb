@@ -2,7 +2,11 @@ module Twig
   # @!attribute [r] source
   #   @return [Source]
   class TokenStream
-    attr_reader :tokens, :source
+    # @return [Array<Token>]
+    attr_reader :tokens
+
+    # @return [Source]
+    attr_reader :source
 
     # @param [Array<Token>] tokens
     # @param [Source] source
@@ -16,14 +20,16 @@ module Twig
     def next
       @current += 1
 
-      raise "Unexpected end of template." unless @tokens[@current]
+      unless tokens[@current]
+        raise Error::Syntax.new("Unexpected end of template.", tokens[@current - 1].lineno, source)
+      end
 
-      @tokens[@current - 1]
+      tokens[@current - 1]
     end
 
     # @return [Token]
     def current
-      @tokens[@current]
+      tokens[@current]
     end
 
     # @return [Token]
@@ -31,7 +37,11 @@ module Twig
       token = current
 
       unless token.test(type, value)
-        raise "Expected #{type} but got #{token.type} #{message}"
+        raise Error::Syntax.new(
+          "Expected #{type}(#{value}) but got #{token.type} #{message}".rstrip,
+          token.lineno,
+          source
+        )
       end
 
       self.next
