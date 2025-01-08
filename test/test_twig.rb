@@ -65,6 +65,8 @@ module Twig
         ["{% block test %}hello{% endblock %}", "hello"],
         ["{% if a %}Hello true{% else %}Hello false{% endif %}", "Hello true", { a: true }],
         ["{% if a %}a{% elsif b %}b{% else %}c{% endif %}", "b", { a: false, b: true }],
+        ['{{ true ? "a" : "b" }}', 'a'],
+        ['{{ false ? "a" : (false ? "a" : "b") }}', 'b'],
       ].
         each do |input, expected, context|
           assert_equal(expected, compile_and_run(input, context || {}))

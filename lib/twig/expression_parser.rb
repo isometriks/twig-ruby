@@ -37,6 +37,8 @@ module Twig
         token = parser.current_token
       end
 
+      return parse_ternary_expression(expr) if precedence.zero?
+
       expr
     end
 
@@ -67,7 +69,11 @@ module Twig
       when Token::STRING_TYPE, Token::INTERPOLATION_START_TYPE
         node = parse_string_expression
       else
-        raise "Unexpected token type: #{token.type}"
+        raise Error::Syntax.new(
+          "Unexpected token '#{token.type}' of value '#{token.value}'",
+          token.lineno,
+          parser.stream.source
+        )
       end
 
       parse_post_fix_expression(node)
@@ -142,6 +148,23 @@ module Twig
       end
 
       parse_primary_expression
+    end
+
+    # @param [Node::Expression] expr
+    # @return [Node::Expression]
+    def parse_ternary_expression(expr)
+      while parser.stream.next_if(Token::PUNCTUATION_TYPE, '?')
+        expr2 = parse_expression
+        expr3 = if parser.stream.next_if(Token::PUNCTUATION_TYPE, ':')
+                  parse_expression
+                else
+                  Node::Expression::Constant.new('', parser.current_token.lineno)
+                end
+
+        expr = Node::Expression::Ternary.new(expr, expr2, expr3, parser.current_token.lineno)
+      end
+
+      expr
     end
 
     def parse_filter_expression(node)
