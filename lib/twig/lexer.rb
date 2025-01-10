@@ -8,7 +8,7 @@ module Twig
     WHITESPACE_LINE_CHARS = " \t\0\x0B".freeze
     INTERPOLATION = %w[#{ }]
     OPENING_BRACKET = '([{'.split(//)
-    CLOSING_BRACKET = ')}]'.split(//)
+    CLOSING_BRACKET = ')]}'.split(//)
     PUNCTUATION = OPENING_BRACKET + CLOSING_BRACKET + '?:.,|'.split(//)
 
     REGEX_LNUM = /[0-9]+(_[0-9]+)*/

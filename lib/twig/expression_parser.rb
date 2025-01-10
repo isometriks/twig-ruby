@@ -68,6 +68,19 @@ module Twig
         node = Node::Expression::Constant.new(token.value, token.lineno)
       when Token::STRING_TYPE, Token::INTERPOLATION_START_TYPE
         node = parse_string_expression
+      when Token::PUNCTUATION_TYPE
+        case token.value
+        when '['
+          node = parse_sequence_expression
+        when '{'
+          node = parse_mapping_expression
+        else
+          Error::Syntax.new(
+            "Unexpected token #{token.type} of value #{token.value}",
+            token.lineno,
+            parser.stream.source
+          )
+        end
       else
         raise Error::Syntax.new(
           "Unexpected token '#{token.type}' of value '#{token.value}'",
@@ -122,6 +135,75 @@ module Twig
       end
 
       Node::Expression::GetAttribute.new(node, attribute, arguments, nil, token.lineno)
+    end
+
+    def parse_mapping_expression
+      stream = parser.stream
+      stream.expect(Token::PUNCTUATION_TYPE, '{', 'A mapping element was expected')
+
+      node = Node::Expression::Array.new({}, stream.current.lineno)
+      first = true
+
+      until stream.test(Token::PUNCTUATION_TYPE, '}')
+        unless first
+          stream.expect(Token::PUNCTUATION_TYPE, ',', 'A mapping value must be followed by a comma')
+
+          # trailing comma
+          if stream.test(Token::PUNCTUATION_TYPE, '}')
+            break
+          end
+        end
+
+        first = false
+
+        if stream.next_if(Token::SPREAD_TYPE)
+          value = parse_expression
+          value.attributes[:spread] = true
+          node.add_element(value)
+
+          next
+        end
+
+        # a mapping key can be:
+        #
+        #  * a number -- 12
+        #  * a string -- 'a'
+        #  * a name, which is equivalent to a string -- a
+        #  * an expression, which must be enclosed in parentheses -- (1 + 2)
+        if (token = stream.next_if(Token::NAME_TYPE))
+          key = Node::Expression::Constant.new(token.value, token.lineno)
+
+          # {a} is a shortcut for {a: a}
+          if stream.test(Token::PUNCTUATION_TYPE, %w[, }])
+            value = Node::Expression::Variable::Context.new(key.attributes[:value], key.lineno)
+            node.add_element(value, key)
+
+            next
+          end
+        elsif (token = stream.next_if(Token::STRING_TYPE)) || (token = stream.next_if(Token::NUMBER_TYPE))
+          key = Node::Expression::Constant.new(token.value, token.lineno)
+        elsif stream.test(Token::PUNCTUATION_TYPE, '(')
+          key = parse_expression
+        else
+          current = stream.current
+
+          raise Error::Syntax.new(
+            'A mapping key must be a quoted string, number, name, or expression in parentheses ' +
+              "expected token '#{current.type}' of value '#{current.value}'",
+            current.lineno,
+            stream.source,
+          )
+        end
+
+        stream.expect(Token::PUNCTUATION_TYPE, ':', 'A mapping key must be followed by a colon (:)')
+        value = parse_expression
+
+        node.add_element(value, key)
+      end
+
+      stream.expect(Token::PUNCTUATION_TYPE, '}', 'An opened mapping is not properly closed')
+
+      node
     end
 
     private

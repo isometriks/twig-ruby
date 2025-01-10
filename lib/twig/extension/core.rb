@@ -31,6 +31,7 @@ module Twig
           TokenParser::Extends.new,
           TokenParser::If.new,
           TokenParser::Include.new,
+          TokenParser::With.new,
         ]
       end
 
