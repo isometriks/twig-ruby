@@ -7,7 +7,7 @@ module Twig
 
       def compile(compiler)
         compiler.
-          write("def block_#{attributes[:name]}\n").
+          write("def block_#{attributes[:name]}(context, blocks)\n").
           indent.
           subcompile(nodes[:body]).
           outdent.

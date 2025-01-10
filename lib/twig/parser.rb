@@ -12,13 +12,14 @@ module Twig
     # @param [TokenStream] stream
     def parse(stream, test = nil, drop_needle: false)
       @stream = stream
+      @parent = nil
       @blocks = {}
       @block_stack = []
       @imported_symbols = [{}]
 
       body = subparse(test, drop_needle:)
 
-      Node::Module.new(body, Node::Nodes.new(@blocks), stream.source)
+      Node::Module.new(body, @parent, Node::Nodes.new(@blocks), stream.source)
     end
 
     # @param [Proc] test
@@ -112,6 +113,15 @@ module Twig
     # @todo type value as BlockNode and also set it to a BodyNode
     def set_block(name, value)
       @blocks[name] = value
+    end
+
+    # @param [Node::Base] parent
+    def parent=(parent)
+      if @parent
+        raise Error::Syntax.new("Cannot extends twice", parent.lineno, parent.source_context)
+      end
+
+      @parent = parent
     end
   end
 end

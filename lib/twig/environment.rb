@@ -12,6 +12,10 @@ module Twig
       "twig_compiled_#{::Digest::SHA256.hexdigest(name.to_s)}"
     end
 
+    def load_template(name)
+      eval(render_ruby(name)).new(self)
+    end
+
     def render(name)
       loader.get_source_context(name).code
     end

@@ -8,24 +8,29 @@ module Twig
       @blocks = {}
     end
 
-    def call(context = {})
+    def call(context = {}, blocks = {})
       raise "call is not implemented"
     end
 
-    def render(context = {})
+    def render(context = {}, blocks = {})
       parts = []
 
-      self.call(context.transform_keys(&:to_sym)) do |yielded|
+      self.call(context.transform_keys(&:to_sym), blocks) do |yielded|
         parts << yielded
       end
 
       parts.join
     end
 
-    def yield_block(name)
+    def yield_block(name, context = {}, blocks = {})
       parts = []
+      object = self
 
-      public_send(:"block_#{name}") do |yielded|
+      if blocks.key?(name)
+        object = blocks[name]
+      end
+
+      object.public_send(:"block_#{name}", context, blocks) do |yielded|
         parts << yielded
       end
 

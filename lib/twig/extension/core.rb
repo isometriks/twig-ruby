@@ -28,6 +28,7 @@ module Twig
       def token_parsers
         [
           TokenParser::Block.new,
+          TokenParser::Extends.new,
           TokenParser::If.new,
         ]
       end

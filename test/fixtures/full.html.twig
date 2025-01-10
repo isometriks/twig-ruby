@@ -1,11 +1,15 @@
-<html>
+<html lang="en">
   <body>
-    Hello World!
+    {% block header %}
+      <img src="logo.ong" alt="Logo">
+    {% endblock %}
 
-    {% if user %}
-      Welcome back {{ user.name.last }}
-    {% else %}
-      <a href="/login">Log In</a>
-    {% endif %}
+    <h1>Hello {{ name }}!</h1>
+
+    <footer>
+      {% block footer %}
+        Copyright&copy; 2025
+      {% endblock %}
+    </footer>
   </body>
 </html>

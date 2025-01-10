@@ -77,11 +77,11 @@ module Twig
       loader = Twig::Loader::File.new([__dir__ + '/fixtures/'])
       environment = Twig::Environment.new(loader)
 
-      puts environment.load_and_compile('full.html.twig')
+      puts environment.load_and_compile('child.html.twig')
 
       # Create the class in memory
-      template = eval(environment.load_and_compile('full.html.twig'))
-      result = template.new(environment).render({ user: { "name" => { "last" => "Blanchette" } } })
+      template = eval(environment.load_and_compile('child.html.twig'))
+      result = template.new(environment).render({ name: "Craig" })
       puts result
     end
 

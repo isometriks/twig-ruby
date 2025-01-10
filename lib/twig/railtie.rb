@@ -12,7 +12,10 @@ module Twig
     end
 
     def self.loader
-      @loader ||= ::Twig::Loader::File.new([Rails.root.to_s + "/"])
+      @loader ||= ::Twig::Loader::File.new([
+        Rails.root.to_s + "/",
+        Rails.root.to_s + "/app/views/",
+      ])
     end
 
     def self.environment
