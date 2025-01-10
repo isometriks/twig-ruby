@@ -9,11 +9,17 @@ module Twig
     end
 
     def template_class(name)
-      "Twig::Compiled_#{::Digest::SHA256.hexdigest(name.to_s)}"
+      "twig_compiled_#{::Digest::SHA256.hexdigest(name.to_s)}"
     end
 
     def render(name)
       loader.get_source_context(name).code
+    end
+
+    def render_ruby(name)
+      compile_source(
+        loader.get_source_context(name)
+      )
     end
 
     def extension(name)

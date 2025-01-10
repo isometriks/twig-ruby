@@ -1,1 +1,1 @@
-require_relative '../lib/twig'
+require_relative '../lib/twig-ruby'

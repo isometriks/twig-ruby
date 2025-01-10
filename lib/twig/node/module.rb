@@ -12,7 +12,7 @@ module Twig
 
       def compile(compiler)
         class_begin = <<~CLASS
-          class #{compiler.environment.template_class(source_context.name)} < ::Twig::Template
+          #{compiler.environment.template_class(source_context.name)} = Class.new(::Twig::Template) do
         CLASS
 
         class_end = <<~CLASS

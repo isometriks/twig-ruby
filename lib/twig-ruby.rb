@@ -14,10 +14,13 @@ require 'digest'
   require directory + 'base.rb' if File.file?(directory + 'base.rb')
 
   Dir[directory + '*.rb'].each do |file|
-    next if File.basename(file).inspect == 'base.rb'
+    next if %w[base.rb railtie.rb].include?(File.basename(file))
     require file
   end
 end
+
+# Railtie
+require 'twig/railtie' if defined?(::Rails::Railtie)
 
 module Twig
 end

@@ -1,5 +1,5 @@
 require 'minitest/autorun'
-require 'twig'
+require 'twig-ruby'
 
 module Twig
   class TwigTest < Minitest::Test
@@ -80,12 +80,8 @@ module Twig
       puts environment.load_and_compile('full.html.twig')
 
       # Create the class in memory
-      eval(environment.load_and_compile('full.html.twig'))
-
-      template_class = environment.template_class('full.html.twig')
-      template = Kernel.const_get(template_class).new(environment)
-
-      result = template.render({ user: { "name" => { "last" => "Blanchette" } } })
+      template = eval(environment.load_and_compile('full.html.twig'))
+      result = template.new(environment).render({ user: { "name" => { "last" => "Blanchette" } } })
       puts result
     end
 
@@ -103,15 +99,8 @@ module Twig
       nodes = parser.parse(tokens)
 
       # Create the class in memory
-      eval(compiler.compile(nodes).source)
-
-      template_class = environment.template_class(template_key)
-      template = Kernel.const_get(template_class).new(environment)
-
-      result = template.render(context)
-      Twig.send(:remove_const, template_class.split('::').last)
-
-      result
+      template = eval(compiler.compile(nodes).source)
+      template.new(environment).render(context)
     end
   end
 end
