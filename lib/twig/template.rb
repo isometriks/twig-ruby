@@ -39,6 +39,12 @@ module Twig
 
     private
 
+    # @param [String] name
+    # @return ]Template]
+    def load_template(name, template_name = '', template_line = nil)
+      env.load_template(name)
+    end
+
     # @return [Environment]
     def env
       @environment

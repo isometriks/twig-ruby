@@ -30,7 +30,7 @@ module Twig
 
         if nodes.key?(:parent)
           compiler.
-            write('yield env.load_template(').
+            write('yield load_template(').
             string(nodes[:parent].attributes[:value]).
             raw(").render(context, block_list.merge(blocks))\n")
         else

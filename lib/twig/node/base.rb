@@ -46,6 +46,11 @@ module Twig
         @source_context = source
         @nodes.values.each { |node| node.source_context = source }
       end
+
+      # @return [String]
+      def template_name
+        source_context.name
+      end
     end
   end
 end

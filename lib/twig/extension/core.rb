@@ -30,6 +30,7 @@ module Twig
           TokenParser::Block.new,
           TokenParser::Extends.new,
           TokenParser::If.new,
+          TokenParser::Include.new,
         ]
       end
 
