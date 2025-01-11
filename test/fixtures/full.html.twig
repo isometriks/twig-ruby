@@ -4,7 +4,9 @@
       <img src="logo.ong" alt="Logo">
     {% endblock %}
 
-    {% include 'include.html.twig' with { name: "Different" } %}
+    {% include 'include.html.twig' with {
+      name: "Different", hobbies: ["cooking", "music"]
+    } %}
 
     <footer>
       {% block footer %}

@@ -137,6 +137,39 @@ module Twig
       Node::Expression::GetAttribute.new(node, attribute, arguments, nil, token.lineno)
     end
 
+    def parse_sequence_expression
+      stream = parser.stream
+      stream.expect(Token::PUNCTUATION_TYPE, '[', 'A sequence element was expected')
+
+      node = Node::Expression::Array.new({}, stream.current.lineno)
+      first = true
+
+      #raise stream.debug
+
+      until stream.test(Token::PUNCTUATION_TYPE, ']')
+        unless first
+          stream.expect(Token::PUNCTUATION_TYPE, ',', 'A sequence element must be followed by a comma')
+
+          # trailing comma
+          break if stream.test(Token::PUNCTUATION_TYPE, ']')
+        end
+
+        first = false
+
+        if stream.next_if(Token::SPREAD_TYPE)
+          expr = parse_expression
+          expr.attributes[:spread] = true
+          node.add_element(expr)
+        else
+          node.add_element(parse_expression)
+        end
+      end
+
+      stream.expect(Token::PUNCTUATION_TYPE, ']', 'An opened sequence is not properly closed')
+
+      node
+    end
+
     def parse_mapping_expression
       stream = parser.stream
       stream.expect(Token::PUNCTUATION_TYPE, '{', 'A mapping element was expected')

@@ -22,7 +22,7 @@ module Twig
 
         def compile(compiler)
           compiler.
-            write("{\n").
+            write("{").
             indent
 
           key_value_pairs.each do |key, value|
@@ -30,18 +30,18 @@ module Twig
               subcompile(key).
               raw(' => ').
               subcompile(value).
-              raw(",\n")
+              raw(", ")
           end
 
           compiler.
             outdent.
-            write("}\n")
+            write("}")
         end
 
         private
 
         def key_value_pairs
-          nodes.each_value.each_cons(2)
+          nodes.each_value.each_slice(2)
         end
       end
     end

@@ -38,7 +38,7 @@ module Twig
 
       unless token.test(type, value)
         raise Error::Syntax.new(
-          "Expected #{type}(#{value}) but got #{token.type} #{message}".rstrip,
+          "Expected #{type}(#{value}) but got #{token.type}(#{token.value}) #{message}".rstrip,
           token.lineno,
           source
         )
