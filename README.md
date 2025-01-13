@@ -12,9 +12,6 @@ This gem includes a Railtie that will automatically add your views folder and
 register a `:twig` template handler. Just simply create your views such as
 `app/views/welcome/index.html.twig` and it will start rendering them.
 
-Layouts currently do not work with this library, and probably aren't needed
-since each template can choose which "layout" to use by using the `extends` tag:
-
 ```twig
 {# welcome/index.html.twig #}
 
