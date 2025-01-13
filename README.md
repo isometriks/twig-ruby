@@ -32,3 +32,22 @@ class ApplicationController < ActionController::Base
   layout false
 end
 ```
+
+## Additions
+
+Since Ruby has the concept of blocks, a new tag is introduced call `yield` it
+can be used with helpers like `form_with`
+
+```twig
+{% yield form_with(url: 'login') do |f| %}
+  {{ f.email_field("email") }}
+{% endyield %}
+```
+
+or cache
+
+```twig
+{% yield cache(product) do %}
+  ...
+{% endyield %}
+```
