@@ -7,9 +7,9 @@ module Twig
 
       def compile(compiler)
         compiler.
-          write('yield ').
+          write('@output_buffer.append = ').
           subcompile(nodes[:expr]).
-          raw("\n")
+          raw(";\n")
       end
     end
   end

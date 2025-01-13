@@ -30,15 +30,16 @@ module Twig
 
         if nodes.key?(:parent)
           compiler.
-            write('yield load_template(').
+            write('load_template(').
             string(nodes[:parent].attributes[:value]).
-            raw(").render(context, block_list.merge(blocks))\n")
+            raw(").render(context, block_list.merge(blocks));\n")
         else
           compiler.
             subcompile(nodes[:body])
         end
 
         compiler.
+          write("@output_buffer\n").
           outdent.
           write("end\n\n").
           subcompile(nodes[:blocks]).
@@ -46,6 +47,7 @@ module Twig
           outdent
 
         compiler.
+          indent.
           write("def block_list\n").
           indent.
           write("{\n").
@@ -60,7 +62,8 @@ module Twig
           outdent.
           write("}\n").
           outdent.
-          write("end\n\n")
+          write("end\n").
+          outdent
 
         compiler.
           raw(class_end)

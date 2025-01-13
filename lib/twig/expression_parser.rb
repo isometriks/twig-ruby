@@ -55,12 +55,15 @@ module Twig
           node = Node::Expression::Constant.new(true, token.lineno)
         when 'false', 'FALSE'
           node = Node::Expression::Constant.new(false, token.lineno)
-        when 'null', 'NULL'
+        when 'null', 'NULL', 'nil'
           node = Node::Expression::Constant.new(nil, token.lineno)
         else
-          # @todo lots missing here
-          # @todo should be a context variable
-          node = Node::Expression::Name.new(token.value, token.lineno)
+          if parser.current_token.value == '('
+            node = get_function_node(token.value, token.lineno)
+          else
+            # @todo should be a context variable
+            node = Node::Expression::Name.new(token.value, token.lineno)
+          end
         end
       when Token::NUMBER_TYPE
         parser.stream.next
@@ -239,7 +242,70 @@ module Twig
       node
     end
 
-    private
+    def get_function_node(name, line)
+      # @todo lots of stuff in this method
+      args = parse_only_arguments
+
+      if environment.helper_method?(name)
+        Node::Expression::HelperMethod.new(name, args, line)
+      else
+        raise Error::Syntax.new("Unknown function '#{name}'", line, parser.stream.source)
+      end
+    end
+
+    def parse_only_arguments
+      args = AutoHash.new
+      stream = parser.stream
+      stream.expect(Token::PUNCTUATION_TYPE, '(', 'A list of arguments must begin with an opening parenthesis')
+      has_spread = false
+
+      until stream.test(Token::PUNCTUATION_TYPE, ')')
+        unless args.empty?
+          stream.expect(Token::PUNCTUATION_TYPE, ',', 'Arguments must be separated by a comma')
+
+          # if above was trailing comma, exit early
+          break if stream.test(Token::PUNCTUATION_TYPE, ')')
+        end
+
+        if stream.next_if(Token::SPREAD_TYPE)
+          has_spread = true
+          value = Node::Expression::Unary::Spread.new(parse_expression, stream.current.lineno)
+        elsif has_spread
+          raise Error::Syntax.new(
+            'Normal arguments must be placed before argument unpacking.',
+            stream.current.lineno,
+            stream.source
+          )
+        else
+          value = parse_expression
+        end
+
+        name = nil
+        if (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
+          (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
+          unless value.class <= Node::Expression::Name
+            raise Error::Syntax.new(
+              "A parameter name must be a string, #{value.class.name} given.",
+              token.lineno,
+              stream.source
+            )
+          end
+
+          name = value.attributes[:name]
+          value = parse_expression
+        end
+
+        if name.nil?
+          args.add(value)
+        else
+          args[name] = value
+        end
+      end
+
+      stream.expect(Token::PUNCTUATION_TYPE, ')', 'A list of arguments must be closed by a parenthesis')
+
+      Node::Nodes.new(args)
+    end
 
     # @return [Parser]
     def parser

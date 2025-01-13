@@ -1,4 +1,6 @@
+require 'active_support/core_ext/string/output_safety'
 require 'digest'
+require 'cgi'
 
 %w[
   .

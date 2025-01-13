@@ -13,9 +13,10 @@ module Twig
         end
 
         stream.expect(Token::BLOCK_END_TYPE)
+        body = parser.subparse(decide_with_end, drop_needle: true)
+        stream.expect(Token::BLOCK_END_TYPE)
 
-        raise "yeah with got hit"
-        #body = parser.subparse
+        raise [variables].inspect
       end
 
       def tag

@@ -9,9 +9,9 @@ module Twig
 
       def compile(compiler)
         compiler.
-          write('yield ').
+          write('@output_buffer.safe_append = ').
           string(attributes[:data]).
-          raw("\n")
+          raw(";\n")
       end
     end
   end

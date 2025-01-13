@@ -7,7 +7,12 @@ module Twig
 
       <<~TEMPLATE
         #{environment.render_ruby(template.short_identifier)}
-        #{class_name}.new(#{self.class.name}.environment).render(local_assigns)
+        #{class_name}.new(
+          #{self.class.name}.environment, 
+          call_context: self,
+          output_buffer: @output_buffer
+        ).render(local_assigns)
+        @output_buffer
       TEMPLATE
     end
 
@@ -19,7 +24,9 @@ module Twig
     end
 
     def self.environment
-      @environment ||= ::Twig::Environment.new(self.loader)
+      @environment ||= ::Twig::Environment.new(self.loader).tap do |env|
+        env.add_extension(::Twig::Extension::Rails.new)
+      end
     end
   end
 

@@ -49,7 +49,7 @@ module Twig
       token
     end
 
-    def test(primary, secondary)
+    def test(primary, secondary = nil)
       current.test(primary, secondary)
     end
 

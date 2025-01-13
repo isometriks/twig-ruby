@@ -26,19 +26,19 @@ module Twig
     # @return [Node::Base]
     def subparse(test, drop_needle: false)
       lineno = current_token.lineno
-      rv = {}
+      rv = AutoHash.new
 
       until stream.eof?
         case current_token.type
         when Token::TEXT_TYPE
           token = stream.next
-          rv[rv.length] = Node::Text.new(token.value, token.lineno)
+          rv.add(Node::Text.new(token.value, token.lineno))
         when Token::VAR_START_TYPE
           token = stream.next
           expr = expression_parser.parse_expression
           stream.expect(Token::VAR_END_TYPE)
 
-          rv[rv.length] = Node::Print.new(expr, token.lineno)
+          rv.add(Node::Print.new(expr, token.lineno))
         when Token::BLOCK_START_TYPE
           stream.next
           token = current_token
@@ -67,7 +67,7 @@ module Twig
           raise "Cannot return nil from TokenParser" unless node
           node.tag = subparser.tag
 
-          rv[rv.length] = node
+          rv.add(node)
         else
           raise "Unable to parse token of type #{current_token.type}"
         end

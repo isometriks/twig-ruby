@@ -36,6 +36,10 @@ module Twig
       [all_unary, all_binary]
     end
 
+    def helper_methods
+      @helper_methods ||= extensions.values.map(&:helper_methods).reduce([], :concat)
+    end
+
     def filters
       @filters ||= extensions.values.map(&:filters).reduce({}, :merge)
     end

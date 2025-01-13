@@ -9,7 +9,7 @@ module Twig
       # @return [Source]
       attr_reader :source_context
 
-      # @return [Hash<Node::Base>]
+      # @return [AutoHash<Node::Base>]
       attr_reader :nodes
 
       # @param [Hash<Node::Base>] nodes
@@ -22,7 +22,7 @@ module Twig
 
         raise "#{invalid.inspect} does not extend from #{Node::Base.name}" if invalid
 
-        @nodes = nodes
+        @nodes = AutoHash[nodes]
         @nodes.default_proc = -> (_hash, key) { raise "Node '#{key}' does not exist" }
 
         @attributes = attributes

@@ -15,6 +15,7 @@ module Twig
     INTERPOLATION_END_TYPE = :interpolation_end
     ARROW_TYPE = :arrow
     SPREAD_TYPE = :spread
+    YIELD_TYPE = :yield
 
     attr_reader :type, :value, :lineno
 

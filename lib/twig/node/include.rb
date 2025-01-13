@@ -22,7 +22,7 @@ module Twig
           raise "not implemented yet"
         else
           compiler.
-            write('yield ')
+            write('')
 
           add_get_template(compiler)
 
@@ -32,7 +32,7 @@ module Twig
           add_template_arguments(compiler)
 
           compiler.
-            raw(")\n")
+            raw(");\n")
         end
       end
 

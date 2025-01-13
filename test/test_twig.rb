@@ -67,6 +67,7 @@ module Twig
         ["{% if a %}a{% elsif b %}b{% else %}c{% endif %}", "b", { a: false, b: true }],
         ['{{ true ? "a" : "b" }}', 'a'],
         ['{{ false ? "a" : (false ? "a" : "b") }}', 'b'],
+        ['{{ "<h1>Hello</h1>" }}', '&lt;h1&gt;Hello&lt;/h1&gt;']
       ].
         each do |input, expected, context|
           assert_equal(expected, compile_and_run(input, context || {}))
@@ -100,7 +101,7 @@ module Twig
 
       # Create the class in memory
       template = eval(compiler.compile(nodes).source)
-      template.new(environment).render(context)
+      template.new(environment).render(context).to_s
     end
   end
 end

@@ -22,6 +22,7 @@ module Twig
         {
           capitalize: TwigFilter.new('capitalize', [self, :capitalize]),
           upper: TwigFilter.new('upper', [self, :upper]),
+          raw: TwigFilter.new('raw', [self, :raw]),
         }
       end
 
@@ -32,6 +33,7 @@ module Twig
           TokenParser::If.new,
           TokenParser::Include.new,
           TokenParser::With.new,
+          TokenParser::Yield.new
         ]
       end
 

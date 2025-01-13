@@ -12,6 +12,10 @@ module Twig
       def token_parsers
         []
       end
+
+      def helper_methods
+        []
+      end
     end
   end
 end

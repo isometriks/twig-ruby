@@ -16,8 +16,7 @@ module Twig
             key = Constant.new(@index, value.lineno)
           end
 
-          nodes[nodes.length] = key
-          nodes[nodes.length] = value
+          nodes.add(key, value)
         end
 
         def compile(compiler)

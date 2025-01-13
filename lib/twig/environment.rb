@@ -13,7 +13,7 @@ module Twig
     end
 
     def load_template(name)
-      eval(render_ruby(name)).new(self)
+      eval(render_ruby(name))
     end
 
     def render(name)
@@ -48,6 +48,11 @@ module Twig
     # @return [TokenParser::Base]
     def token_parser(name)
       @extension_set.token_parser(name)
+    end
+
+    # @return [Boolean]
+    def helper_method?(name)
+      @extension_set.helper_methods.include?(name)
     end
 
     # @param [Source] source
