@@ -41,6 +41,7 @@ module Twig
           And: '&&',
           Add: '+',
           Sub: '-',
+          Concat: '+',
           Mul: '*',
           Div: '/',
         }
