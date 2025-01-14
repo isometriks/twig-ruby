@@ -7,6 +7,8 @@ module Twig
 
       def helper_methods
         %w[
+          render
+
           distance_of_time_in_words
           time_ago_in_words
 

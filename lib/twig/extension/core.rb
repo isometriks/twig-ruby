@@ -9,11 +9,19 @@ module Twig
             # Unary
           },
           {
-            '+': { precedence: 30, class: binary::AddBinary, associativity: ExpressionParser::OPERATOR_LEFT },
-            '-': { precedence: 30, class: binary::SubBinary, associativity: ExpressionParser::OPERATOR_LEFT },
-            '~': { precedence: 40, class: binary::ConcatBinary, associativity: ExpressionParser::OPERATOR_LEFT },
-            '*': { precedence: 60, class: binary::MulBinary, associativity: ExpressionParser::OPERATOR_LEFT },
-            '/': { precedence: 60, class: binary::DivBinary, associativity: ExpressionParser::OPERATOR_LEFT },
+            '==': { precedence: 20, class: binary::Equal, associativity: ExpressionParser::OPERATOR_LEFT },
+            '!=': { precedence: 20, class: binary::NotEqual, associativity: ExpressionParser::OPERATOR_LEFT },
+            '<=>': { precedence: 20, class: binary::Spaceship, associativity: ExpressionParser::OPERATOR_LEFT },
+            '<': { precedence: 20, class: binary::Less, associativity: ExpressionParser::OPERATOR_LEFT },
+            '>': { precedence: 20, class: binary::Greater, associativity: ExpressionParser::OPERATOR_LEFT },
+            '>=': { precedence: 20, class: binary::GreaterEqual, associativity: ExpressionParser::OPERATOR_LEFT },
+            '<=': { precedence: 20, class: binary::LessEqual, associativity: ExpressionParser::OPERATOR_LEFT },
+
+            '+': { precedence: 30, class: binary::Add, associativity: ExpressionParser::OPERATOR_LEFT },
+            '-': { precedence: 30, class: binary::Sub, associativity: ExpressionParser::OPERATOR_LEFT },
+            '~': { precedence: 40, class: binary::Concat, associativity: ExpressionParser::OPERATOR_LEFT },
+            '*': { precedence: 60, class: binary::Mul, associativity: ExpressionParser::OPERATOR_LEFT },
+            '/': { precedence: 60, class: binary::Div, associativity: ExpressionParser::OPERATOR_LEFT },
           }
         ]
       end
@@ -22,6 +30,7 @@ module Twig
         {
           capitalize: TwigFilter.new('capitalize', [self, :capitalize]),
           upper: TwigFilter.new('upper', [self, :upper]),
+          lower: TwigFilter.new('lower', [self, :lower]),
           raw: TwigFilter.new('raw', [self, :raw]),
         }
       end
@@ -43,6 +52,10 @@ module Twig
 
       def upper(string)
         string.upcase
+      end
+
+      def lower(string)
+        string.downcase
       end
     end
   end

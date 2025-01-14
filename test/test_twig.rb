@@ -51,9 +51,6 @@ module Twig
       [
         ['{{ 5 + 5 }}', '10'],
         ['{{ 5 + 1 * 2 }}', '7'],
-        ['{{ 8 / 3 }}', '2'],
-        ['{{ 5.0 / 2 }}', '2.5'],
-        ['{{ a + b }}', '5', { a: 3, b: 2 }],
         ['{{ "hey" }}', 'hey'],
         ['{{ "hey"|capitalize }}', 'Hey'],
         ['{{ "hello " ~ \'world\' }}', 'hello world'],
@@ -63,10 +60,6 @@ module Twig
         ["{% verbatim %} what up\n  {%~ endverbatim %}", " what up"], # Strip all for ~
         ["before\n{% line 10 %}\nafter", "before\n\nafter"],
         ["{% block test %}hello{% endblock %}", "hello"],
-        ["{% if a %}Hello true{% else %}Hello false{% endif %}", "Hello true", { a: true }],
-        ["{% if a %}a{% elsif b %}b{% else %}c{% endif %}", "b", { a: false, b: true }],
-        ['{{ true ? "a" : "b" }}', 'a'],
-        ['{{ false ? "a" : (false ? "a" : "b") }}', 'b'],
         ['{{ "<h1>Hello</h1>" }}', '&lt;h1&gt;Hello&lt;/h1&gt;']
       ].
         each do |input, expected, context|

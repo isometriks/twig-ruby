@@ -2,7 +2,7 @@ module Twig
   module Node
     module Expression
       module Binary
-        class ConcatBinary < Binary
+        class Concat < Binary::Base
           def operator(compiler)
             compiler.raw('+')
           end

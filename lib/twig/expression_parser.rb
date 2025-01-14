@@ -30,7 +30,7 @@ module Twig
 
         expr1 = parse_expression(next_precedence)
 
-        # @type [Node::Expression::Base::Binary]
+        # @type [Node::Expression::Binary::Base]
         expr = operator[:class].new(expr, expr1, token.lineno)
         expr.attributes[:operator] = "binary_#{token.value}"
 
@@ -399,7 +399,7 @@ module Twig
 
       expr = nodes.shift
       nodes.each do |node|
-        expr = Node::Expression::Binary::ConcatBinary(expr, node, node.lineno)
+        expr = Node::Expression::Binary::Concat(expr, node, node.lineno)
       end
 
       expr

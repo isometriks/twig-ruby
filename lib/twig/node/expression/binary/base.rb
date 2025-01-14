@@ -2,7 +2,7 @@ module Twig
   module Node
     module Expression
       module Binary
-        class Binary < Expression::Base
+        class Base < Expression::Base
           def initialize(left, right, lineno)
             super({ left:, right: }, {}, lineno)
           end
@@ -29,9 +29,16 @@ module Twig
         end
 
         OPERATORS = {
+          Equal: '==',
+          NotEqual: '!=',
+          Spaceship: '<=>',
+          Less: '<',
+          Greater: '>',
+          LessEqual: '<=',
+          GreaterEqual: '>=',
+
           Or: '||',
           And: '&&',
-          Equal: '==',
           Add: '+',
           Sub: '-',
           Mul: '*',
@@ -40,7 +47,7 @@ module Twig
 
         # Lots of simple operator classes can just be generated dynamically
         OPERATORS.each do |name, operation|
-          const_set("#{name}Binary", Class.new(Binary) do
+          const_set("#{name}", Class.new(Binary::Base) do
             def operator(compiler)
               compiler.raw(self.class.const_get("OPERATOR"))
             end

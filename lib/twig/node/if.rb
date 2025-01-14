@@ -25,18 +25,18 @@ module Twig
             raw(")\n").
             indent
 
-          if (node = nodes[:tests].nodes[i + 1])
+          if nodes[:tests].nodes.key?(i + 1)
             compiler.
-              subcompile(node)
+              subcompile(nodes[:tests].nodes[i + 1])
           end
         end
 
-        if (else_node = nodes[:else])
+        if nodes.key?(:else)
           compiler.
             outdent.
             write("else\n").
             indent.
-            subcompile(else_node)
+            subcompile(nodes[:else])
         end
 
         compiler.
