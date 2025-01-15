@@ -43,13 +43,13 @@ module Twig
 
       # @param [Compiler] compiler
       def compile(compiler)
-        @nodes.values.each { |node| compiler.subcompile(node) }
+        @nodes.each_value { |node| compiler.subcompile(node) }
       end
 
       # @param [Source] source
       def source_context=(source)
         @source_context = source
-        @nodes.values.each { |node| node.source_context = source }
+        @nodes.each_value { |node| node.source_context = source }
       end
 
       # @return [String]

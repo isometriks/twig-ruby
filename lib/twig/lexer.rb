@@ -347,7 +347,7 @@ module Twig
 
       chain = []
 
-      operators.keys.each do |operator|
+      operators.each_key do |operator|
         regex = Regexp.escape(operator)
 
         # an operator that ends with a character must be followed by
