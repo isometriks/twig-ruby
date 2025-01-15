@@ -24,7 +24,7 @@ module Twig
 
           # @param [Compiler] compiler
           def operator(compiler)
-            raise "operator is not implemented"
+            raise 'operator is not implemented'
           end
         end
 
@@ -51,9 +51,9 @@ module Twig
         OPERATORS.each do |name, operation|
           const_set("#{name}", Class.new(Binary::Base) do
             def operator(compiler)
-              compiler.raw(self.class.const_get("OPERATOR"))
+              compiler.raw(self.class.const_get('OPERATOR'))
             end
-          end).const_set("OPERATOR", operation)
+          end).const_set('OPERATOR', operation)
         end
       end
     end

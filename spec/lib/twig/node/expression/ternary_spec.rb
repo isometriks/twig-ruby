@@ -20,5 +20,5 @@ RSpec.describe Twig::Node::Expression::Ternary do
 
   let(:locals) { { } }
 
-  it_behaves_like "render_and_assert"
+  it_behaves_like 'render_and_assert'
 end

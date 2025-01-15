@@ -3,8 +3,8 @@ module Twig
     TAG_COMMENT = %w[{# #}]
     TAG_BLOCK = %w[{% %}]
     TAG_VARIABLE = %w[{{ }}]
-    WHITESPACE_TRIM = "-".freeze
-    WHITESPACE_LINE_TRIM = "~".freeze
+    WHITESPACE_TRIM = '-'.freeze
+    WHITESPACE_LINE_TRIM = '~'.freeze
     WHITESPACE_LINE_CHARS = " \t\0\x0B".freeze
     INTERPOLATION = %w[#{ }]
     OPENING_BRACKET = '([{'.split(//)
@@ -230,7 +230,7 @@ module Twig
       TEMP
     end
 
-    def push_token(type, value = "")
+    def push_token(type, value = '')
       return if type == Token::TEXT_TYPE && value.empty?
 
       @tokens << Token.new(type, value, @lineno)
@@ -243,7 +243,7 @@ module Twig
 
     def pop_state
       if @states.empty?
-        raise "Cannot pop state without a previous state."
+        raise 'Cannot pop state without a previous state.'
       end
 
       @state = @states.pop

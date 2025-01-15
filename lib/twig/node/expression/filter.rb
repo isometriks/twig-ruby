@@ -34,7 +34,7 @@ module Twig
             raise 'Changing the value of a "filter" node is not supported'
           end
 
-          if name == "raw"
+          if name == 'raw'
             raise 'Cannot create raw filter via expression'
           end
 

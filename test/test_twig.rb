@@ -57,9 +57,9 @@ module Twig
         ['{{ "hello "|capitalize ~ "world" }}', 'Hello world'],
         ['{% verbatim %} what up {% endverbatim %}', ' what up '],
         ["{% verbatim %} what up\n  {%- endverbatim %}", " what up\n"], # Leave line break for -
-        ["{% verbatim %} what up\n  {%~ endverbatim %}", " what up"], # Strip all for ~
+        ["{% verbatim %} what up\n  {%~ endverbatim %}", ' what up'], # Strip all for ~
         ["before\n{% line 10 %}\nafter", "before\n\nafter"],
-        ["{% block test %}hello{% endblock %}", "hello"],
+        ['{% block test %}hello{% endblock %}', 'hello'],
         ['{{ "<h1>Hello</h1>" }}', '&lt;h1&gt;Hello&lt;/h1&gt;']
       ].
         each do |input, expected, context|
@@ -75,7 +75,7 @@ module Twig
 
       # Create the class in memory
       template = eval(environment.load_and_compile('child.html.twig'))
-      result = template.new(environment).render({ name: "Craig" })
+      result = template.new(environment).render({ name: 'Craig' })
       puts result
     end
 

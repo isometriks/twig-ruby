@@ -17,7 +17,7 @@ module Twig
 
             compiler.
               subcompile(value).
-              raw(",")
+              raw(',')
           end
 
           compiler.

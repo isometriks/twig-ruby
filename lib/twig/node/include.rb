@@ -19,7 +19,7 @@ module Twig
       def compile(compiler)
         if attributes[:ignore_missing]
           # @todo
-          raise "not implemented yet"
+          raise 'not implemented yet'
         else
           compiler.
             write('')

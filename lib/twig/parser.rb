@@ -44,7 +44,7 @@ module Twig
           token = current_token
 
           unless token.type == Token::NAME_TYPE
-            raise Error::Syntax.new("A block must start with a tag name.", token.lineno, stream.source)
+            raise Error::Syntax.new('A block must start with a tag name.', token.lineno, stream.source)
           end
 
           if test&.call(token)
@@ -64,7 +64,7 @@ module Twig
           subparser.parser = self
           node = subparser.parse(token)
 
-          raise "Cannot return nil from TokenParser" unless node
+          raise 'Cannot return nil from TokenParser' unless node
           node.tag = subparser.tag
 
           rv.add(node)
@@ -118,7 +118,7 @@ module Twig
     # @param [Node::Base] parent
     def parent=(parent)
       if @parent
-        raise Error::Syntax.new("Cannot extends twice", parent.lineno, parent.source_context)
+        raise Error::Syntax.new('Cannot extends twice', parent.lineno, parent.source_context)
       end
 
       @parent = parent

@@ -18,8 +18,8 @@ module Twig
 
     def self.loader
       @loader ||= ::Twig::Loader::File.new([
-        Rails.root.to_s + "/",
-        Rails.root.to_s + "/app/views/",
+        Rails.root.to_s + '/',
+        Rails.root.to_s + '/app/views/',
       ])
     end
 
