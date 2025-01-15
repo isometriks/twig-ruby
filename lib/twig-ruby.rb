@@ -26,7 +26,7 @@ require 'cgi'
 end
 
 # Railtie
-require 'twig/railtie' if defined?(::Rails::Railtie)
+require 'twig/railtie' if defined?(Rails::Railtie)
 
 module Twig
 end

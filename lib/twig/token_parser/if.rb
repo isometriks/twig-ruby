@@ -20,7 +20,7 @@ module Twig
         else_node = nil
 
         if_ended = false
-        until if_ended do
+        until if_ended
           case stream.next.value
           when 'else'
             stream.expect(Token::BLOCK_END_TYPE)
@@ -29,7 +29,7 @@ module Twig
             expr = parser.expression_parser.parse_expression
             stream.expect(Token::BLOCK_END_TYPE)
             body = parser.subparse(decide_if_fork)
-            tests.concat([expr, body])
+            tests.push(expr, body)
           when 'endif'
             if_ended = true
           else

@@ -8,7 +8,7 @@ module Twig
 
         if parser.peek_block_stack
           raise Error::Syntax.new('Cannot raise from inside a block', token.lineno, stream.source)
-        #elsif parser.main_scope? @todo
+          # elsif parser.main_scope? @todo
         end
 
         parser.parent = parser.expression_parser.parse_expression

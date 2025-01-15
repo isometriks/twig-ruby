@@ -97,7 +97,7 @@ module Twig
     private
 
     def indent_source
-      @source << '  ' * @indentation
+      @source << ('  ' * @indentation)
     end
 
     # @return [Compiler]

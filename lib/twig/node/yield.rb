@@ -14,8 +14,8 @@ module Twig
           raw(' do')
 
         if attributes[:name]
-          compiler
-            .raw(" |#{attributes[:name]}|")
+          compiler.
+            raw(" |#{attributes[:name]}|")
         end
 
         compiler.
