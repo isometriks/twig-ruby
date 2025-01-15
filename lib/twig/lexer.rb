@@ -340,8 +340,7 @@ module Twig
 
       unary, binary = @environment.operators
       operators = ([:'='] + unary.keys + binary.keys).
-        map { |op| [op, op.length] }.
-        to_h.
+        to_h { |op| [op, op.length] }.
         sort_by { |_, length| -length }.
         to_h
 

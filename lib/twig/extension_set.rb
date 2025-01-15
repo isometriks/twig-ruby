@@ -53,8 +53,7 @@ module Twig
     def token_parsers
       @token_parsers ||= extensions.
         values.map(&:token_parsers).reduce([], :concat).
-        map { |token_parser| [token_parser.tag.to_sym, token_parser] }.
-        to_h
+        to_h { |token_parser| [token_parser.tag.to_sym, token_parser] }
     end
 
     # @return [TokenParser::Base|nil]

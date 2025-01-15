@@ -41,8 +41,7 @@ module Twig
 
         tests_hash = tests.
           each_with_index.
-          map { |t, i| [i, t] }.
-          to_h
+          to_h { |t, i| [i, t] }
 
         Node::If.new(Node::Nodes.new(tests_hash), else_node, lineno)
       end
