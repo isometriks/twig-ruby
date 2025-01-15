@@ -38,6 +38,7 @@ module Twig
           GreaterEqual: '>=',
 
           Or: '||',
+          Xor: '^',
           And: '&&',
           Add: '+',
           Sub: '-',
