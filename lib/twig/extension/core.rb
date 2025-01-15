@@ -31,7 +31,7 @@ module Twig
             '~': { precedence: 40, class: binary::Concat, associativity: ExpressionParser::OPERATOR_LEFT },
             '*': { precedence: 60, class: binary::Mul, associativity: ExpressionParser::OPERATOR_LEFT },
             '/': { precedence: 60, class: binary::Div, associativity: ExpressionParser::OPERATOR_LEFT },
-          }
+          },
         ]
       end
 
@@ -51,7 +51,7 @@ module Twig
           TokenParser::If.new,
           TokenParser::Include.new,
           TokenParser::With.new,
-          TokenParser::Yield.new
+          TokenParser::Yield.new,
         ]
       end
 
