@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples 'render_and_assert' do
   it 'matches the output' do
     results = outputs.strip.split(/\n/)

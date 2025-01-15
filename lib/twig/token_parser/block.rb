@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   module TokenParser
     # Marks a section of a template as being reusable.

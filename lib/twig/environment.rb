@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   class Environment
     # @param [::Twig::Loader::Base] loader

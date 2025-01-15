@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   module TokenParser
     class Yield < TokenParser::Base
