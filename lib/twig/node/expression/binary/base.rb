@@ -51,7 +51,7 @@ module Twig
 
         # Lots of simple operator classes can just be generated dynamically
         OPERATORS.each do |name, operation|
-          const_set("#{name}", Class.new(Binary::Base) do
+          const_set(name.to_s, Class.new(Binary::Base) do
             def operator(compiler)
               compiler.raw(self.class.const_get('OPERATOR'))
             end
