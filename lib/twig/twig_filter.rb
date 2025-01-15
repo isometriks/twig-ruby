@@ -4,7 +4,7 @@ module Twig
   class TwigFilter < Callable
     def initialize(name, callable = nil, options = {})
       super
-      
+
       @options = {
         is_safe: nil,
         is_safe_callback: nil,
