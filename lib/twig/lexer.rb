@@ -289,7 +289,7 @@ module Twig
       @lex_var_regex ||=
         /\A\s*(?:
           #{Regexp.union(
-            WHITESPACE_TRIM + TAG_VARIABLE[1] + '\s*',
+            "#{WHITESPACE_TRIM}#{TAG_VARIABLE[1]}\\s*",
             WHITESPACE_LINE_TRIM + TAG_VARIABLE[1] + "[#{WHITESPACE_LINE_CHARS}]*",
             TAG_VARIABLE[1]
           )}
@@ -300,7 +300,7 @@ module Twig
       @lex_block_raw_regex ||=
         /\A\s*verbatim\s*(?:
           #{Regexp.union(
-            WHITESPACE_TRIM + TAG_BLOCK[1] + '\s*',
+            "#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\\s*",
             WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
             TAG_BLOCK[1]
           )}
@@ -328,7 +328,7 @@ module Twig
           #{TAG_BLOCK[0]}
           (#{Regexp.union(WHITESPACE_TRIM, WHITESPACE_LINE_TRIM)})?\s*endverbatim\s*
           (?:#{Regexp.union(
-            WHITESPACE_TRIM + TAG_BLOCK[1] + '\s*',
+            "#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\\s*",
             WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
             TAG_BLOCK[1]
           )})
@@ -358,7 +358,7 @@ module Twig
 
         # an operator that begins with a character must not have a dot or pipe before
         if operator[0].match(/\w/)
-          regex = '(?<![\.\|])' + regex
+          regex = "(?<![\\.\\|])#{regex}"
         end
 
         # an operator with a space can be any amount of whitespaces
@@ -367,7 +367,7 @@ module Twig
         chain << regex
       end
 
-      @operator_regex = Regexp.new('\A(?:' + chain.join('|') + ')')
+      @operator_regex = Regexp.new("\\A(?:#{chain.join('|')})")
     end
   end
 end

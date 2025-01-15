@@ -70,7 +70,7 @@ module Twig
     end
 
     def test_file
-      loader = Twig::Loader::File.new([__dir__ + '/fixtures/'])
+      loader = Twig::Loader::File.new(["#{__dir__}/fixtures/"])
       environment = Twig::Environment.new(loader)
 
       puts environment.load_and_compile('full.html.twig')
