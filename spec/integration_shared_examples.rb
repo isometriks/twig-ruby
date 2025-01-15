@@ -9,7 +9,7 @@ RSpec.shared_examples 'render_and_assert' do
   end
 
   def render(source, context)
-    loader = Twig::Loader::Array.new({ template: source })
+    loader = Twig::Loader::Array.new({ template: source, **(defined?(templates) ? templates : {}) })
     environment = Twig::Environment.new(loader)
 
     environment.
