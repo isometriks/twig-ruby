@@ -55,7 +55,7 @@ module Twig
           write("{\n").
           indent
 
-        nodes[:blocks].nodes.values.each do |block|
+        nodes[:blocks].nodes.each_value do |block|
           compiler.
             write("#{block.attributes[:name]}: self,\n")
         end
