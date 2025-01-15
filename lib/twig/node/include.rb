@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   module Node
     class Include < Node::Base

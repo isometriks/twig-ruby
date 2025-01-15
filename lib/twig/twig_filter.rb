@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   class TwigFilter < Callable
     def initialize(name, callable = nil, options = {})

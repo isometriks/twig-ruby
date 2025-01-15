@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   # Base class for compiled templates
   class Template

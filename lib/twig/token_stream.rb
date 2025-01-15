@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   # @!attribute [r] source
   #   @return [Source]

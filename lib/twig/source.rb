@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Twig
   class Source
     attr_reader :code, :name, :path
