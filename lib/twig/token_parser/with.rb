@@ -28,7 +28,7 @@ module Twig
       private
 
       def decide_with_end
-        -> (token) { token.test('endwith') }
+        ->(token) { token.test('endwith') }
       end
     end
 =begin

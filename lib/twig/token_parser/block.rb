@@ -47,7 +47,7 @@ module Twig
       private
 
       def decide_block_end
-        -> (token) { token.test('endblock') }
+        ->(token) { token.test('endblock') }
       end
     end
   end
