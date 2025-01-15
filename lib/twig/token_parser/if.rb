@@ -54,11 +54,11 @@ module Twig
       private
 
       def decide_if_end
-        -> (token) { token.test(%w[endif]) }
+        ->(token) { token.test(%w[endif]) }
       end
 
       def decide_if_fork
-        -> (token) { token.test(%w[elseif elsif else endif]) }
+        ->(token) { token.test(%w[elseif elsif else endif]) }
       end
     end
   end

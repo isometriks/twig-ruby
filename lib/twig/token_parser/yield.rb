@@ -24,7 +24,7 @@ module Twig
       private
 
       def decide_yield_end
-        -> (token) { token.test('endyield') }
+        ->(token) { token.test('endyield') }
       end
     end
   end

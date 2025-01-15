@@ -8,7 +8,7 @@ module Twig
 
     def initialize
       @extensions = {}
-      @extensions.default_proc = -> (_hash, key) {
+      @extensions.default_proc = ->(_hash, key) {
         raise "Extension '#{key}' does not exist"
       }
     end
