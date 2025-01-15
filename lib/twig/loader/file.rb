@@ -4,6 +4,8 @@ module Twig
   module Loader
     class File < Loader::Base
       def initialize(paths = [])
+        super()
+
         @paths = paths
       end
 

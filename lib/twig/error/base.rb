@@ -7,6 +7,8 @@ module Twig
       # @param [Integer] lineno
       # @param [Source] source
       def initialize(message, lineno = -1, source = nil)
+        super(message)
+
         if source
           name = source.name
           @source_code = source.code

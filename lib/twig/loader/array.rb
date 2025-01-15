@@ -2,9 +2,11 @@
 
 module Twig
   module Loader
-    class Array < Base
+    class Array < Loader::Base
       # @param [Hash<String>] templates
       def initialize(templates)
+        super()
+
         @templates = templates.transform_keys(&:to_sym)
       end
 
