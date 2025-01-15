@@ -15,7 +15,7 @@ module Twig
     end
 
     def load_template(name)
-      eval(render_ruby(name))
+      Twig.module_eval(render_ruby(name))
     end
 
     def render(name)
