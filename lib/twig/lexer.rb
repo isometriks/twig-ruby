@@ -89,12 +89,12 @@ module Twig
       end
 
       # Push the template text first
-      text = textContent = @code[@cursor, (position.begin(0) - @cursor)]
+      text = text_content = @code[@cursor, (position.begin(0) - @cursor)]
 
       # TODO: Trim
 
       push_token(Token::TEXT_TYPE, text)
-      move_cursor(textContent + position.to_s)
+      move_cursor(text_content + position.to_s)
 
       case @positions[@position][1]
       when TAG_BLOCK[0]
