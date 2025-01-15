@@ -2,13 +2,13 @@
 
 module Twig
   class Lexer
-    TAG_COMMENT = %w[{# #}]
-    TAG_BLOCK = %w[{% %}]
-    TAG_VARIABLE = %w[{{ }}]
+    TAG_COMMENT = %w[{# #}].freeze
+    TAG_BLOCK = %w[{% %}].freeze
+    TAG_VARIABLE = %w[{{ }}].freeze
     WHITESPACE_TRIM = '-'.freeze
     WHITESPACE_LINE_TRIM = '~'.freeze
     WHITESPACE_LINE_CHARS = " \t\0\x0B".freeze
-    INTERPOLATION = %w[#{ }]
+    INTERPOLATION = %w[#{ }].freeze
     OPENING_BRACKET = '([{'.split('')
     CLOSING_BRACKET = ')]}'.split('')
     PUNCTUATION = OPENING_BRACKET + CLOSING_BRACKET + '?:.,|'.split('')

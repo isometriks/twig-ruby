@@ -8,7 +8,7 @@ module Twig
           '_self' => 'get_template_name',
           '_context' => 'context',
           '_charset' => 'env.charset',
-        }
+        }.freeze
 
         # @param [String] name
         # @param [Integer] lineno
