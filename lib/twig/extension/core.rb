@@ -9,14 +9,14 @@ module Twig
 
         [
           {
-            'not': { precedence: 70, class: unary::Not },
+            not: { precedence: 70, class: unary::Not },
             '-': { precedence: 500, class: unary::Neg },
             '+': { precedence: 500, class: unary::Pos },
           },
           {
-            'or': { precedence: 10, class: binary::Or, associativity: ExpressionParser::OPERATOR_LEFT },
-            'xor': { precedence: 12, class: binary::Xor, associativity: ExpressionParser::OPERATOR_LEFT },
-            'and': { precedence: 15, class: binary::And, associativity: ExpressionParser::OPERATOR_LEFT },
+            or: { precedence: 10, class: binary::Or, associativity: ExpressionParser::OPERATOR_LEFT },
+            xor: { precedence: 12, class: binary::Xor, associativity: ExpressionParser::OPERATOR_LEFT },
+            and: { precedence: 15, class: binary::And, associativity: ExpressionParser::OPERATOR_LEFT },
 
             '==': { precedence: 20, class: binary::Equal, associativity: ExpressionParser::OPERATOR_LEFT },
             '!=': { precedence: 20, class: binary::NotEqual, associativity: ExpressionParser::OPERATOR_LEFT },
