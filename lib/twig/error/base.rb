@@ -23,7 +23,7 @@ module Twig
         parts << ["in #{@name}"] if @name
         parts << ["on line #{@lineno}"] if @lineno
 
-        parts.join(" ")
+        parts.join(' ')
       end
     end
   end

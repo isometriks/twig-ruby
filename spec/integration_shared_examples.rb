@@ -11,7 +11,7 @@ RSpec.shared_examples 'render_and_assert' do
     environment = Twig::Environment.new(loader)
 
     environment.
-      load_template("template").
+      load_template('template').
       new(environment).
       render(context).
       to_s

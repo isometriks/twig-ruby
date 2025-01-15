@@ -21,7 +21,7 @@ module Twig
       @current += 1
 
       unless tokens[@current]
-        raise Error::Syntax.new("Unexpected end of template.", tokens[@current - 1].lineno, source)
+        raise Error::Syntax.new('Unexpected end of template.', tokens[@current - 1].lineno, source)
       end
 
       tokens[@current - 1]

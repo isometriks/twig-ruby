@@ -24,5 +24,5 @@ RSpec.describe Twig::TokenParser::If do
 
   let(:locals) { { a: true, b: false } }
 
-  it_behaves_like "render_and_assert"
+  it_behaves_like 'render_and_assert'
 end

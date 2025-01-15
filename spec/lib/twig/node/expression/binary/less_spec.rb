@@ -20,7 +20,7 @@ RSpec.describe Twig::Node::Expression::Binary::Less do
     OUTPUTS
   end
 
-  let(:locals) { { a: "a", b: "b" } }
+  let(:locals) { { a: 'a', b: 'b' } }
 
-  it_behaves_like "render_and_assert"
+  it_behaves_like 'render_and_assert'
 end

@@ -20,5 +20,5 @@ RSpec.describe Twig::Node::Expression::Unary::Neg do
 
   let(:locals) { { a: 4, b: 5 } }
 
-  it_behaves_like "render_and_assert"
+  it_behaves_like 'render_and_assert'
 end

@@ -11,7 +11,7 @@ module Twig
     end
 
     def call(context = {}, blocks = {})
-      raise "call is not implemented"
+      raise 'call is not implemented'
     end
 
     def render(context = {}, blocks = {})

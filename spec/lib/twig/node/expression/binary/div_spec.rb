@@ -20,5 +20,5 @@ RSpec.describe Twig::Node::Expression::Binary::Div do
 
   let(:locals) { { a: 4, b: 5 } }
 
-  it_behaves_like "render_and_assert"
+  it_behaves_like 'render_and_assert'
 end

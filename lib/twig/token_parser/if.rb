@@ -31,7 +31,7 @@ module Twig
           when 'endif'
             if_ended = true
           else
-            raise "Unexpected end of template, expect else, elseif, or endif"
+            raise 'Unexpected end of template, expect else, elseif, or endif'
           end
         end
 

@@ -16,7 +16,7 @@ RSpec.describe Twig::Node::Expression::Binary::Concat do
     OUTPUTS
   end
 
-  let(:locals) { { a: "Hello ", b: "World!" } }
+  let(:locals) { { a: 'Hello ', b: 'World!' } }
 
-  it_behaves_like "render_and_assert"
+  it_behaves_like 'render_and_assert'
 end

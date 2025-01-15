@@ -119,7 +119,7 @@ module Twig
     end
 
     def parse_subscript_expression(node)
-      if parser.stream.next.value == "."
+      if parser.stream.next.value == '.'
         return parse_subscript_expression_dot(node)
       end
 

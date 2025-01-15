@@ -21,7 +21,7 @@ module Twig
 
         def compile(compiler)
           compiler.
-            write("{").
+            write('{').
             indent
 
           key_value_pairs.each do |key, value|
@@ -29,12 +29,12 @@ module Twig
               subcompile(key).
               raw(' => ').
               subcompile(value).
-              raw(", ")
+              raw(', ')
           end
 
           compiler.
             outdent.
-            write("}")
+            write('}')
         end
 
         private
