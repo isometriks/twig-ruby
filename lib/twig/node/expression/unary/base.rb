@@ -36,7 +36,7 @@ module Twig
           Not: '!',
           Neg: '-',
           Pos: '+',
-        }
+        }.freeze
 
         # Lots of simple operator classes can just be generated dynamically
         OPERATORS.each do |name, operation|
