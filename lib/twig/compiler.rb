@@ -24,7 +24,7 @@ module Twig
     # @param [Node::Base] node
     # @param [Boolean] raw
     # @return [Compiler]
-    def subcompile(node, raw = true)
+    def subcompile(node, raw: true)
       indent_source unless raw
 
       node.compile(self)
