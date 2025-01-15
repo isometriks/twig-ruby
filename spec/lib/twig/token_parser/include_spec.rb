@@ -21,12 +21,13 @@ RSpec.describe Twig::TokenParser::Include do
   end
 
   let(:locals) { { template: 'include' } }
-  let(:templates) do
-    {
-      include: 'World!',
-      deep: '{% include "include" %}',
-    }
-  end
 
-  it_behaves_like 'render_and_assert'
+  it_behaves_like 'render_and_assert' do
+    let(:templates) do
+      {
+        include: 'World!',
+        deep: '{% include "include" %}',
+      }
+    end
+  end
 end

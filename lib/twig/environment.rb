@@ -14,6 +14,7 @@ module Twig
       "twig_compiled_#{::Digest::SHA256.hexdigest(name.to_s)}"
     end
 
+    # @return [Twig::Template]
     def load_template(name)
       Twig.module_eval(render_ruby(name))
     end

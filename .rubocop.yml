@@ -49,3 +49,6 @@ Metrics/ClassLength:
 
 Lint/NestedPercentLiteral:
   Enabled: false
+
+Metrics/BlockLength:
+  Enabled: false
