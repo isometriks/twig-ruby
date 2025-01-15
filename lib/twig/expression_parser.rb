@@ -20,7 +20,7 @@ module Twig
     def parse_expression(precedence = 0)
       # @todo parse arrow
 
-      expr = get_primary
+      expr = primary
       token = parser.current_token
 
       while binary?(token) && binary_operators[token.value.to_sym][:precedence] >= precedence
@@ -312,7 +312,7 @@ module Twig
     attr_reader :parser
 
     # @return [Node::Expression::Base]
-    def get_primary
+    def primary
       token = parser.current_token
 
       if unary?(token)
