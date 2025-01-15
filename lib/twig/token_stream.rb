@@ -64,13 +64,10 @@ module Twig
     end
 
     def debug
-      lines = []
-
-      tokens.each do |token|
-        lines << token.debug
-      end
-
-      lines.map { |type, value| "#{type}(#{value})" }.join("\n")
+      tokens.
+        map(&:debug).
+        map { |type, value| "#{type}(#{value})" }.
+        join("\n")
     end
   end
 end

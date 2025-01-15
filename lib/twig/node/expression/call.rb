@@ -4,7 +4,6 @@ module Twig
   module Node
     module Expression
       class Call < Expression::Base
-
         private
 
         # @param [Compiler] compiler

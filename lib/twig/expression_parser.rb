@@ -52,21 +52,21 @@ module Twig
       when Token::NAME_TYPE
         parser.stream.next
 
-        case token.value
-        when 'true', 'TRUE'
-          node = Node::Expression::Constant.new(true, token.lineno)
-        when 'false', 'FALSE'
-          node = Node::Expression::Constant.new(false, token.lineno)
-        when 'null', 'NULL', 'nil'
-          node = Node::Expression::Constant.new(nil, token.lineno)
-        else
-          if parser.current_token.value == '('
-            node = get_function_node(token.value, token.lineno)
-          else
-            # @todo should be a context variable
-            node = Node::Expression::Name.new(token.value, token.lineno)
-          end
-        end
+        node = case token.value
+               when 'true', 'TRUE'
+                 Node::Expression::Constant.new(true, token.lineno)
+               when 'false', 'FALSE'
+                 Node::Expression::Constant.new(false, token.lineno)
+               when 'null', 'NULL', 'nil'
+                 Node::Expression::Constant.new(nil, token.lineno)
+               else
+                 if parser.current_token.value == '('
+                   get_function_node(token.value, token.lineno)
+                 else
+                   # @todo should be a context variable
+                   Node::Expression::Name.new(token.value, token.lineno)
+                 end
+               end
       when Token::NUMBER_TYPE
         parser.stream.next
 
@@ -149,7 +149,7 @@ module Twig
       node = Node::Expression::Array.new({}, stream.current.lineno)
       first = true
 
-      #raise stream.debug
+      # raise stream.debug
 
       until stream.test(Token::PUNCTUATION_TYPE, ']')
         unless first
@@ -228,7 +228,7 @@ module Twig
           raise Error::Syntax.new(
             "A mapping key must be a quoted string, number, name, or expression in parentheses expected token '#{current.type}' of value '#{current.value}'",
             current.lineno,
-            stream.source,
+            stream.source
           )
         end
 
@@ -283,7 +283,7 @@ module Twig
 
         name = nil
         if (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
-          (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
+           (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
           unless value.class <= Node::Expression::Name
             raise Error::Syntax.new(
               "A parameter name must be a string, #{value.class.name} given.",
@@ -309,9 +309,7 @@ module Twig
     end
 
     # @return [Parser]
-    def parser
-      @parser
-    end
+    attr_reader :parser
 
     # @return [Node::Expression::Base]
     def get_primary
@@ -365,11 +363,11 @@ module Twig
       loop do
         token = parser.stream.expect(Token::NAME_TYPE)
 
-        unless parser.stream.test(Token::PUNCTUATION_TYPE, '(')
-          arguments = Node::Empty.new
-        else
-          arguments = parse_only_arguments
-        end
+        arguments = if parser.stream.test(Token::PUNCTUATION_TYPE, '(')
+                      parse_only_arguments
+                    else
+                      Node::Empty.new
+                    end
 
         filter = environment.filter(token.value) or raise "TwigFilter #{token.value} not found"
         node = filter.node_class.new(node, filter, arguments, token.lineno)

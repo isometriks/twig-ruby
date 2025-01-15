@@ -10,11 +10,11 @@ module Twig
       unless string.nil?
         string = string.to_s
 
-        if string.html_safe?
-          @buffer << string
-        else
-          @buffer << CGI.escapeHTML(string)
-        end
+        @buffer << if string.html_safe?
+                     string
+                   else
+                     CGI.escapeHTML(string)
+                   end
       end
     end
 

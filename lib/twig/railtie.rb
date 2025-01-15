@@ -26,7 +26,7 @@ module Twig
     end
 
     def self.environment
-      @environment ||= ::Twig::Environment.new(self.loader).tap do |env|
+      @environment ||= ::Twig::Environment.new(loader).tap do |env|
         env.add_extension(::Twig::Extension::Rails.new)
       end
     end

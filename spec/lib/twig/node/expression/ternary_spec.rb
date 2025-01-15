@@ -20,7 +20,7 @@ RSpec.describe Twig::Node::Expression::Ternary do
     OUTPUTS
   end
 
-  let(:locals) { { } }
+  let(:locals) { {} }
 
   it_behaves_like 'render_and_assert'
 end

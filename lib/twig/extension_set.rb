@@ -8,7 +8,7 @@ module Twig
 
     def initialize
       @extensions = {}
-      @extensions.default_proc = ->(_hash, key) {
+      @extensions.default_proc = lambda { |_hash, key|
         raise "Extension '#{key}' does not exist"
       }
     end
@@ -28,7 +28,8 @@ module Twig
     end
 
     def operators
-      all_unary, all_binary = {}, {}
+      all_unary = {}
+      all_binary = {}
 
       extensions.values.map(&:operators).each do |unary, binary|
         all_unary.merge!(unary)

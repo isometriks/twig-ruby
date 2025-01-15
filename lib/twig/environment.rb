@@ -86,9 +86,7 @@ module Twig
     private
 
     # @return [Twig::Loader::Base]
-    def loader
-      @loader
-    end
+    attr_reader :loader
 
     def lexer
       @lexer ||= Lexer.new(self)

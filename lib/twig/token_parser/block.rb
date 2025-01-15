@@ -22,8 +22,8 @@ module Twig
         if stream.next_if(Token::BLOCK_END_TYPE)
           body = parser.subparse(decide_block_end, drop_needle: true)
 
-          if (token = stream.next_if(Token::NAME_TYPE))
-            raise "Expected end block for #{name}, given #{token.value}" unless token.value == name
+          if (token = stream.next_if(Token::NAME_TYPE)) && token.value != name
+            raise "Expected end block for #{name}, given #{token.value}"
           end
         else
           body = Node::Nodes.new({

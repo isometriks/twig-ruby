@@ -10,4 +10,5 @@ Gem::Specification.new do |s|
   s.files       = Dir['lib/**/*']
   s.homepage    = 'https://rubygems.org/gems/twig-ruby'
   s.license     = 'MIT'
+  s.metadata['rubygems_mfa_required'] = 'true'
 end
