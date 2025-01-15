@@ -10,7 +10,7 @@ module Twig
       def get_source_context(name)
         @paths.each do |path|
           if ::File.file?(path + name)
-            return Source.new(::File.open(path + name).read, name)
+            return Source.new(::File.read(path + name), name)
           end
         end
 
