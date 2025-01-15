@@ -62,7 +62,7 @@ module Twig
         ["{% verbatim %} what up\n  {%~ endverbatim %}", ' what up'], # Strip all for ~
         ["before\n{% line 10 %}\nafter", "before\n\nafter"],
         ['{% block test %}hello{% endblock %}', 'hello'],
-        ['{{ "<h1>Hello</h1>" }}', '&lt;h1&gt;Hello&lt;/h1&gt;']
+        ['{{ "<h1>Hello</h1>" }}', '&lt;h1&gt;Hello&lt;/h1&gt;'],
       ].
         each do |input, expected, context|
           assert_equal(expected, compile_and_run(input, context || {}))
