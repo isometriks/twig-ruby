@@ -5,9 +5,9 @@ module Twig
     TAG_COMMENT = %w[{# #}].freeze
     TAG_BLOCK = %w[{% %}].freeze
     TAG_VARIABLE = %w[{{ }}].freeze
-    WHITESPACE_TRIM = '-'.freeze
-    WHITESPACE_LINE_TRIM = '~'.freeze
-    WHITESPACE_LINE_CHARS = " \t\0\x0B".freeze
+    WHITESPACE_TRIM = '-'
+    WHITESPACE_LINE_TRIM = '~'
+    WHITESPACE_LINE_CHARS = " \t\0\x0B"
     INTERPOLATION = %w[#{ }].freeze
     OPENING_BRACKET = '([{'.split('')
     CLOSING_BRACKET = ')]}'.split('')
