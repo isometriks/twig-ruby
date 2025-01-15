@@ -2,8 +2,8 @@
 
 RSpec.shared_examples 'render_and_assert' do
   it 'matches the output' do
-    results = outputs.strip.split(/\n/)
-    inputs.strip.split(/\n/).each_with_index do |line, index|
+    results = outputs.strip.split("\n")
+    inputs.strip.split("\n").each_with_index do |line, index|
       expect(render(line, locals)).to eq(results[index])
     end
   end
