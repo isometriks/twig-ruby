@@ -52,6 +52,7 @@ module Twig
           if test&.call(token)
             stream.next if drop_needle
             return rv.values.first if rv.length == 1
+
             return Node::Nodes.new(rv, lineno)
           end
 
@@ -67,6 +68,7 @@ module Twig
           node = subparser.parse(token)
 
           raise 'Cannot return nil from TokenParser' unless node
+
           node.tag = subparser.tag
 
           rv.add(node)

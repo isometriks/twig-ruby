@@ -20,6 +20,7 @@ require 'cgi'
 
   Dir["#{directory}*.rb"].each do |file|
     next if %w[base.rb railtie.rb].include?(File.basename(file))
+
     require file
   end
 end
