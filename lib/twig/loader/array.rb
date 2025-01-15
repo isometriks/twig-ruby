@@ -15,7 +15,7 @@ module Twig
       end
 
       def exists?(name)
-        @template.has_key?(name)
+        @template.key?(name)
       end
 
       def get_cache_key(name)
