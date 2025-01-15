@@ -71,8 +71,6 @@ module Twig
         raw('Marshal.load(').
           raw(Marshal.dump(value).inspect).
           raw(')')
-      when String
-        string(value)
       else
         string(value)
       end
