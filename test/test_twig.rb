@@ -41,7 +41,7 @@ module Twig
 
       Node::Nodes.new({ 0 => Node::Text.new('test') })
     end
-    
+
     def test_filter
       template = 'Hello {{ name|capitalize }}'
       context = { name: 'world' }

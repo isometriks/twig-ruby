@@ -10,7 +10,7 @@ module Twig
       <<~TEMPLATE
         #{environment.render_ruby(template.short_identifier)}
         #{class_name}.new(
-          #{self.class.name}.environment, 
+          #{self.class.name}.environment,#{' '}
           call_context: self,
           output_buffer: @output_buffer
         ).render(local_assigns)

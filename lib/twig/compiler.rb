@@ -110,7 +110,7 @@ module Twig
       @source_line = 1
       @indentation = indentation
       @var_name_salt = 0
-  
+
       self
     end
   end
