@@ -3,7 +3,7 @@
 module Twig
   module Node
     class Yield < Node::Base
-      def initialize(expr, body, name = nil, lineno)
+      def initialize(expr, body, name, lineno)
         super({ expr:, body: }, { name: }, lineno)
       end
 
