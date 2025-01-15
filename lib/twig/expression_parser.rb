@@ -226,8 +226,7 @@ module Twig
           current = stream.current
 
           raise Error::Syntax.new(
-            'A mapping key must be a quoted string, number, name, or expression in parentheses ' +
-              "expected token '#{current.type}' of value '#{current.value}'",
+            "A mapping key must be a quoted string, number, name, or expression in parentheses expected token '#{current.type}' of value '#{current.value}'",
             current.lineno,
             stream.source,
           )
