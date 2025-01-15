@@ -2,11 +2,14 @@ module Twig
   module Extension
     class Core < Base
       def operators
+        unary = Node::Expression::Unary
         binary = Node::Expression::Binary
-        
+
         [
           {
-            # Unary
+            'not': { precedence: 70, class: unary::Not },
+            '-': { precedence: 500, class: unary::Neg },
+            '+': { precedence: 500, class: unary::Pos },
           },
           {
             '==': { precedence: 20, class: binary::Equal, associativity: ExpressionParser::OPERATOR_LEFT },

@@ -315,10 +315,16 @@ module Twig
     # @return [Node::Expression::Base]
     def get_primary
       token = parser.current_token
-      unary = false
 
-      if unary
-        # @todo unary operators
+      if unary?(token)
+        operator = unary_operators[token.value.to_sym]
+        parser.stream.next
+
+        expr = parse_expression(operator[:precedence])
+        expr = operator[:class].new(expr, token.lineno)
+        expr.attributes[:operator] = "unary_#{token.value}"
+
+        return parse_post_fix_expression(expr)
       elsif token.test(Token::PUNCTUATION_TYPE, '(')
         parser.stream.next
         expr = parse_expression.set_explicit_parentheses
@@ -410,14 +416,14 @@ module Twig
       @unary_operators ||= environment.operators[0]
     end
 
-    # @param [Token] token
-    def unary?(token)
-      token.test(Token::OPERATOR_TYPE) && unary_operators.key?(token.value)
-    end
-
     # @return [Hash]
     def binary_operators
       @binary_operators ||= environment.operators[1]
+    end
+
+    # @param [Token] token
+    def unary?(token)
+      token.test(Token::OPERATOR_TYPE) && unary_operators.key?(token.value.to_sym)
     end
 
     # @param [Token] token
