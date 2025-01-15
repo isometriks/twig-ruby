@@ -11,4 +11,5 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://rubygems.org/gems/twig-ruby'
   s.license     = 'MIT'
   s.metadata['rubygems_mfa_required'] = 'true'
+  s.required_ruby_version = '>= 3.4'
 end
