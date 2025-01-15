@@ -9,4 +9,5 @@ gem 'rubocop', '~> 1.69'
 group :test do
   gem 'rspec', '~> 3.13'
   gem 'simplecov', require: false
+  gem 'simplecov-json', require: false
 end
