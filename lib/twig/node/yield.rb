@@ -3,8 +3,9 @@
 module Twig
   module Node
     class Yield < Node::Base
-      def initialize(expr, body, name, lineno)
-        super({ expr:, body: }, { name: }, lineno)
+      def initialize(expr, body, arguments, lineno)
+        arguments = arguments.empty? ? {} : { arguments: }
+        super({ expr:, body: }, arguments, lineno)
       end
 
       def compile(compiler)
@@ -13,27 +14,33 @@ module Twig
           subcompile(nodes[:expr]).
           raw(' do')
 
-        if attributes[:name]
+        if attributes.key?(:arguments)
           compiler.
-            raw(" |#{attributes[:name]}|")
+            raw(" |#{attributes[:arguments].join(', ')}|")
         end
 
         compiler.
           raw("\n").
           indent
 
-        if attributes[:name]
+        if attributes.key?(:arguments)
           compiler.
             write("preserved_scope = context.dup\n").
-            write("context.merge!({#{attributes[:name]}:})\n")
+            write('context.merge!({')
+
+          attributes[:arguments].each do |argument|
+            compiler.raw("#{argument}:,")
+          end
+
+          compiler.
+            raw("})\n")
         end
 
         compiler.
-          write('').
           subcompile(nodes[:body]).
           raw("\n")
 
-        if attributes[:name]
+        if attributes.key?(:arguments)
           compiler.
             write("context = preserved_scope\n")
         end
