@@ -11,12 +11,22 @@ module Twig
     end
 
     def template_class(name)
-      "twig_compiled_#{::Digest::SHA256.hexdigest(name.to_s)}"
+      key = loader.get_cache_key(name)
+
+      "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}"
     end
 
     # @return [Twig::Template]
-    def load_template(name)
-      Twig.module_eval(render_ruby(name))
+    def load_template(name, **)
+      class_name = template_class(name)
+
+      unless Twig.const_defined?(class_name)
+        code = render_ruby(name)
+        Twig.module_eval(code)
+      end
+
+      Twig.const_get(template_class(name)).
+        new(self, **)
     end
 
     def render(name)

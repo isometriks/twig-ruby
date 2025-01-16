@@ -3,17 +3,12 @@
 module Twig
   class RailsRenderer
     def call(template, source)
-      name = template.short_identifier
-      environment = self.class.environment
-      class_name = environment.template_class(name)
-
       <<~TEMPLATE
-        #{environment.render_ruby(template.short_identifier)}
-        #{class_name}.new(
-          #{self.class.name}.environment,#{' '}
-          call_context: self,
-          output_buffer: @output_buffer
-        ).render(local_assigns)
+        ::#{self.class.name}.
+          environment.
+          load_template("#{template.short_identifier}", call_context: self, output_buffer: @output_buffer).
+            render(local_assigns)
+
         @output_buffer
       TEMPLATE
     end

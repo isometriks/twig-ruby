@@ -25,8 +25,7 @@ RSpec.shared_examples 'render_and_assert' do
     end
 
     environment.
-      load_template('template').
-      new(environment, call_context:).
+      load_template('template', call_context:).
       render(context).
       to_s
   end

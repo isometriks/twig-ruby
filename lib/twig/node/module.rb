@@ -17,7 +17,7 @@ module Twig
 
       def compile(compiler)
         class_begin = <<~CLASS
-          #{compiler.environment.template_class(source_context.name)} = Class.new(::Twig::Template) do
+          class Twig::#{compiler.environment.template_class(source_context.name)} < ::Twig::Template
         CLASS
 
         class_end = <<~CLASS
@@ -45,7 +45,6 @@ module Twig
           outdent.
           write("end\n\n").
           subcompile(nodes[:blocks]).
-          raw("\n\n").
           outdent
 
         compiler.

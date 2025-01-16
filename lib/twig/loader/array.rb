@@ -11,22 +11,25 @@ module Twig
       end
 
       def get_source_context(name)
-        raise "LoaderError: Template #{name} is not defined" unless @templates[name.to_sym]
+        name = name.to_sym
+        raise "LoaderError: Template #{name} is not defined" unless @templates[name]
 
-        ::Twig::Source.new(@templates[name.to_sym], name)
+        ::Twig::Source.new(@templates[name], name)
       end
 
       def exists?(name)
-        @template.key?(name)
+        @templates.key?(name.to_sym)
       end
 
       def get_cache_key(name)
+        name = name.to_sym
         raise "LoaderError: Template #{name} is not defined" unless @templates[name]
 
         "#{name}:#{@templates[name]}"
       end
 
       def fresh?(name, time)
+        name = name.to_sym
         raise "LoaderError: Template #{name} is not defined" unless @templates[name]
 
         true
