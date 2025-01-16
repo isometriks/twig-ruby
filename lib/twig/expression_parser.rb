@@ -248,7 +248,7 @@ module Twig
       # @todo lots of stuff in this method
       args = parse_only_arguments
 
-      if environment.helper_method?(name)
+      if environment.helper_method?(name.to_sym)
         Node::Expression::HelperMethod.new(name, args, line)
       else
         raise Error::Syntax.new("Unknown function '#{name}'", line, parser.stream.source)

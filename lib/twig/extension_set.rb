@@ -40,7 +40,11 @@ module Twig
     end
 
     def helper_methods
-      @helper_methods ||= extensions.values.map(&:helper_methods).reduce([], :concat)
+      @helper_methods ||= extensions.
+        values.
+        map(&:helper_methods).
+        reduce([], :concat).
+        map(&:to_sym)
     end
 
     def filters

@@ -6,23 +6,33 @@ require 'integration_shared_examples'
 RSpec.describe Twig::TokenParser::Yield do
   let(:inputs) do
     <<~INPUTS
+      {% yield basic() do %}Hello World!{% endyield %}
       {% yield basic() do |q| %}Hello World!{% endyield %}
+      {% yield pair() do |k, v| %}{{ k }} {{ v }}{% endyield %}
     INPUTS
   end
 
   let(:outputs) do
     <<~OUTPUTS
       Hello World!
+      Hello World!
+      Hello World!
     OUTPUTS
   end
 
-  let(:locals) { {} }
+  let(:locals) { { a: %w[Hello World!] } }
 
   it_behaves_like 'render_and_assert' do
     let(:call_context) do
       Class.new do
         def basic
           yield
+
+          nil
+        end
+
+        def pair
+          yield %w[Hello World!]
 
           nil
         end
@@ -33,7 +43,7 @@ RSpec.describe Twig::TokenParser::Yield do
       [
         Class.new(Twig::Extension::Base) do
           def helper_methods
-            ['basic']
+            %i[basic pair]
           end
         end.new,
       ]
