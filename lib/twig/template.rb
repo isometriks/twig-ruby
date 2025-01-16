@@ -35,11 +35,7 @@ module Twig
     # @param [String] name
     # @return ]Template]
     def load_template(name, template_name = '', template_line = nil)
-      env.load_template(name).new(
-        @environment,
-        call_context: @call_context,
-        output_buffer: @output_buffer
-      )
+      env.load_template(name, call_context: @call_context, output_buffer: @output_buffer)
     end
 
     # @return [Environment]

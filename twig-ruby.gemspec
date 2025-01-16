@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |s|
-  s.name        = 'twig-ruby'
+  s.name        = 'twig_ruby'
   s.version     = '0.0.1'
   s.summary     = 'Twig Templating for Ruby'
   s.description = ''

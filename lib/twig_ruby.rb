@@ -29,4 +29,6 @@ end
 require 'twig/railtie' if defined?(Rails::Railtie)
 
 module Twig
+  module Compiled
+  end
 end
