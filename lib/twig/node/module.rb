@@ -33,7 +33,7 @@ module Twig
         if nodes.key?(:parent)
           compiler.
             write('load_template(').
-            string(nodes[:parent].attributes[:value]).
+            subcompile(nodes[:parent]).
             raw(").render(context, block_list.merge(blocks));\n")
         else
           compiler.
