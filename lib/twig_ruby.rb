@@ -6,6 +6,7 @@ require 'cgi'
 
 %w[
   .
+  cache
   error
   extension
   loader
