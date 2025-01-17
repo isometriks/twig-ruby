@@ -2,10 +2,22 @@
 
 module Twig
   class Environment
+    # @return [Cache::Base]
+    attr_reader :cache
+
     # @param [::Twig::Loader::Base] loader
-    def initialize(loader)
+    def initialize(loader, options = {})
       @loader = loader
       @extension_set = ExtensionSet.new
+      @options = {
+        cache: false,
+        debug: false,
+        auto_reload: nil,
+      }.merge(options)
+
+      @auto_reload = options[:auto_reload].nil? ? options[:debug] : options[:auto_reload]
+
+      self.cache = @options[:cache]
 
       add_extension(Extension::Core.new)
     end
@@ -19,10 +31,24 @@ module Twig
     # @return [Twig::Template]
     def load_template(name, **)
       class_name = template_class(name)
+      cache_key = cache.generate_key(name, class_name)
 
       unless Twig.const_defined?(class_name)
-        code = render_ruby(name)
-        Twig.module_eval(code)
+        if !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
+          @cache.load(cache_key)
+        end
+
+        # Cache didn't load a class
+        unless Twig.const_defined?(class_name)
+          code = render_ruby(name)
+
+          # File cache loader won't rely on eval
+          @cache.write(cache_key, code)
+          @cache.load(cache_key)
+
+          # Finally just eval the generated code
+          Twig.module_eval(code) unless Twig.const_defined?(class_name)
+        end
       end
 
       Twig.const_get(template_class(name)).
@@ -92,6 +118,25 @@ module Twig
     def load_and_compile(name)
       source = loader.get_source_context(name)
       compile_source(source)
+    end
+
+    # @param [String] name
+    # @param [Integer] time
+    def template_fresh?(name, time)
+      # @todo check extension set last modified
+      loader.fresh?(name, time)
+    end
+
+    def cache=(cache)
+      @cache = if cache.is_a?(String)
+                 Cache::Filesystem.new(cache)
+               elsif cache == false
+                 Cache::Nil.new
+               elsif cache.class < Cache::Base
+                 cache
+               else
+                 raise "Cache must be string, false, or implement Twig::Cache::Base, got #{cache.inspect}"
+               end
     end
 
     private

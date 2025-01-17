@@ -14,14 +14,19 @@ module Twig
     end
 
     def self.loader
-      @loader ||= ::Twig::Loader::File.new([
-        "#{Rails.root}/",
-        "#{Rails.root}/app/views/",
-      ])
+      @loader ||= ::Twig::Loader::Filesystem.new(
+        Rails.root,
+        %w[/ /app/views]
+      )
     end
 
     def self.environment
-      @environment ||= ::Twig::Environment.new(loader).tap do |env|
+      options = {
+        cache: Rails.root.join('tmp/cache/twig').to_s,
+        debug: Rails.env.development?,
+      }
+
+      @environment ||= ::Twig::Environment.new(loader, options).tap do |env|
         env.add_extension(::Twig::Extension::Rails.new)
       end
     end
