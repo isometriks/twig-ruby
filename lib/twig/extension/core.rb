@@ -26,6 +26,9 @@ module Twig
             '>=': { precedence: 20, class: binary::GreaterEqual, associativity: ExpressionParser::OPERATOR_LEFT },
             '<=': { precedence: 20, class: binary::LessEqual, associativity: ExpressionParser::OPERATOR_LEFT },
 
+            # @todo this needs a custom class but just needs to be parsed as operaor for for loops
+            in: { precedence: 20, class: binary::LessEqual, associativity: ExpressionParser::OPERATOR_LEFT },
+
             '+': { precedence: 30, class: binary::Add, associativity: ExpressionParser::OPERATOR_LEFT },
             '-': { precedence: 30, class: binary::Sub, associativity: ExpressionParser::OPERATOR_LEFT },
             '~': { precedence: 40, class: binary::Concat, associativity: ExpressionParser::OPERATOR_LEFT },
@@ -48,6 +51,7 @@ module Twig
         [
           TokenParser::Block.new,
           TokenParser::Extends.new,
+          TokenParser::For.new,
           TokenParser::If.new,
           TokenParser::Include.new,
           TokenParser::With.new,
@@ -65,6 +69,12 @@ module Twig
 
       def lower(string)
         string.downcase
+      end
+
+      def self.ensure_hash(value)
+        return value if value.class < Hash
+
+        AutoHash.new.add(*value)
       end
     end
   end

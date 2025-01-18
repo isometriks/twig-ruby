@@ -14,6 +14,7 @@ require 'cgi'
   node/expression
   node/expression/binary
   node/expression/unary
+  node/expression/variable
   token_parser
 ].each do |directory|
   directory = __dir__ + "/twig/#{directory}/"

@@ -6,6 +6,12 @@ module Twig
       values.each do |value|
         self[length] = value
       end
+
+      self
+    end
+
+    def <<(*values)
+      add(*values)
     end
   end
 end
