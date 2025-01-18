@@ -43,7 +43,18 @@ module Twig
           raw(" = v\n\n").
           subcompile(nodes[:body]).
           outdent.
-          write("end\n").
+          write("end\n")
+
+        if nodes.key?(:else_expr)
+          compiler.
+            write("unless context[:_iterated]\n").
+            indent.
+            subcompile(nodes[:else_expr]).
+            outdent.
+            write("end\n")
+        end
+
+        compiler.
           write("context.pop_stack\n")
       end
     end

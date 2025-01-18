@@ -15,7 +15,6 @@ module Twig
         # @todo if with loop
         compiler.
           write("context[:loop] = {\n").
-          write("  parent: context[:_parent],\n").
           write("  index0: 0,\n").
           write("  index: 1,\n").
           write("  first: true,\n").
