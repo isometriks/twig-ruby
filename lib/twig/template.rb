@@ -17,7 +17,7 @@ module Twig
     end
 
     def render(context = {}, blocks = {})
-      call(context.transform_keys(&:to_sym), blocks)
+      call(Context.new(context), blocks)
     end
 
     def yield_block(name, context = {}, blocks = {})
