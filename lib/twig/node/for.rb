@@ -23,7 +23,7 @@ module Twig
 
       def compile(compiler)
         compiler.
-          write("context[:parent] = context\n").
+          write("context.push_stack\n").
           write('context[:_seq] = ::Twig::Extension::Core.ensure_hash(').
           subcompile(nodes[:seq]).
           raw(")\n")
@@ -43,9 +43,8 @@ module Twig
           raw(" = v\n\n").
           subcompile(nodes[:body]).
           outdent.
-          write("end\n")
-
-        # @todo need to clean up some local variables
+          write("end\n").
+          write("context.pop_stack\n")
       end
     end
   end

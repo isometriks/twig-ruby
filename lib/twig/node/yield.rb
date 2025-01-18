@@ -25,7 +25,7 @@ module Twig
 
         if attributes.key?(:arguments)
           compiler.
-            write("preserved_scope = context.dup\n").
+            write("context.push_stack\n").
             write('context.merge!({')
 
           attributes[:arguments].each do |argument|
@@ -42,7 +42,7 @@ module Twig
 
         if attributes.key?(:arguments)
           compiler.
-            write("context = preserved_scope\n")
+            write("context.pop_stack\n")
         end
 
         compiler.

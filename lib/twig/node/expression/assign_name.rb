@@ -20,7 +20,7 @@ module Twig
           compiler.
             raw('context[').
             string(attributes[:name]).
-            raw('.to_sym]')
+            raw(']')
         end
       end
     end
