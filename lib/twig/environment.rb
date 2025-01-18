@@ -33,22 +33,23 @@ module Twig
       class_name = template_class(name)
       cache_key = cache.generate_key(name, class_name)
 
-      unless Twig.const_defined?(class_name)
-        if !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
-          @cache.load(cache_key)
-        end
+      attempt_cache = !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
 
-        # Cache didn't load a class
-        unless Twig.const_defined?(class_name)
-          code = render_ruby(name)
+      if attempt_cache
+        @cache.load(cache_key)
+      end
 
-          # File cache loader won't rely on eval
-          @cache.write(cache_key, code)
-          @cache.load(cache_key)
+      # Cache didn't load a class or we should load fresh
+      unless attempt_cache && Twig.const_defined?(class_name)
+        code = render_ruby(name)
 
-          # Finally just eval the generated code
-          Twig.module_eval(code) unless Twig.const_defined?(class_name)
-        end
+        # File cache loader won't rely on eval
+        @cache.write(cache_key, code)
+        @cache.load(cache_key)
+
+        # Finally just eval the generated code if cache does
+        # create the class
+        Twig.module_eval(code) unless Twig.const_defined?(class_name)
       end
 
       Twig.const_get(template_class(name)).

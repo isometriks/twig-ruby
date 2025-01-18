@@ -17,7 +17,7 @@ module Twig
 
       def load(key)
         if File.file?(key)
-          require key
+          Kernel.load(key)
 
           true
         else
