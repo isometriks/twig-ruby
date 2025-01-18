@@ -3,6 +3,8 @@
 module Twig
   module Error
     class Base < StandardError
+      attr_reader :lineno
+
       # @param [String] message
       # @param [Integer] lineno
       # @param [Source] source
@@ -24,10 +26,11 @@ module Twig
 
       def to_s
         parts = [@raw_message]
-        parts << ["in #{@name}"] if @name
-        parts << ["on line #{@lineno}"] if @lineno
+        parts << [" in #{@name}"] if @name
+        parts << [":#{@lineno}"] if @name && @lineno
+        parts << [" on line #{@lineno}"] if !@name && @lineno
 
-        parts.join(' ')
+        parts.join
       end
     end
   end

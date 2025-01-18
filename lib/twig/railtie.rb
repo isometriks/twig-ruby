@@ -13,6 +13,26 @@ module Twig
       TEMPLATE
     end
 
+    def translate_location(spot, backtrace_location, source)
+      template = backtrace_location.path.delete_prefix(Rails.root.to_s)
+
+      # Attempt to recompile the template to find where the syntax error is
+      # otherwise just do what would have happened anyway
+      begin
+        self.class.environment.render_ruby(template)
+      rescue ::Twig::Error::Syntax => e
+        return spot.merge({
+          first_lineno: e.lineno,
+          last_lineno: e.lineno + 1,
+          script_lines: source.lines,
+        })
+      rescue StandardError
+        # Nothing, don't add another exception to the problem
+      end
+
+      spot
+    end
+
     def self.loader
       @loader ||= ::Twig::Loader::Filesystem.new(
         Rails.root,
