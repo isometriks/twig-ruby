@@ -16,11 +16,13 @@ module Twig
             write('(temp = ').
             subcompile(nodes[:node]).
             raw("\n").
-            write('temp.respond_to?(:[]) ? temp[').
+            write('temp.respond_to?(').
             subcompile(nodes[:attribute]).
-            raw('] : temp.public_send(').
+            raw(') ? temp.public_send(').
             subcompile(nodes[:attribute]).
-            raw("))\n\n")
+            raw(') : temp[').
+            subcompile(nodes[:attribute]).
+            raw("])\n\n")
         end
       end
     end
