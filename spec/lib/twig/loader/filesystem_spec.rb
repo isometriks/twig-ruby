@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'integration_shared_examples'
 
 RSpec.describe Twig::Loader::Filesystem do
   let(:template) { 'filesystem.html.twig' }
