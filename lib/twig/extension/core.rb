@@ -54,7 +54,6 @@ module Twig
           TokenParser::For.new,
           TokenParser::If.new,
           TokenParser::Include.new,
-          TokenParser::With.new,
           TokenParser::Yield.new,
         ]
       end
