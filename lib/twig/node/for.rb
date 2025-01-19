@@ -28,6 +28,8 @@ module Twig
           subcompile(nodes[:seq]).
           raw(")\n")
 
+        # @todo Missing some more loops stuff here
+
         if nodes.key?(:else_expr)
           compiler.write("context[:_iterated] = false\n")
         end

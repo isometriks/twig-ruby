@@ -21,13 +21,7 @@ module Twig
       def get_cache_key(name)
         return unless (path = find_template(name))
 
-        len = @root_path.length
-
-        if path[0...len] == @root_path
-          path[len...]
-        else
-          path
-        end
+        path.delete_prefix(@root_path)
       end
 
       def fresh?(name, time)
