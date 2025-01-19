@@ -2,10 +2,16 @@
 
 require 'simplecov'
 require 'simplecov-json'
+
 SimpleCov.formatters = SimpleCov::Formatter::MultiFormatter.new([
   SimpleCov::Formatter::HTMLFormatter,
   SimpleCov::Formatter::JSONFormatter,
 ])
+
+SimpleCov.add_filter do |src_file|
+  File.basename(src_file.filename) == 'base.rb'
+end
+
 SimpleCov.start do
   enable_coverage :branch
 end
