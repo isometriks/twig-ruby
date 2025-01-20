@@ -370,7 +370,7 @@ module Twig
                       Node::Empty.new
                     end
 
-        filter = environment.filter(token.value) or raise "TwigFilter #{token.value} not found"
+        filter = get_filter(token.value, token.lineno)
         node = filter.node_class.new(node, filter, arguments, token.lineno)
 
         unless parser.stream.test(Token::PUNCTUATION_TYPE, '|')
@@ -440,6 +440,47 @@ module Twig
       expr
     end
 
+    # @param [Node::Base]
+    # @return [Node::Expression::Base]
+    def parse_subscript_expression_array(node)
+      stream = parser.stream
+      token = stream.current
+      lineno = token.lineno
+      arguments = Node::Expression::Array.new({}, lineno)
+
+      slice = false
+      if stream.test(Token::PUNCTUATION_TYPE, ':')
+        slice = true
+        attribute = Node::Expression::Constant.new(0, token.lineno)
+      else
+        attribute = parse_expression
+      end
+
+      if stream.next_if(Token::PUNCTUATION_TYPE, ':')
+        slice = true
+      end
+
+      if slice
+        length = if stream.test(Token::PUNCTUATION_TYPE, ']')
+                   Node::Expression::Constant.new(nil, token.lineno)
+                 else
+                   parse_expression
+                 end
+
+        filter = get_filter('slice', token.lineno)
+        arguments = Node::Nodes.new(AutoHash.new.add(attribute, length))
+        filter = filter.node_class.new(node, filter, arguments, token.lineno)
+
+        stream.expect(Token::PUNCTUATION_TYPE, ']')
+
+        return filter
+      end
+
+      stream.expect(Token::PUNCTUATION_TYPE, ']')
+
+      Node::Expression::GetAttribute.new(node, attribute, arguments, Template::ARRAY_CALL, lineno)
+    end
+
     # @return [Hash]
     def unary_operators
       @unary_operators ||= environment.operators[0]
@@ -458,6 +499,15 @@ module Twig
     # @param [Token] token
     def binary?(token)
       token.test(Token::OPERATOR_TYPE) && binary_operators.key?(token.value.to_sym)
+    end
+
+    # @return [Filter]
+    def get_filter(name, lineno)
+      unless (filter = environment.filter(name))
+        raise Error::Syntax.new("Unknown '#{name}' filter", lineno, parser.stream.source)
+      end
+
+      filter
     end
   end
 end

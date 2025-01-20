@@ -23,7 +23,7 @@ module Twig
 
         def compile(compiler)
           compiler.
-            write('{').
+            raw('{').
             indent
 
           key_value_pairs.each do |key, value|
@@ -36,7 +36,7 @@ module Twig
 
           compiler.
             outdent.
-            write('}')
+            raw('}')
         end
 
         private

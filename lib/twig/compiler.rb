@@ -9,6 +9,7 @@ module Twig
     # @param [Environment] environment
     def initialize(environment)
       @environment = environment
+      @var_name_salt = 0
     end
 
     # @param [Node::Base] node
@@ -71,6 +72,8 @@ module Twig
         raw('Marshal.load(').
           raw(Marshal.dump(value).inspect).
           raw(')')
+      when Symbol
+        raw(":#{value}")
       else
         string(value)
       end
@@ -90,6 +93,11 @@ module Twig
       @indentation -= step
 
       self
+    end
+
+    # @return [String]
+    def var_name
+      "_v#{@var_name_salt}"
     end
 
     private
