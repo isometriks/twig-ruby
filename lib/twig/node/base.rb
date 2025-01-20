@@ -3,7 +3,10 @@
 module Twig
   module Node
     class Base
-      attr_reader :tag, :lineno
+      attr_reader :tag
+
+      # @return [Integer]
+      attr_reader :lineno
 
       # @return [Hash]
       attr_reader :attributes

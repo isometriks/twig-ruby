@@ -9,7 +9,7 @@ RSpec.describe Twig::TokenParser::Set do
       <<~INPUTS
         {% set message = "Hello World!" %}{{ message }}
         {% set hello, world = "Hello", "World!" %}{{ hello }} {{ world }}
-        {% set message %}Hello World!{% endset %}
+        {% set message %}Hello World!{% endset %}{{ message }}
       INPUTS
     end
 
