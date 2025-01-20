@@ -11,7 +11,20 @@ module Twig
         safe = false
 
         if capture
-          # @todo Fill this out for capture node
+          safe = true
+          capture = false
+
+          if values.is_a?(Nodes) && values.empty?
+            values = Expression::Constant.new('', values.lineno)
+          elsif values.is_a?(Text)
+            values = Expression::Constant.new(values.attributes[:data], values.lineno)
+          elsif values.is_a?(Print) && values.nodes[:expr].is_a(Expression::Constant)
+            values = values.nodes[:expr]
+          else
+            # @todo implement capture node
+            values = Capture.new(values, values.lineno)
+            capture = true
+          end
         end
 
         super({ names:, values: }, { capture:, safe: }, lineno)
