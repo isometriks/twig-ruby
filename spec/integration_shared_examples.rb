@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.shared_examples 'render_and_assert' do
+  let(:inputs) { raise NotImplementedError }
+  let(:outputs) { raise NotImplementedError }
+  let(:locals) { {} }
   let(:templates) { {} }
   let(:extensions) { [] }
   let(:call_context) { nil }
