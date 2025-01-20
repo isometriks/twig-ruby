@@ -3,6 +3,10 @@
 module Twig
   # Base class for compiled templates
   class Template
+    ARRAY_CALL = :array_call
+    METHOD_CALL = :method_call
+    ANY_CALL = :any_call
+
     # @param [Environment] environment
     def initialize(environment, call_context: nil, output_buffer: nil)
       @environment = environment

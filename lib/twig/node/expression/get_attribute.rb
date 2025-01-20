@@ -12,17 +12,17 @@ module Twig
         end
 
         def compile(compiler)
+          var = compiler.var_name
+
           compiler.
-            write('(temp = ').
+            raw("(#{var} = ").
             subcompile(nodes[:node]).
             raw("\n").
-            write('temp.respond_to?(').
+            write("::Twig::Extension::Core.get_attribute(#{var}, ").
             subcompile(nodes[:attribute]).
-            raw(') ? temp.public_send(').
-            subcompile(nodes[:attribute]).
-            raw(') : temp[').
-            subcompile(nodes[:attribute]).
-            raw("])\n\n")
+            raw(', ').
+            repr(attributes[:type]).
+            raw('))')
         end
       end
     end

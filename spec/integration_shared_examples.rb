@@ -6,7 +6,7 @@ RSpec.shared_examples 'render_and_assert' do
   let(:call_context) { nil }
 
   it 'matches the output' do
-    results = outputs.strip.split("\n")
+    results = outputs.is_a?(Array) ? outputs : outputs.strip.split("\n")
     inputs.strip.split("\n").each_with_index do |line, index|
       expect(render(line, locals)).to eq(results[index])
     end
