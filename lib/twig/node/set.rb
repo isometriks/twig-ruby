@@ -18,10 +18,9 @@ module Twig
             values = Expression::Constant.new('', values.lineno)
           elsif values.is_a?(Text)
             values = Expression::Constant.new(values.attributes[:data], values.lineno)
-          elsif values.is_a?(Print) && values.nodes[:expr].is_a(Expression::Constant)
+          elsif values.is_a?(Print) && values.nodes[:expr].is_a?(Expression::Constant)
             values = values.nodes[:expr]
           else
-            # @todo implement capture node
             values = Capture.new(values, values.lineno)
             capture = true
           end
@@ -30,7 +29,6 @@ module Twig
         super({ names:, values: }, { capture:, safe: }, lineno)
       end
 
-      # @todo this doesn't work for multi targets
       def compile(compiler)
         if nodes[:names].length > 1
           compiler.write('')
@@ -44,17 +42,28 @@ module Twig
 
           nodes[:values].nodes.each do |i, node|
             compiler.raw(', ') if i.positive?
-            compiler.subcompile(node)
-          end
+            compiler.
+              raw('(').
+              subcompile(node).
+              raw(')')
 
-          compiler.raw("\n")
+            if attributes[:safe]
+              compiler.raw('.html_safe')
+            end
+          end
         else
           compiler.
             subcompile(nodes[:names], raw: false).
-            raw(' = ').
+            raw(' = (').
             subcompile(nodes[:values]).
-            raw("\n")
+            raw(')')
+
+          if attributes[:safe]
+            compiler.raw('.html_safe')
+          end
         end
+
+        compiler.raw("\n")
       end
     end
   end
