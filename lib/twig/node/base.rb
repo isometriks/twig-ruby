@@ -56,6 +56,11 @@ module Twig
       def template_name
         source_context.name
       end
+
+      # @return [Integer]
+      def length
+        nodes.length
+      end
     end
   end
 end
