@@ -49,6 +49,10 @@ module Twig
       token = parser.current_token
 
       case token.type
+      when Token::SYMBOL_TYPE
+        parser.stream.next
+
+        node = Node::Expression::Constant.new(token.value.to_sym, token.lineno)
       when Token::NAME_TYPE
         parser.stream.next
 
@@ -206,15 +210,15 @@ module Twig
         #
         #  * a number -- 12
         #  * a string -- 'a'
-        #  * a name, which is equivalent to a string -- a
+        #  * a name, which is equivalent to a symbol -- a
         #  * an expression, which must be enclosed in parentheses -- (1 + 2)
         if (token = stream.next_if(Token::NAME_TYPE))
-          key = Node::Expression::Constant.new(token.value, token.lineno)
+          key = Node::Expression::Constant.new(token.value.to_sym, token.lineno)
 
           # {a} is a shortcut for {a: a}
           if stream.test(Token::PUNCTUATION_TYPE, %w[, }])
             value = Node::Expression::Variable::Context.new(key.attributes[:value], key.lineno)
-            node.add_element(value, key)
+            node.add_element(value, key.to_sym)
 
             next
           end

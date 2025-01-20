@@ -96,6 +96,7 @@ module Twig
     end
 
     # @param [Source] source
+    # @return [TokenStream]
     def tokenize(source)
       lexer.tokenize(source)
     end
