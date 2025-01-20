@@ -416,6 +416,21 @@ module Twig
       Node::Nodes.new(targets)
     end
 
+    # @return [Node::Nodes]
+    def parse_multi_target_expression
+      targets = AutoHash.new
+
+      loop do
+        targets << parse_expression
+
+        unless parser.stream.next_if(Token::PUNCTUATION_TYPE, ',')
+          break
+        end
+      end
+
+      Node::Nodes.new(targets)
+    end
+
     def parse_string_expression
       stream = parser.stream
       nodes = []
