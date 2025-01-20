@@ -20,8 +20,6 @@ module Twig
             7
           OUTPUTS
         end
-
-        let(:locals) { {} }
       end
     end
 
@@ -42,8 +40,6 @@ module Twig
             '',
           ]
         end
-
-        let(:locals) { {} }
       end
     end
 

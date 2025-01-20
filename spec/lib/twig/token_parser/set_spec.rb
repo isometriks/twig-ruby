@@ -20,7 +20,5 @@ RSpec.describe Twig::TokenParser::Set do
         Hello World!
       OUTPUTS
     end
-
-    let(:locals) { {} }
   end
 end
