@@ -77,6 +77,8 @@ module Twig
           <<~INPUTS
             {{ { hello: "Hello", world: "World!" }["hello"] }}
             {{ names["first"] }} {{ names["last"] }}
+            {{ names[:first] }} {{ names[:last] }}
+            {{ { hello: :world }[:hello] }}
           INPUTS
         end
 
@@ -84,6 +86,8 @@ module Twig
           <<~OUTPUTS
             Hello
             Hello World!
+            Hello World!
+            world
           OUTPUTS
         end
 

@@ -19,6 +19,7 @@ module Twig
     REGEX_DNUM = /#{REGEX_LNUM}(?:#{REGEX_FRAC})?/
 
     REGEX_NAME = /[a-zA-Z_][a-zA-Z0-9_]*/
+    REGEX_SYMBOL = /:#{REGEX_NAME}/
     REGEX_STRING = /\A"([^#"\\]*(?:\\\\.[^#"\\]*)*)"|'([^'\\]*(?:\\\\.[^'\\]*)*)'/s
     REGEX_NUMBER = /\A(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
 
@@ -181,6 +182,9 @@ module Twig
         move_cursor(match.to_s)
       elsif (match = @code[@cursor..].match(/\A#{REGEX_NAME}/))
         push_token(Token::NAME_TYPE, match.to_s)
+        move_cursor(match.to_s)
+      elsif (match = @code[@cursor..].match(/\A#{REGEX_SYMBOL}/))
+        push_token(Token::SYMBOL_TYPE, match.to_s[1..])
         move_cursor(match.to_s)
       elsif (match = @code[@cursor..].match(REGEX_NUMBER))
         value = match.to_s.tr('_', '')

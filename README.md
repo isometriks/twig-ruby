@@ -32,12 +32,21 @@ end
 
 ## Additions
 
+Twig Ruby supports symbols as Ruby does and can be used in places strings can as 
+hash keys, arguments, etc.
+
+```twig
+{{ name[:first] }}
+{{ user_func(:first, :second) }}
+{% set hash = { key: :value } %}
+```
+
 Since Ruby has the concept of blocks, a new tag is introduced call `yield` it
 can be used with helpers like `form_with`
 
 ```twig
 {% yield form_with(url: 'login') do |f| %}
-  {{ f.email_field("email") }}
+  {{ f.email_field(:email) }}
 {% endyield %}
 ```
 

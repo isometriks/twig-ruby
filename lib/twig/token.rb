@@ -9,6 +9,7 @@ module Twig
     BLOCK_END_TYPE = :block_end
     VAR_END_TYPE = :var_end
     NAME_TYPE = :name
+    SYMBOL_TYPE = :symbol
     NUMBER_TYPE = :number
     STRING_TYPE = :string
     OPERATOR_TYPE = :operator
