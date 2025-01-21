@@ -43,7 +43,6 @@ module Twig
           capitalize: TwigFilter.new('capitalize', method(:capitalize)),
           upper: TwigFilter.new('upper', method(:upper)),
           lower: TwigFilter.new('lower', method(:lower)),
-          raw: TwigFilter.new('raw', nil, node_class: Node::Expression::Filter::Raw),
         }
       end
 
