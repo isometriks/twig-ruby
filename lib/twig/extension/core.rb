@@ -50,6 +50,7 @@ module Twig
       def token_parsers
         [
           TokenParser::Block.new,
+          TokenParser::Do.new,
           TokenParser::Extends.new,
           TokenParser::For.new,
           TokenParser::If.new,
