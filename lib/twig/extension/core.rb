@@ -78,9 +78,10 @@ module Twig
       end
 
       def self.get_attribute(object, attribute, type)
-        case type
-        when Template::ARRAY_CALL
+        if type == Template::ARRAY_CALL
           object[attribute] || (attribute.is_a?(String) ? object[attribute.to_sym] : object[attribute.to_s])
+        elsif object.respond_to?(attribute)
+          object.send(attribute)
         else
           raise NotImplementedError, 'Need to implement other get_attribute calls'
         end
