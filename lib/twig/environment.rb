@@ -12,6 +12,7 @@ module Twig
       @options = {
         cache: false,
         debug: false,
+        auto_escape: 'html',
         auto_reload: nil,
       }.merge(options)
 
@@ -20,6 +21,7 @@ module Twig
       self.cache = @options[:cache]
 
       add_extension(Extension::Core.new)
+      add_extension(Extension::Escaper.new(options[:auto_escape]))
     end
 
     def template_class(name)
