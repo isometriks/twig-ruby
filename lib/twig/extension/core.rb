@@ -40,10 +40,10 @@ module Twig
 
       def filters
         {
-          capitalize: TwigFilter.new('capitalize', [self, :capitalize]),
-          upper: TwigFilter.new('upper', [self, :upper]),
-          lower: TwigFilter.new('lower', [self, :lower]),
-          raw: TwigFilter.new('raw', [self, :raw]),
+          capitalize: TwigFilter.new('capitalize', method(:capitalize)),
+          upper: TwigFilter.new('upper', method(:upper)),
+          lower: TwigFilter.new('lower', method(:lower)),
+          raw: TwigFilter.new('raw', nil, node_class: Node::Expression::Filter::Raw),
         }
       end
 
