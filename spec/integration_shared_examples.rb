@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.shared_examples 'render_and_assert' do
+  let(:options) { {} }
   let(:inputs) { raise NotImplementedError }
   let(:outputs) { raise NotImplementedError }
   let(:locals) { {} }
@@ -21,7 +22,7 @@ RSpec.shared_examples 'render_and_assert' do
       **templates,
     })
 
-    environment = Twig::Environment.new(loader)
+    environment = Twig::Environment.new(loader, options)
 
     extensions.each do |extension|
       environment.add_extension(extension)

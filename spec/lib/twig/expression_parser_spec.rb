@@ -90,5 +90,29 @@ module Twig
         let(:locals) { { names: { first: 'Hello', last: 'World!' } } }
       end
     end
+
+    context 'with class variable in call context' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          <<~INPUTS
+            {{ @message }}
+          INPUTS
+        end
+
+        let(:outputs) do
+          <<~OUTPUTS
+            Hello World!
+          OUTPUTS
+        end
+
+        let(:call_context) do
+          Class.new do
+            def initialize
+              @message = 'Hello World!'
+            end
+          end.new
+        end
+      end
+    end
   end
 end

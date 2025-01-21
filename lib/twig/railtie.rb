@@ -44,6 +44,7 @@ module Twig
       options = {
         cache: Rails.root.join('tmp/cache/twig').to_s,
         debug: Rails.env.development?,
+        allow_helper_methods: true,
       }
 
       @environment ||= ::Twig::Environment.new(loader, options).tap do |env|
