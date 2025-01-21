@@ -252,7 +252,7 @@ module Twig
       # @todo lots of stuff in this method
       args = parse_only_arguments
 
-      if environment.helper_method?(name.to_sym)
+      if environment.allow_helper_methods?
         Node::Expression::HelperMethod.new(name, args, line)
       else
         raise Error::Syntax.new("Unknown function '#{name}'", line, parser.stream.source)
@@ -289,7 +289,12 @@ module Twig
         name = nil
         if (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
            (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
-          unless value.class <= Node::Expression::Name
+          # Allow quoted kwargs - form_with("data-turbo-stream": true)
+          if value.is_a?(Node::Expression::Constant) && value.attributes[:value].is_a?(String)
+            name = value.attributes[:value]
+          elsif value.is_a?(Node::Expression::Name)
+            name = value.attributes[:name]
+          else
             raise Error::Syntax.new(
               "A parameter name must be a string, #{value.class.name} given.",
               token.lineno,
@@ -297,7 +302,6 @@ module Twig
             )
           end
 
-          name = value.attributes[:name]
           value = parse_expression
         end
 

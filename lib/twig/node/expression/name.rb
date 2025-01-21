@@ -24,9 +24,17 @@ module Twig
         def compile(compiler)
           name = attributes[:name]
 
+          if attributes[:name][0] == '@'
+            check = "@call_context.instance_variable_defined?('#{name}')"
+            get = "@call_context.instance_variable_get('#{name}')"
+          else
+            check = "context.key?(:#{name})"
+            get = "context[:#{name}]"
+          end
+
           compiler.
-            raw("(context.key?(:#{name})").
-            raw(" ? context[:#{name}]").
+            raw("(#{check}").
+            raw(" ? #{get}").
             raw(' : raise("#{').
             string(name).
             raw('} does not exist"))')

@@ -14,6 +14,7 @@ module Twig
         debug: false,
         auto_escape: 'html',
         auto_reload: nil,
+        allow_helper_methods: false,
       }.merge(options)
 
       @auto_reload = options[:auto_reload].nil? ? options[:debug] : options[:auto_reload]
@@ -35,7 +36,7 @@ module Twig
       class_name = template_class(name)
       cache_key = cache.generate_key(name, class_name)
 
-      attempt_cache = !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
+      attempt_cache = !@auto_reload && template_fresh?(name, cache.timestamp(cache_key))
 
       if attempt_cache
         @cache.load(cache_key)
@@ -141,6 +142,11 @@ module Twig
                else
                  raise "Cache must be string, false, or implement Twig::Cache::Base, got #{cache.inspect}"
                end
+    end
+
+    # @return [Boolean]
+    def allow_helper_methods?
+      @options[:allow_helper_methods]
     end
 
     private

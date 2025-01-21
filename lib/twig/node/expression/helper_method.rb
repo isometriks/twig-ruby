@@ -17,7 +17,7 @@ module Twig
             compiler.raw(', ') unless first
 
             unless key.is_a?(Integer)
-              compiler.raw("#{key}: ")
+              compiler.raw("'#{key}': ")
             end
 
             compiler.

@@ -5,6 +5,8 @@ require 'integration_shared_examples'
 
 RSpec.describe Twig::TokenParser::Yield do
   it_behaves_like 'render_and_assert' do
+    let(:options) { { allow_helper_methods: true } }
+
     let(:inputs) do
       <<~INPUTS
         {{ a }}{% do upper(a) %}{{ a }}
