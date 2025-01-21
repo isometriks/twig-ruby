@@ -10,8 +10,15 @@ module Twig
         def compile_callable(compiler)
           callable = attributes[:twig_callable].callable
 
-          compiler.
-            raw("env.extension(%q[#{callable[0].class.name}]).#{callable[1]}")
+          if callable.is_a?(::Array)
+            compiler.
+              raw("env.extension(%q[#{callable[0].class.name}]).#{callable[1]}")
+          elsif callable.is_a?(::Method)
+            compiler.
+              raw("env.extension(%q[#{callable.owner.name}]).#{callable.name}")
+          else
+            raise "Callable not supported: #{callable.inspect}"
+          end
 
           compile_arguments(compiler)
         end

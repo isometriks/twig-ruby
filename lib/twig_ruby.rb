@@ -13,6 +13,7 @@ require 'cgi'
   node
   node/expression
   node/expression/binary
+  node/expression/filter
   node/expression/unary
   node/expression/variable
   token_parser
