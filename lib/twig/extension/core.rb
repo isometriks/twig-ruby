@@ -77,11 +77,21 @@ module Twig
         AutoHash.new.add(*value)
       end
 
-      def self.get_attribute(object, attribute, type)
+      def self.get_attribute(object, attribute, type, arguments: {})
         if type == Template::ARRAY_CALL
           object[attribute] || (attribute.is_a?(String) ? object[attribute.to_sym] : object[attribute.to_s])
         elsif object.respond_to?(attribute)
-          object.send(attribute)
+          positional, kwargs = arguments.partition { |k, _v| k.is_a?(Integer) }.map(&:to_h)
+
+          if positional.length.positive? && kwargs.empty?
+            object.send(attribute, *positional.values)
+          elsif positional.empty? && kwargs.length.positive?
+            object.send(attribute, **kwargs)
+          elsif positional.length.positive? && kwargs.length.positive?
+            object.send(attribute, *positional.values, **kwargs)
+          else
+            object.send(attribute)
+          end
         else
           raise NotImplementedError, 'Need to implement other get_attribute calls'
         end

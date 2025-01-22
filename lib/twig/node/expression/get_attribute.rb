@@ -21,7 +21,15 @@ module Twig
             write("::Twig::Extension::Core.get_attribute(#{var}, ").
             subcompile(nodes[:attribute]).
             raw(', ').
-            repr(attributes[:type]).
+            repr(attributes[:type])
+
+          if nodes.key?(:arguments)
+            compiler.
+              raw(', arguments: ').
+              subcompile(nodes[:arguments])
+          end
+
+          compiler.
             raw('))')
         end
       end
