@@ -95,12 +95,16 @@ module Twig
       it_behaves_like 'render_and_assert' do
         let(:inputs) do
           <<~INPUTS
-            {{ @message }}
+            {{ @greeting }}
+            {{ @greeting_array[0] }} {{ @greeting_array[1] }}
+            {{ @greeting_array.join(" ") }}
           INPUTS
         end
 
         let(:outputs) do
           <<~OUTPUTS
+            Hello World!
+            Hello World!
             Hello World!
           OUTPUTS
         end
@@ -108,7 +112,8 @@ module Twig
         let(:call_context) do
           Class.new do
             def initialize
-              @message = 'Hello World!'
+              @greeting = 'Hello World!'
+              @greeting_array = %w[Hello World!]
             end
           end.new
         end

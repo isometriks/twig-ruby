@@ -10,6 +10,7 @@ module Twig
     VAR_END_TYPE = :var_end
     NAME_TYPE = :name
     SYMBOL_TYPE = :symbol
+    CLASS_VAR_TYPE = :class_var
     NUMBER_TYPE = :number
     STRING_TYPE = :string
     OPERATOR_TYPE = :operator

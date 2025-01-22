@@ -55,3 +55,6 @@ Metrics/BlockLength:
 
 Metrics/ParameterLists:
   Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false

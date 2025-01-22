@@ -53,6 +53,10 @@ module Twig
         parser.stream.next
 
         node = Node::Expression::Constant.new(token.value.to_sym, token.lineno)
+      when Token::CLASS_VAR_TYPE
+        parser.stream.next
+
+        node = Node::Expression::Variable::Context.new(token.value, token.lineno)
       when Token::NAME_TYPE
         parser.stream.next
 
@@ -67,8 +71,7 @@ module Twig
                  if parser.current_token.value == '('
                    get_function_node(token.value, token.lineno)
                  else
-                   # @todo should be a context variable
-                   Node::Expression::Name.new(token.value, token.lineno)
+                   Node::Expression::Variable::Context.new(token.value, token.lineno)
                  end
                end
       when Token::NUMBER_TYPE
@@ -137,13 +140,34 @@ module Twig
       token = stream.current
       lineno = token.lineno
       arguments = Node::Expression::Array.new({}, lineno)
-      token = stream.next
+      type = Template::ANY_CALL
 
-      if token.type == Token::NAME_TYPE
-        attribute = Node::Expression::Constant.new(token.value, token.lineno)
+      if stream.next_if(Token::PUNCTUATION_TYPE, '(')
+        attribute = parse_expression
+        stream.expect(Token::PUNCTUATION_TYPE, ')')
+      else
+        token = stream.next
+
+        if [Token::NAME_TYPE, Token::NUMBER_TYPE].include?(token.type) ||
+           (token.type == Token::OPERATOR_TYPE && token.value.match(/\A#{Lexer::REGEX_NAME}/))
+          attribute = Node::Expression::Constant.new(token.value, token.lineno)
+        else
+          raise Error::Syntax.new(
+            "Expected name or number, got #{token.value} of type #{token.type}",
+            token.lineno,
+            stream.source
+          )
+        end
       end
 
-      Node::Expression::GetAttribute.new(node, attribute, arguments, nil, token.lineno)
+      if stream.test(Token::PUNCTUATION_TYPE, '(')
+        type = Template::METHOD_CALL
+        arguments = create_arguments(token.lineno)
+      end
+
+      # @todo Macro reference here
+
+      Node::Expression::GetAttribute.new(node, attribute, arguments, type, token.lineno)
     end
 
     def parse_sequence_expression
@@ -531,6 +555,19 @@ module Twig
       end
 
       filter
+    end
+
+    private
+
+    # @param [Integer] lineno
+    def create_arguments(lineno)
+      arguments = Node::Expression::Array.new({}, lineno)
+
+      parse_only_arguments.nodes.each do |key, node|
+        arguments.add_element(node, Node::Expression::Variable::Local.new(key, lineno))
+      end
+
+      arguments
     end
   end
 end
