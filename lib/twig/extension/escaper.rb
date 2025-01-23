@@ -10,9 +10,9 @@ module Twig
       end
 
       def filters
-        {
-          raw: TwigFilter.new('raw', nil, node_class: Node::Expression::Filter::Raw),
-        }
+        [
+          TwigFilter.new('raw', nil, node_class: Node::Expression::Filter::Raw),
+        ]
       end
     end
   end

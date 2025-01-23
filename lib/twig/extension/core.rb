@@ -39,11 +39,25 @@ module Twig
       end
 
       def filters
-        {
-          capitalize: TwigFilter.new('capitalize', method(:capitalize)),
-          upper: TwigFilter.new('upper', method(:upper)),
-          lower: TwigFilter.new('lower', method(:lower)),
-        }
+        [
+          # Strings
+          TwigFilter.new('title', method(:title_case)),
+          TwigFilter.new('capitalize', method(:capitalize)),
+          TwigFilter.new('upper', method(:upper)),
+          TwigFilter.new('lower', method(:lower)),
+          TwigFilter.new('trim', method(:trim)),
+          TwigFilter.new('nl2br', method(:nl2br)),
+          TwigFilter.new('pluralize', method(:pluralize)),
+          TwigFilter.new('singularize', method(:singularize)),
+
+          # Arrays / Hashes
+          TwigFilter.new('reverse', method(:reverse)),
+          TwigFilter.new('shuffle', method(:shuffle)),
+          TwigFilter.new('length', method(:length)),
+          TwigFilter.new('slice', method(:slice)),
+          TwigFilter.new('first', method(:first)),
+          TwigFilter.new('last', method(:last)),
+        ]
       end
 
       def token_parsers
@@ -59,6 +73,10 @@ module Twig
         ]
       end
 
+      def title_case(string)
+        string.titleize
+      end
+
       def capitalize(string)
         string.capitalize
       end
@@ -69,6 +87,50 @@ module Twig
 
       def lower(string)
         string.downcase
+      end
+
+      def trim(string)
+        # @todo doesn't match php implementation
+        string.strip
+      end
+
+      def nl2br(string)
+        OutputBuffer.
+          render(string).
+          gsub("\n", "<br>\n").
+          html_safe
+      end
+
+      def singularize(string)
+        string.singularize
+      end
+
+      def pluralize(string)
+        string.pluralize
+      end
+
+      def reverse(object)
+        object.is_a?(Hash) ? object.to_a.reverse.to_h : object.reverse
+      end
+
+      def shuffle(object)
+        object.is_a?(Hash) ? object.to_a.shuffle.to_h : object.shuffle
+      end
+
+      def length(object)
+        object.length
+      end
+
+      def slice(object, start, length)
+        object[start, length]
+      end
+
+      def first(object)
+        (object.is_a?(Hash) ? object.values : object).first
+      end
+
+      def last(object)
+        (object.is_a?(Hash) ? object.values : object).last
       end
 
       def self.ensure_hash(value)

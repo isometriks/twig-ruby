@@ -6,6 +6,12 @@ module Twig
       @buffer = +''
     end
 
+    def self.render(string)
+      buffer = new
+      buffer.append = string
+      buffer.to_s
+    end
+
     def append=(string)
       unless string.nil?
         string = string.to_s
