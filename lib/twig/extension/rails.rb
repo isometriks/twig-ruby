@@ -2,6 +2,16 @@
 
 module Twig
   module Extension
-    class Rails < Extension::Base; end
+    class Rails < Extension::Base
+      def filters
+        [
+          TwigFilter.new('striptags', method(:strip_tags)),
+        ]
+      end
+
+      def strip_tags(string, tags = [])
+        ApplicationController.helpers.sanitize(string, tags:)
+      end
+    end
   end
 end

@@ -48,7 +48,11 @@ module Twig
     end
 
     def filters
-      @filters ||= extensions.values.map(&:filters).reduce({}, :merge)
+      @filters ||= extensions.
+        values.
+        map(&:filters).
+        flatten.
+        to_h { |filter| [filter.name.to_sym, filter] }
     end
 
     def filter(name)
