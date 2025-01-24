@@ -134,7 +134,7 @@ module Twig
       end
 
       def self.ensure_hash(value)
-        return value if value.class < Hash
+        return value if value.is_a?(Hash)
 
         AutoHash.new.add(*value)
       end

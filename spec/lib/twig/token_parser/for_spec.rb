@@ -9,6 +9,7 @@ RSpec.describe Twig::TokenParser::For do
       <<~INPUTS
         {% for i in numbers %}{{ i }}{% endfor %}
         {% for i in empty %}{{ i }}{% else %}empty{% endfor %}
+        {% for x in [0, 1] %}{% for y in [0, 1] %}{{ x }}-{{ y }},{% endfor %}{% endfor %}
       INPUTS
     end
 
@@ -16,6 +17,7 @@ RSpec.describe Twig::TokenParser::For do
       <<~OUTPUTS
         123
         empty
+        0-0,0-1,1-0,1-1,
       OUTPUTS
     end
 

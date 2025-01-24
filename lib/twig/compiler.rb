@@ -97,6 +97,7 @@ module Twig
 
     # @return [String]
     def var_name
+      @var_name_salt += 1
       "_v#{@var_name_salt}"
     end
 
