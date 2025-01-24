@@ -34,15 +34,18 @@ module Twig
           compiler.write("context[:_iterated] = false\n")
         end
 
+        key_var = compiler.var_name
+        value_var = compiler.var_name
+
         compiler.
-          write("context[:_seq].each do |k, v|\n").
+          write("context[:_seq].each do |#{key_var}, #{value_var}|\n").
           indent.
           write('').
           subcompile(nodes[:key_target]).
-          raw(" = k\n").
+          raw(" = #{key_var}\n").
           write('').
           subcompile(nodes[:value_target]).
-          raw(" = v\n\n").
+          raw(" = #{value_var}\n\n").
           subcompile(nodes[:body]).
           outdent.
           write("end\n")
