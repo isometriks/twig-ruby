@@ -11,6 +11,7 @@ RSpec.describe Twig::Extension::Core do
           Hello {{ name|capitalize }}!
           Hello {{ name|upper }}!
           {{ "HeLLo WoRlD!"|lower }}
+          {{ "hello world!"|title }}
           {{ "<h1>Hello World!</h1>"|raw }}
           {{ ["Hello", "World"]|first }}
           {{ ["Hello", "World"]|last }}
@@ -23,6 +24,7 @@ RSpec.describe Twig::Extension::Core do
           Hello World!
           Hello WORLD!
           hello world!
+          Hello World!
           <h1>Hello World!</h1>
           Hello
           World

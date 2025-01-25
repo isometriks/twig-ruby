@@ -365,7 +365,7 @@ module Twig
         end
 
         # an operator with a space can be any amount of whitespaces
-        regex.gsub!(/\s+/, '\s+')
+        regex.gsub!(/(\\\s)+/, '\s+')
 
         chain << regex
       end

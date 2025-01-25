@@ -31,6 +31,13 @@ module Twig
         end
 
         OPERATORS = {
+          Elvis: '||',
+          Or: '||',
+          Xor: '^',
+          And: '&&',
+          BitwiseOr: '|',
+          BitwiseXor: '^',
+          BitwiseAnd: '&',
           Equal: '==',
           NotEqual: '!=',
           Spaceship: '<=>',
@@ -39,14 +46,14 @@ module Twig
           LessEqual: '<=',
           GreaterEqual: '>=',
 
-          Or: '||',
-          Xor: '^',
-          And: '&&',
+          Range: '..',
+          Concat: '+',
           Add: '+',
           Sub: '-',
-          Concat: '+',
           Mul: '*',
           Div: '/',
+          Mod: '%',
+          Power: '**',
         }.freeze
 
         # Lots of simple operator classes can just be generated dynamically

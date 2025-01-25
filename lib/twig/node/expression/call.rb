@@ -14,8 +14,15 @@ module Twig
             compiler.
               raw("env.extension(%q[#{callable[0].class.name}]).#{callable[1]}")
           elsif callable.is_a?(::Method)
-            compiler.
-              raw("env.extension(%q[#{callable.owner.name}]).#{callable.name}")
+            # Instance method
+            if callable.receiver.is_a?(Extension::Base)
+              compiler.
+                raw("env.extension(%q[#{callable.owner.name}]).#{callable.name}")
+            # Class method
+            else
+              compiler.
+                raw("#{callable.receiver.name}.#{callable.name}")
+            end
           else
             raise "Callable not supported: #{callable.inspect}"
           end
