@@ -14,10 +14,15 @@ module Twig
             '+': { precedence: 500, class: unary::Pos },
           },
           {
+            '? :': { precedence: 5, class: binary::Elvis, associativity: ExpressionParser::OPERATOR_RIGHT },
+            '?:': { precedence: 5, class: binary::Elvis, associativity: ExpressionParser::OPERATOR_RIGHT },
+            '??': { precedence: 5, class: binary::NullCoalesce, associativity: ExpressionParser::OPERATOR_RIGHT },
             or: { precedence: 10, class: binary::Or, associativity: ExpressionParser::OPERATOR_LEFT },
             xor: { precedence: 12, class: binary::Xor, associativity: ExpressionParser::OPERATOR_LEFT },
             and: { precedence: 15, class: binary::And, associativity: ExpressionParser::OPERATOR_LEFT },
-
+            'b-or': { precedence: 16, class: binary::BitwiseOr, associativity: ExpressionParser::OPERATOR_LEFT },
+            'b-xor': { precedence: 17, class: binary::BitwiseXor, associativity: ExpressionParser::OPERATOR_LEFT },
+            'b-and': { precedence: 18, class: binary::BitwiseAnd, associativity: ExpressionParser::OPERATOR_LEFT },
             '==': { precedence: 20, class: binary::Equal, associativity: ExpressionParser::OPERATOR_LEFT },
             '!=': { precedence: 20, class: binary::NotEqual, associativity: ExpressionParser::OPERATOR_LEFT },
             '<=>': { precedence: 20, class: binary::Spaceship, associativity: ExpressionParser::OPERATOR_LEFT },
@@ -25,15 +30,25 @@ module Twig
             '>': { precedence: 20, class: binary::Greater, associativity: ExpressionParser::OPERATOR_LEFT },
             '>=': { precedence: 20, class: binary::GreaterEqual, associativity: ExpressionParser::OPERATOR_LEFT },
             '<=': { precedence: 20, class: binary::LessEqual, associativity: ExpressionParser::OPERATOR_LEFT },
-
-            # @todo this needs a custom class but just needs to be parsed as operaor for for loops
-            in: { precedence: 20, class: binary::LessEqual, associativity: ExpressionParser::OPERATOR_LEFT },
-
+            'not in': { precedence: 20, class: binary::NotIn, associativity: ExpressionParser::OPERATOR_LEFT },
+            in: { precedence: 20, class: binary::In, associativity: ExpressionParser::OPERATOR_LEFT },
+            matches: { precedence: 20, class: binary::Matches, associativity: ExpressionParser::OPERATOR_LEFT },
+            'starts with': { precedence: 20, class: binary::StartsWith,
+                             associativity: ExpressionParser::OPERATOR_LEFT },
+            'ends with': { precedence: 20, class: binary::EndsWith, associativity: ExpressionParser::OPERATOR_LEFT },
+            # 'has some': { precedence: 20, class: binary::HasSome, associativity: ExpressionParser::OPERATOR_LEFT },
+            # 'has every': { precedence: 20, class: binary::HasEvery, associativity: ExpressionParser::OPERATOR_LEFT },
+            '..': { precedence: 25, class: binary::Range, associativity: ExpressionParser::OPERATOR_LEFT },
+            '~': { precedence: 27, class: binary::Concat, associativity: ExpressionParser::OPERATOR_LEFT },
             '+': { precedence: 30, class: binary::Add, associativity: ExpressionParser::OPERATOR_LEFT },
             '-': { precedence: 30, class: binary::Sub, associativity: ExpressionParser::OPERATOR_LEFT },
-            '~': { precedence: 40, class: binary::Concat, associativity: ExpressionParser::OPERATOR_LEFT },
             '*': { precedence: 60, class: binary::Mul, associativity: ExpressionParser::OPERATOR_LEFT },
             '/': { precedence: 60, class: binary::Div, associativity: ExpressionParser::OPERATOR_LEFT },
+            '//': { precedence: 60, class: binary::FloorDiv, associativity: ExpressionParser::OPERATOR_LEFT },
+            '%': { precedence: 60, class: binary::Mod, associativity: ExpressionParser::OPERATOR_LEFT },
+            is: { precedence: 100, associativity: ExpressionParser::OPERATOR_LEFT },
+            'is not': { precedence: 100, associativity: ExpressionParser::OPERATOR_LEFT },
+            '**': { precedence: 200, class: binary::Power, associativity: ExpressionParser::OPERATOR_RIGHT },
           },
         ]
       end
@@ -41,22 +56,22 @@ module Twig
       def filters
         [
           # Strings
-          TwigFilter.new('title', method(:title_case)),
-          TwigFilter.new('capitalize', method(:capitalize)),
-          TwigFilter.new('upper', method(:upper)),
-          TwigFilter.new('lower', method(:lower)),
-          TwigFilter.new('trim', method(:trim)),
-          TwigFilter.new('nl2br', method(:nl2br)),
-          TwigFilter.new('pluralize', method(:pluralize)),
-          TwigFilter.new('singularize', method(:singularize)),
+          TwigFilter.new('title', static(:title_case)),
+          TwigFilter.new('capitalize', static(:capitalize)),
+          TwigFilter.new('upper', static(:upper)),
+          TwigFilter.new('lower', static(:lower)),
+          TwigFilter.new('trim', static(:trim)),
+          TwigFilter.new('nl2br', static(:nl2br)),
+          TwigFilter.new('pluralize', static(:pluralize)),
+          TwigFilter.new('singularize', static(:singularize)),
 
           # Arrays / Hashes
-          TwigFilter.new('reverse', method(:reverse)),
-          TwigFilter.new('shuffle', method(:shuffle)),
-          TwigFilter.new('length', method(:length)),
-          TwigFilter.new('slice', method(:slice)),
-          TwigFilter.new('first', method(:first)),
-          TwigFilter.new('last', method(:last)),
+          TwigFilter.new('reverse', static(:reverse)),
+          TwigFilter.new('shuffle', static(:shuffle)),
+          TwigFilter.new('length', static(:length)),
+          TwigFilter.new('slice', static(:slice)),
+          TwigFilter.new('first', static(:first)),
+          TwigFilter.new('last', static(:last)),
         ]
       end
 
@@ -73,63 +88,63 @@ module Twig
         ]
       end
 
-      def title_case(string)
+      def self.title_case(string)
         string.titleize
       end
 
-      def capitalize(string)
+      def self.capitalize(string)
         string.capitalize
       end
 
-      def upper(string)
+      def self.upper(string)
         string.upcase
       end
 
-      def lower(string)
+      def self.lower(string)
         string.downcase
       end
 
-      def trim(string)
+      def self.trim(string)
         # @todo doesn't match php implementation
         string.strip
       end
 
-      def nl2br(string)
+      def self.nl2br(string)
         OutputBuffer.
           render(string).
           gsub("\n", "<br>\n").
           html_safe
       end
 
-      def singularize(string)
+      def self.singularize(string)
         string.singularize
       end
 
-      def pluralize(string)
+      def self.pluralize(string)
         string.pluralize
       end
 
-      def reverse(object)
+      def self.reverse(object)
         object.is_a?(Hash) ? object.to_a.reverse.to_h : object.reverse
       end
 
-      def shuffle(object)
+      def self.shuffle(object)
         object.is_a?(Hash) ? object.to_a.shuffle.to_h : object.shuffle
       end
 
-      def length(object)
+      def self.length(object)
         object.length
       end
 
-      def slice(object, start, length)
+      def self.slice(object, start, length)
         object[start, length]
       end
 
-      def first(object)
+      def self.first(object)
         (object.is_a?(Hash) ? object.values : object).first
       end
 
-      def last(object)
+      def self.last(object)
         (object.is_a?(Hash) ? object.values : object).last
       end
 
@@ -137,6 +152,23 @@ module Twig
         return value if value.is_a?(Hash)
 
         AutoHash.new.add(*value)
+      end
+
+      # @todo some stuff missing here for Twig's custom compare
+      def self.in_filter(value, compare)
+        if compare.is_a?(String) || compare.is_a?(Integer) || compare.is_a?(Float)
+          compare.to_s.include?(value.to_s)
+        elsif compare.respond_to?(:include?)
+          compare.include?(value)
+        else
+          false
+        end
+      end
+
+      def self.matches(regexp, string)
+        Regexp.new(regexp).match?(string.to_s)
+      rescue RegexpError => e
+        raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
 
       def self.get_attribute(object, attribute, type, arguments: {})

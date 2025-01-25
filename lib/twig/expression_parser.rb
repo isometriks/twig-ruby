@@ -207,7 +207,7 @@ module Twig
       stream = parser.stream
       stream.expect(Token::PUNCTUATION_TYPE, '{', 'A mapping element was expected')
 
-      node = Node::Expression::Array.new({}, stream.current.lineno)
+      node = Node::Expression::Hash.new({}, stream.current.lineno)
       first = true
 
       until stream.test(Token::PUNCTUATION_TYPE, '}')
@@ -561,7 +561,7 @@ module Twig
 
     # @param [Integer] lineno
     def create_arguments(lineno)
-      arguments = Node::Expression::Array.new({}, lineno)
+      arguments = Node::Expression::Hash.new({}, lineno)
 
       parse_only_arguments.nodes.each do |key, node|
         arguments.add_element(node, Node::Expression::Variable::Local.new(key, lineno))

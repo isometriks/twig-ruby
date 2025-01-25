@@ -23,37 +23,25 @@ module Twig
 
         def compile(compiler)
           compiler.
-            raw('{').
+            raw('[').
             indent
 
           first = true
 
-          key_value_pairs.each do |key, value|
+          key_value_pairs.each do |pair|
             unless first
               compiler.raw(', ')
             end
 
             first = false
 
-            case key
-            when Variable::Context
-              key = Unary::StringCast.new(key, key.lineno)
-            when Variable::Local
-              key_value = key.attributes[:name]
-              key = Constant.new(key_value, key.lineno)
-            when Constant
-              key.attributes[:value]
-            end
-
             compiler.
-              subcompile(key).
-              raw(' => ').
-              subcompile(value)
+              subcompile(pair[1])
           end
 
           compiler.
             outdent.
-            raw('}')
+            raw(']')
         end
 
         private

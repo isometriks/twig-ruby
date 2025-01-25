@@ -18,6 +18,12 @@ module Twig
       def helper_methods
         []
       end
+
+      private
+
+      def static(method)
+        self.class.method(method)
+      end
     end
   end
 end
