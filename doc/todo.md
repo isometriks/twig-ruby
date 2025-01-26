@@ -1,0 +1,125 @@
+# Todo
+
+## Tags
+
+- apply
+- autoescape
+- ~~block~~
+- cache
+- deprecated
+- ~~do~~
+- embed
+- ~~extends~~
+- flush
+- for*
+- from
+- guard
+- ~~if~~
+- import
+- include*
+- macro
+- sandbox
+- ~~set~~
+- types
+- use
+- verbatim
+- with
+
+## Filters
+
+- abs
+- batch
+- ~~capitalize~~
+- column
+- convert_encoding
+- country_name
+- currency_name
+- currency_symbol
+- data_uri
+- date
+- date_modify
+- default
+- escape
+- filter
+- find
+- ~~first~~
+- format
+- format_currency
+- format_date
+- format_datetime
+- format_number
+- format_time
+- ~~join~~
+- json_encode
+- keys
+- language_name
+- ~~last~~
+- ~~length~~
+- locale_name
+- ~~lower~~
+- map
+- merge
+- ~~nl2br~~
+- number_format
+- ~~plural~~
+- ~~raw~~
+- reduce
+- replace
+- reverse
+- round
+- ~~shuffle~~
+- ~~singular~~
+- slice
+- slug
+- sort
+- spaceless
+- split
+- ~~striptags~~
+- timezone_name
+- ~~title~~
+- trim* (Doesn't except arbitrary trim chars)
+- u
+- ~~upper~~
+- url_encode
+
+## Functions
+
+- attribute
+- block
+- constant
+- country_names
+- country_timezones
+- currency_names
+- cycle
+- date
+- dump
+- enum
+- enum_cases
+- html_classes
+- html_cva
+- include
+- language_names
+- locale_names
+- max
+- min
+- parent
+- random
+- range
+- script_names
+- source
+- template_from_string
+- timezone_names
+
+## Tests
+
+- constant
+- defined
+- divisible by
+- empty
+- even
+- iterable
+- mapping
+- null
+- odd
+- same as
+- sequence
