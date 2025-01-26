@@ -15,7 +15,7 @@ RSpec.describe Twig::Extension::Core do
           {{ "<h1>Hello World!</h1>"|raw }}
           {{ ["Hello", "World"]|first }}
           {{ ["Hello", "World"]|last }}
-          4 sleeping {{ "dog"|pluralize(4) }} lie
+          4 sleeping {{ "dog"|plural(4) }} lie
         INPUTS
       end
 

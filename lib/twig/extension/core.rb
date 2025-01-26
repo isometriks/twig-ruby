@@ -62,8 +62,8 @@ module Twig
           TwigFilter.new('lower', static(:lower)),
           TwigFilter.new('trim', static(:trim)),
           TwigFilter.new('nl2br', static(:nl2br)),
-          TwigFilter.new('pluralize', static(:pluralize)),
-          TwigFilter.new('singularize', static(:singularize)),
+          TwigFilter.new('plural', static(:pluralize)),
+          TwigFilter.new('singular', static(:singularize)),
 
           # Arrays / Hashes
           TwigFilter.new('reverse', static(:reverse)),
