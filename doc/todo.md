@@ -27,7 +27,7 @@
 
 ## Filters
 
-- abs
+- ~~abs~~
 - batch
 - ~~capitalize~~
 - column
@@ -43,7 +43,7 @@
 - filter
 - find
 - ~~first~~
-- format
+- ~~format~~
 - format_currency
 - format_date
 - format_datetime
@@ -60,13 +60,13 @@
 - map
 - merge
 - ~~nl2br~~
-- number_format
+- ~~number_format~~
 - ~~plural~~
 - ~~raw~~
 - reduce
-- replace
+- ~~replace~~
 - reverse
-- round
+- ~~round~~
 - ~~shuffle~~
 - ~~singular~~
 - slice

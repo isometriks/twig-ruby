@@ -15,7 +15,12 @@ RSpec.describe Twig::Extension::Core do
           {{ "<h1>Hello World!</h1>"|raw }}
           {{ ["Hello", "World"]|first }}
           {{ ["Hello", "World"]|last }}
-          4 sleeping {{ "dog"|plural(4) }} lie
+          4 sleeping {{ "dog"|plural(0) }} lie
+          {{ "%s %s"|format("Hello", "World!") }}
+          {{ "Hello %name%"|replace({'%name%': 'World!'}) }}
+          {{ 1234.567|number_format(2) }}
+          {{ (-1234)|abs }}
+          {{ 1234.567|round(2, :floor) }}
         INPUTS
       end
 
@@ -29,6 +34,11 @@ RSpec.describe Twig::Extension::Core do
           Hello
           World
           4 sleeping dogs lie
+          Hello World!
+          Hello World!
+          1,234.57
+          1234
+          1234.56
         OUTPUTS
       end
 
