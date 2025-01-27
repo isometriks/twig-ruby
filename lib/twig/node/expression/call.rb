@@ -31,9 +31,26 @@ module Twig
         end
 
         def compile_arguments(compiler)
+          first = false
+
           compiler.
-            raw('(').
-            subcompile(nodes[:node]).
+            raw('(')
+
+          if nodes.key?(:node)
+            compiler.
+              subcompile(nodes[:node])
+
+            first = false
+          end
+
+          nodes[:arguments].nodes.each_value do |node|
+            compiler.raw(', ') unless first
+            compiler.subcompile(node)
+
+            first = false
+          end
+
+          compiler.
             raw(')')
         end
       end

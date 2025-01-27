@@ -3,6 +3,10 @@
 module Twig
   module Extension
     class Core < Base
+      class << self
+        include ActiveSupport::NumberHelper
+      end
+
       def operators
         unary = Node::Expression::Unary
         binary = Node::Expression::Binary
@@ -55,6 +59,15 @@ module Twig
 
       def filters
         [
+          # Formatting filters
+          # TwigFilter.new('date', $this->formatDate(...)),
+          # TwigFilter.new('date_modify', $this->modifyDate(...)),
+          TwigFilter.new('format', static(:sprintf)),
+          TwigFilter.new('replace', static(:replace)),
+          TwigFilter.new('number_format', static(:number_format)),
+          TwigFilter.new('abs', static(:abs)),
+          TwigFilter.new('round', static(:round)),
+
           # Strings
           TwigFilter.new('title', static(:title_case)),
           TwigFilter.new('capitalize', static(:capitalize)),
@@ -88,6 +101,56 @@ module Twig
         ]
       end
 
+      def self.date; end
+
+      def self.date_modify; end
+
+      def self.sprintf(string, *values)
+        format(string || '', *values)
+      end
+
+      def self.replace(string, from)
+        unless from.is_a?(Hash)
+          raise Error::Runtime, "String replacements must be a Hash #{from.class.name} given"
+        end
+
+        regex = Regexp.union(
+          *from.keys.map(&:to_s)
+        )
+
+        string.gsub(regex, from.transform_keys(&:to_s))
+      end
+
+      def self.number_format(number, decimal = nil, decimal_point = nil, thousands_separator = nil)
+        options = {
+          precision: decimal,
+          delimiter: thousands_separator,
+          separator: decimal_point,
+        }.compact
+
+        number_to_delimited(
+          number_to_rounded(number, options),
+          options
+        )
+      end
+
+      def self.abs(number)
+        number.abs
+      end
+
+      def self.round(value, precision = 0, method = :common)
+        value = value.to_f
+        method = method.to_sym
+
+        return value.round(precision) if method == :common
+
+        unless %i[ceil floor].include?(method)
+          raise Error::Runtime, 'The "round" filter only supports the "common", "ceil", and "floor" methods'
+        end
+
+        (value * (10.0**precision)).public_send(method) / (10.0**precision)
+      end
+
       def self.title_case(string)
         string.titleize
       end
@@ -116,12 +179,12 @@ module Twig
           html_safe
       end
 
-      def self.singularize(string)
-        string.singularize
+      def self.singularize(string, count = nil)
+        string.singularize(count)
       end
 
-      def self.pluralize(string)
-        string.pluralize
+      def self.pluralize(string, count = nil)
+        string.pluralize(count)
       end
 
       def self.reverse(object)
