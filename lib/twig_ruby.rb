@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'active_support'
+require 'active_support/core_ext/date'
+require 'active_support/core_ext/date_time'
 require 'active_support/core_ext/string/output_safety'
 require 'active_support/inflector'
 require 'active_support/number_helper'

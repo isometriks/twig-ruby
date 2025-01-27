@@ -7,6 +7,12 @@ module Twig
         include ActiveSupport::NumberHelper
       end
 
+      def initialize
+        super
+
+        @date_format = '%B %-e, %Y %H:%M'
+      end
+
       def operators
         unary = Node::Expression::Unary
         binary = Node::Expression::Binary
@@ -60,7 +66,7 @@ module Twig
       def filters
         [
           # Formatting filters
-          # TwigFilter.new('date', $this->formatDate(...)),
+          TwigFilter.new('date', method(:format_date)),
           # TwigFilter.new('date_modify', $this->modifyDate(...)),
           TwigFilter.new('format', static(:sprintf)),
           TwigFilter.new('replace', static(:replace)),
@@ -101,7 +107,19 @@ module Twig
         ]
       end
 
-      def self.date; end
+      def format_date(date, format = nil, timezone = nil)
+        format = @date_format if format.nil?
+
+        convert_date(date, timezone).strftime(format)
+      end
+
+      def convert_date(date, timezone = nil)
+        if date == 'now'
+          date = DateTime.now
+        end
+
+        timezone.nil? ? date : date.in_time_zone(timezone)
+      end
 
       def self.date_modify; end
 

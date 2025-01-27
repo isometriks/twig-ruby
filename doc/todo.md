@@ -36,7 +36,7 @@
 - currency_name
 - currency_symbol
 - data_uri
-- date
+- ~~date~~
 - date_modify
 - default
 - escape

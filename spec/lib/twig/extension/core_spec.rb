@@ -21,6 +21,8 @@ RSpec.describe Twig::Extension::Core do
           {{ 1234.567|number_format(2) }}
           {{ (-1234)|abs }}
           {{ 1234.567|round(2, :floor) }}
+          {{ millennium|date }}
+          {{ millennium|date('%Y-%m-%d') }}
         INPUTS
       end
 
@@ -39,10 +41,18 @@ RSpec.describe Twig::Extension::Core do
           1,234.57
           1234
           1234.56
+          January 1, 2021 00:00
+          2021-01-01
         OUTPUTS
       end
 
-      let(:locals) { { name: 'world', line: "Hello\nWorld!" } }
+      let(:locals) do
+        {
+          name: 'world',
+          line: "Hello\nWorld!",
+          millennium: DateTime.new(2021, 1, 1, 0, 0, 0),
+        }
+      end
     end
   end
 end
