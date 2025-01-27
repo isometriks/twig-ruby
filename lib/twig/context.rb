@@ -37,6 +37,14 @@ module Twig
       frame[:replace].each { |k, v| self[k] = v }
     end
 
+    def clear
+      # Copy everything to the replace stack
+      merge!(self)
+
+      # Clear the hash
+      super
+    end
+
     def [](key)
       super(key.to_sym)
     end

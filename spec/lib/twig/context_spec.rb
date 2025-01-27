@@ -31,4 +31,33 @@ RSpec.describe Twig::Context do
 
     context.pop_stack
   end
+
+  it 'can clear all context from a scope' do
+    context = Twig::Context.new({ initial: 'state' })
+    context.push_stack
+    context.clear
+
+    expect(context.length).to eq(0)
+    expect(context.key?(:initial)).to be_falsey
+
+    context[:initial] = '1 deep'
+    expect(context[:initial]).to eq('1 deep')
+
+    context.push_stack
+    context.clear
+
+    expect(context.length).to eq(0)
+    expect(context.key?(:initial)).to be_falsey
+
+    context[:initial] = '2 deep'
+    expect(context[:initial]).to eq('2 deep')
+
+    context.pop_stack
+    expect(context[:initial]).to eq('1 deep')
+
+    context.pop_stack
+
+    expect(context.length).to eq(1)
+    expect(context[:initial]).to eq('state')
+  end
 end
