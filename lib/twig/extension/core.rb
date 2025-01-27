@@ -96,6 +96,7 @@ module Twig
 
       def token_parsers
         [
+          TokenParser::Apply.new,
           TokenParser::Block.new,
           TokenParser::Do.new,
           TokenParser::Extends.new,
