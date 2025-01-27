@@ -2,7 +2,7 @@
 
 ## Tags
 
-- apply
+- ~~apply~~
 - autoescape
 - ~~block~~
 - cache
