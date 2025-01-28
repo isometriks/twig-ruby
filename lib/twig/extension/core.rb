@@ -97,6 +97,9 @@ module Twig
 
       def functions
         [
+          TwigFunction.new('parent', nil, {
+            parser_callable: static(:parse_parent_function),
+          }),
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
@@ -298,6 +301,28 @@ module Twig
         else
           raise NotImplementedError, 'Need to implement other get_attribute calls'
         end
+      end
+
+      # @param [Parser] parser
+      # @param [Node::Base] fake_node
+      def self.parse_parent_function(parser, fake_node, args, line)
+        unless (block_name = parser.peek_block_stack)
+          raise Error::Syntax.new(
+            'Calling the "parent" function outside of a block is forbidden',
+            line,
+            parser.stream.source
+          )
+        end
+
+        unless parser.inheritance?
+          raise Error::Syntax.new(
+            'Calling the "parent" function on a template that does not call "extends" or "use" is forbidden',
+            line,
+            parser.stream.source
+          )
+        end
+
+        Node::Expression::Parent.new(block_name, line)
       end
     end
   end

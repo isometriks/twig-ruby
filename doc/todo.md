@@ -102,7 +102,7 @@
 - locale_names
 - ~~max~~
 - ~~min~~
-- parent
+- ~~parent~~
 - random
 - ~~range~~
 - script_names

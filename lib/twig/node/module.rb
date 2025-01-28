@@ -26,7 +26,11 @@ module Twig
 
         compiler.
           raw(class_begin).
-          indent.
+          indent
+
+        compile_get_parent(compiler)
+
+        compiler.
           write("def call(context = {}, blocks = {})\n").
           indent
 
@@ -34,7 +38,7 @@ module Twig
           compiler.
             write('load_template(').
             subcompile(nodes[:parent]).
-            raw(").render(context, block_list.merge(blocks));\n")
+            raw(").call(context, block_list.merge(blocks));\n")
         else
           compiler.
             subcompile(nodes[:body])
@@ -64,10 +68,62 @@ module Twig
           write("}\n").
           outdent.
           write("end\n").
-          outdent
+          raw("\n")
+
+        compile_get_source_context(compiler)
 
         compiler.
+          outdent.
           raw(class_end)
+      end
+
+      private
+
+      # @param [Compiler] compiler
+      def compile_get_parent(compiler)
+        unless nodes.key?(:parent)
+          return
+        end
+
+        parent = nodes[:parent]
+
+        compiler.
+          write("private def do_get_parent(context)\n").
+          indent.
+          write('')
+
+        if parent.is_a?(Node::Expression::Constant)
+          compiler.subcompile(parent)
+        else
+          compiler.
+            raw('load_template(').
+            subcompile(parent).
+            raw(', ').
+            repr(source_context.name).
+            raw(', ').
+            repr(parent.lineno).
+            raw(')')
+        end
+
+        compiler.
+          raw("\n").
+          outdent.
+          write("end\n\n")
+      end
+
+      def compile_get_source_context(compiler)
+        compiler.
+          write("private def source_context\n").
+          indent.
+          write('::Twig::Source.new(').
+          string(compiler.environment.debug? ? source_context.code : '').
+          raw(', ').
+          string(source_context.name).
+          raw(', ').
+          string(source_context.path).
+          raw(")\n").
+          outdent.
+          write("end\n")
       end
     end
   end

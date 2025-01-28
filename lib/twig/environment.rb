@@ -88,6 +88,7 @@ module Twig
       @extension_set.filter(name)
     end
 
+    # @return [TwigFunction]
     def function(name)
       @extension_set.function(name)
     end
@@ -146,6 +147,10 @@ module Twig
     # @return [Boolean]
     def allow_helper_methods?
       @options[:allow_helper_methods]
+    end
+
+    def debug?
+      @options[:debug]
     end
 
     private
