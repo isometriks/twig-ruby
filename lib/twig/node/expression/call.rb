@@ -4,6 +4,10 @@ module Twig
   module Node
     module Expression
       class Call < Expression::Base
+        def compile(compiler)
+          compile_callable(compiler)
+        end
+
         private
 
         # @param [Compiler] compiler
@@ -31,7 +35,7 @@ module Twig
         end
 
         def compile_arguments(compiler)
-          first = false
+          first = true
 
           compiler.
             raw('(')
