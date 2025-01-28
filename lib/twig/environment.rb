@@ -93,11 +93,6 @@ module Twig
       @extension_set.token_parser(name)
     end
 
-    # @return [Boolean]
-    def helper_method?(name)
-      @extension_set.helper_methods.include?(name)
-    end
-
     # @param [Source] source
     # @return [TokenStream]
     def tokenize(source)

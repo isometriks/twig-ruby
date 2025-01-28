@@ -15,10 +15,6 @@ module Twig
         []
       end
 
-      def helper_methods
-        []
-      end
-
       private
 
       def static(method)

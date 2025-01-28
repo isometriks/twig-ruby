@@ -28,15 +28,5 @@ RSpec.describe Twig::TokenParser::Yield do
         end
       end.new
     end
-
-    let(:extensions) do
-      [
-        Class.new(Twig::Extension::Base) do
-          def helper_methods
-            %i[upper]
-          end
-        end.new,
-      ]
-    end
   end
 end
