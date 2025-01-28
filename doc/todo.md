@@ -70,7 +70,7 @@
 - ~~shuffle~~
 - ~~singular~~
 - slice
-- slug
+- ~~slug~~
 - sort
 - spaceless
 - split

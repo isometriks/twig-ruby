@@ -83,6 +83,7 @@ module Twig
           TwigFilter.new('nl2br', static(:nl2br)),
           TwigFilter.new('plural', static(:pluralize)),
           TwigFilter.new('singular', static(:singularize)),
+          TwigFilter.new('slug', static(:slug)),
 
           # Arrays / Hashes
           TwigFilter.new('reverse', static(:reverse)),
@@ -226,6 +227,10 @@ module Twig
 
       def self.pluralize(string, count = nil)
         string.pluralize(count)
+      end
+
+      def self.slug(string, separator = '-', locale = 'en')
+        string.parameterize(separator:, locale:)
       end
 
       def self.reverse(object)
