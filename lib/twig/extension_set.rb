@@ -47,8 +47,20 @@ module Twig
         to_h { |filter| [filter.name.to_sym, filter] }
     end
 
+    def functions
+      @functions ||= extensions.
+        values.
+        map(&:functions).
+        flatten.
+        to_h { |function| [function.name.to_sym, function] }
+    end
+
     def filter(name)
       filters[name.to_sym]
+    end
+
+    def function(name)
+      functions[name.to_sym]
     end
 
     def token_parsers

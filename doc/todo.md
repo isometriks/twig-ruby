@@ -49,7 +49,7 @@
 - format_datetime
 - format_number
 - format_time
-- ~~join~~
+- join
 - json_encode
 - keys
 - language_name
@@ -91,7 +91,7 @@
 - country_timezones
 - currency_names
 - cycle
-- date
+- ~~date~~
 - dump
 - enum
 - enum_cases
@@ -100,11 +100,11 @@
 - include
 - language_names
 - locale_names
-- max
-- min
+- ~~max~~
+- ~~min~~
 - parent
 - random
-- range
+- ~~range~~
 - script_names
 - source
 - template_from_string

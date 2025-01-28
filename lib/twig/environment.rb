@@ -88,6 +88,10 @@ module Twig
       @extension_set.filter(name)
     end
 
+    def function(name)
+      @extension_set.function(name)
+    end
+
     # @return [TokenParser::Base]
     def token_parser(name)
       @extension_set.token_parser(name)

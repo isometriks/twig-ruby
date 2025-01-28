@@ -23,6 +23,9 @@ RSpec.describe Twig::Extension::Core do
           {{ 1234.567|round(2, :floor) }}
           {{ millennium|date }}
           {{ millennium|date('%Y-%m-%d') }}
+          {{ min(1, 2, 3) }}
+          {{ max(1, 2, 3) }}
+          {% for letter in range('a', 'g', 2) %}{{ letter }}{% endfor %}
         INPUTS
       end
 
@@ -43,6 +46,9 @@ RSpec.describe Twig::Extension::Core do
           1234.56
           January 1, 2021 00:00
           2021-01-01
+          1
+          3
+          aceg
         OUTPUTS
       end
 

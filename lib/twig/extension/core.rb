@@ -94,6 +94,15 @@ module Twig
         ]
       end
 
+      def functions
+        [
+          TwigFunction.new('max', static(:max)),
+          TwigFunction.new('min', static(:min)),
+          TwigFunction.new('range', static(:range)),
+          TwigFunction.new('date', method(:convert_date)),
+        ]
+      end
+
       def token_parsers
         [
           TokenParser::Apply.new,
@@ -169,6 +178,18 @@ module Twig
         end
 
         (value * (10.0**precision)).public_send(method) / (10.0**precision)
+      end
+
+      def self.max(*args)
+        args.max
+      end
+
+      def self.min(*args)
+        args.min
+      end
+
+      def self.range(start, finish, step = 1)
+        Range.new(start, finish).step(step)
       end
 
       def self.title_case(string)
