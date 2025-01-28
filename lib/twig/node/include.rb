@@ -29,7 +29,7 @@ module Twig
           add_get_template(compiler)
 
           compiler.
-            raw('.render(')
+            raw('.call(')
 
           add_template_arguments(compiler)
 

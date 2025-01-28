@@ -277,7 +277,14 @@ module Twig
       args = parse_only_arguments
 
       if (function = environment.function(name))
-        Node::Expression::Function.new(function, args, line)
+        if (callable = function.parser_callable)
+          fake_node = Node::Empty.new(line)
+          fake_node.source_context = parser.stream.source
+
+          callable.call(parser, fake_node, args, line)
+        else
+          Node::Expression::Function.new(function, args, line)
+        end
       elsif environment.allow_helper_methods?
         Node::Expression::HelperMethod.new(name, args, line)
       else

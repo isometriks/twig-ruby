@@ -9,6 +9,7 @@ RSpec.describe Twig::TokenParser::Extends do
       <<~INPUTS
         {% extends "base" %}{% block original %}Hello{% endblock %}
         {% extends template %}{% block original %}Hello{% endblock %}
+        {% extends "base" %}{% block original %}Hello and {{ parent() }}{% endblock %}
       INPUTS
     end
 
@@ -16,6 +17,7 @@ RSpec.describe Twig::TokenParser::Extends do
       <<~OUTPUTS
         Hello World!
         Hello World!
+        Hello and Goodbye World!
       OUTPUTS
     end
 

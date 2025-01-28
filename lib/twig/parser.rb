@@ -15,6 +15,7 @@ module Twig
     def parse(stream, test = nil, drop_needle: false)
       @stream = stream
       @parent = nil
+      @traits = {}
       @blocks = {}
       @block_stack = []
       @imported_symbols = [{}]
@@ -88,6 +89,11 @@ module Twig
     # @return [ExpressionParser]
     def expression_parser
       @expression_parser ||= ExpressionParser.new(self, @environment)
+    end
+
+    # @return [Boolean]
+    def inheritance?
+      @parent || @traits.length.positive?
     end
 
     def push_local_scope
