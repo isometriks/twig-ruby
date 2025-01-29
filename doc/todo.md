@@ -30,7 +30,7 @@
 - ~~abs~~
 - batch
 - ~~capitalize~~
-- column
+- ~~column~~
 - convert_encoding
 - country_name
 - currency_name

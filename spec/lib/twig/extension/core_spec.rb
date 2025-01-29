@@ -28,6 +28,7 @@ RSpec.describe Twig::Extension::Core do
           {% for letter in range('a', 'g', 2) %}{{ letter }}{% endfor %}
           {{ 'Wôrķšpáçè ~~sèťtïñğš~~'|slug('/') }}
           {{ { hello: "world" }|json_encode|raw }}
+          {{ array_of_hashes|column(:fruit)|raw }}
         INPUTS
       end
 
@@ -53,6 +54,7 @@ RSpec.describe Twig::Extension::Core do
           aceg
           workspace/settings
           {"hello":"world"}
+          ["Apple", "Orange"]
         OUTPUTS
       end
 
@@ -61,6 +63,7 @@ RSpec.describe Twig::Extension::Core do
           name: 'world',
           line: "Hello\nWorld!",
           millennium: DateTime.new(2021, 1, 1, 0, 0, 0),
+          array_of_hashes: [{ fruit: 'Apple' }, { fruit: 'Orange' }],
         }
       end
     end

@@ -90,7 +90,19 @@ module Twig
           TwigFilter.new('singular', static(:singularize)),
           TwigFilter.new('slug', static(:slug)),
 
-          # Arrays / Hashes
+          # array helpers
+          # new TwigFilter('join', self::join(...)),
+          # new TwigFilter('split', self::split(...), ['needs_charset' => true]),
+          # new TwigFilter('sort', self::sort(...)),
+          # new TwigFilter('merge', self::merge(...)),
+          # new TwigFilter('batch', self::batch(...)),
+          TwigFilter.new('column', static(:column)),
+          # new TwigFilter('filter', self::filter(...)),
+          # new TwigFilter('map', self::map(...)),
+          # new TwigFilter('reduce', self::reduce(...)),
+          # new TwigFilter('find', self::find(...)),
+
+          # Arrays / Hashes filters
           TwigFilter.new('reverse', static(:reverse)),
           TwigFilter.new('shuffle', static(:shuffle)),
           TwigFilter.new('length', static(:length)),
@@ -243,6 +255,10 @@ module Twig
 
       def self.slug(string, separator = '-', locale = 'en')
         string.parameterize(separator:, locale:)
+      end
+
+      def self.column(object, column)
+        object.map { |o| o[column] }
       end
 
       def self.reverse(object)
