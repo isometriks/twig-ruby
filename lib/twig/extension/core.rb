@@ -74,6 +74,11 @@ module Twig
           TwigFilter.new('abs', static(:abs)),
           TwigFilter.new('round', static(:round)),
 
+          # Encoding
+          # new TwigFilter('url_encode', self::urlencode(...)),
+          TwigFilter.new('json_encode', static(:json_encode)),
+          # new TwigFilter('convert_encoding', self::convertEncoding(...)),
+
           # Strings
           TwigFilter.new('title', static(:title_case)),
           TwigFilter.new('capitalize', static(:capitalize)),
@@ -194,6 +199,10 @@ module Twig
 
       def self.range(start, finish, step = 1)
         Range.new(start, finish).step(step)
+      end
+
+      def self.json_encode(object)
+        object.respond_to?(:to_json) ? object.to_json : '{}'
       end
 
       def self.title_case(string)

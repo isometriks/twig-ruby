@@ -50,7 +50,7 @@
 - format_number
 - format_time
 - join
-- json_encode
+- ~~json_encode~~
 - keys
 - language_name
 - ~~last~~
@@ -84,7 +84,6 @@
 
 ## Functions
 
-- attribute
 - block
 - constant
 - country_names
@@ -105,7 +104,6 @@
 - ~~parent~~
 - random
 - ~~range~~
-- script_names
 - source
 - template_from_string
 - timezone_names
