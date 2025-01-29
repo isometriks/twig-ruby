@@ -27,6 +27,7 @@ RSpec.describe Twig::Extension::Core do
           {{ max(1, 2, 3) }}
           {% for letter in range('a', 'g', 2) %}{{ letter }}{% endfor %}
           {{ 'Wôrķšpáçè ~~sèťtïñğš~~'|slug('/') }}
+          {{ { hello: "world" }|json_encode|raw }}
         INPUTS
       end
 
@@ -51,6 +52,7 @@ RSpec.describe Twig::Extension::Core do
           3
           aceg
           workspace/settings
+          {"hello":"world"}
         OUTPUTS
       end
 
