@@ -24,6 +24,22 @@ module Twig
         @raw_message = message
       end
 
+      # @return [Source, nil]
+      def source_context
+        @name ? Source.new(@source_code, @name, @source_path) : nil
+      end
+
+      # @param [Source, nil] source
+      def source_context=(source)
+        if source.nil?
+          @source_code = @name = @source_path = nil
+        else
+          @source_code = source.code
+          @source_path = source.path
+          @name = source.name
+        end
+      end
+
       def to_s
         parts = [@raw_message]
         parts << [" in #{@name}"] if @name
