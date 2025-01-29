@@ -22,7 +22,7 @@ module Twig
             compiler.
               raw('(').
               subcompile(nodes[:node]).
-              raw(').html_safe')
+              raw(').to_s.html_safe')
           end
         end
       end
