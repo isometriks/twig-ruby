@@ -70,6 +70,7 @@ module Twig
           write("end\n").
           raw("\n")
 
+        compile_get_template_name(compiler)
         compile_get_source_context(compiler)
 
         compiler.
@@ -111,9 +112,20 @@ module Twig
           write("end\n\n")
       end
 
+      def compile_get_template_name(compiler)
+        compiler.
+          write("def template_name\n").
+          indent.
+          write('').
+          repr(source_context.name).
+          raw("\n").
+          outdent.
+          write("end\n\n")
+      end
+
       def compile_get_source_context(compiler)
         compiler.
-          write("private def source_context\n").
+          write("def source_context\n").
           indent.
           write('::Twig::Source.new(').
           string(compiler.environment.debug? ? source_context.code : '').

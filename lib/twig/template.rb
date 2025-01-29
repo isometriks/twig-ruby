@@ -13,7 +13,6 @@ module Twig
       @parent = nil
       @parents = {}
       @traits = {}
-      @blocks = {}
       @call_context = call_context
       @output_buffer = output_buffer || OutputBuffer.new
     end
@@ -26,14 +25,52 @@ module Twig
       call(Context.new(context))
     end
 
-    def yield_block(name, context = {}, blocks = {}, use_blocks: true)
-      object = self
+    def yield_block(name, context = {}, blocks = {}, use_blocks: true, template_context: self)
+      name = name.to_sym
 
-      if blocks.key?(name)
-        object = blocks[name]
+      template = if use_blocks && blocks.key?(name)
+                   blocks[name]
+                 elsif block_list.key?(name)
+                   block_list[name]
+                 end
+
+      # avoid RCEs when sandbox is enabled
+      if !template.nil? && !template.is_a?(::Twig::Template)
+        raise Error::Logic, 'A block must be a method on a ::Twig::Template instance.'
       end
 
-      object.public_send(:"block_#{name}", context, blocks)
+      if !template.nil?
+        begin
+          template.public_send(:"block_#{name}", context, blocks)
+        rescue Error::Base => e
+          unless e.source_context
+            e.source_context = template.source_context
+          end
+
+          # @todo Guess template line
+          raise e
+        rescue StandardError => e
+          raise Error::Runtime.new(
+            "An exception has been thrown during the rendering of a template (#{e})",
+            -1,
+            template.source_context
+          )
+        end
+      elsif (parent = get_parent(context))
+        parent.yield_block(name, context, block_list.merge(blocks), use_blocks: false, template_context:)
+      elsif blocks.key?(name)
+        raise Error::Runtime.new(
+          "Block '#{name}' should not call parent() in #{blocks[name].template_name}",
+          -1,
+          blocks[name].source_context
+        )
+      else
+        raise Error::Runtime.new(
+          "Block '#{name}' on template '#{template_name}' does not exist.",
+          -1,
+          template_context.source_context
+        )
+      end
     end
 
     def render_parent_block(name, context, blocks = {})
@@ -58,6 +95,10 @@ module Twig
       raise NotImplementedError
     end
 
+    def block_list
+      raise NotImplementedError
+    end
+
     private
 
     # @param [String] name
@@ -71,6 +112,7 @@ module Twig
       false
     end
 
+    # @return [Template, false]
     def get_parent(context)
       if @parent
         return @parent
