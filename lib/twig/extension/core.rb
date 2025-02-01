@@ -94,7 +94,7 @@ module Twig
           # new TwigFilter('join', self::join(...)),
           # new TwigFilter('split', self::split(...), ['needs_charset' => true]),
           # new TwigFilter('sort', self::sort(...)),
-          # new TwigFilter('merge', self::merge(...)),
+          TwigFilter.new('merge', static(:merge)),
           # new TwigFilter('batch', self::batch(...)),
           TwigFilter.new('column', static(:column)),
           # new TwigFilter('filter', self::filter(...)),
@@ -255,6 +255,14 @@ module Twig
 
       def self.slug(string, separator = '-', locale = 'en')
         string.parameterize(separator:, locale:)
+      end
+
+      def self.merge(*enumerables)
+        if enumerables.first.is_a?(Hash)
+          enumerables.reduce(&:merge)
+        else
+          enumerables.reduce(&:concat)
+        end
       end
 
       def self.column(object, column)
