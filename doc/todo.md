@@ -58,7 +58,7 @@
 - locale_name
 - ~~lower~~
 - map
-- merge
+- ~~merge~~
 - ~~nl2br~~
 - ~~number_format~~
 - ~~plural~~

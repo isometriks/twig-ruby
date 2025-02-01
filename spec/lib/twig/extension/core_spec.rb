@@ -29,6 +29,8 @@ RSpec.describe Twig::Extension::Core do
           {{ 'Wôrķšpáçè ~~sèťtïñğš~~'|slug('/') }}
           {{ { hello: "world" }|json_encode|raw }}
           {{ array_of_hashes|column(:fruit)|raw }}
+          {{ [:hello]|merge([:world]) }}
+          {{ { greeting: "Hello" }|merge({ subject: "World!" })|raw }}
         INPUTS
       end
 
@@ -55,6 +57,8 @@ RSpec.describe Twig::Extension::Core do
           workspace/settings
           {"hello":"world"}
           ["Apple", "Orange"]
+          [:hello, :world]
+          {greeting: "Hello", subject: "World!"}
         OUTPUTS
       end
 
