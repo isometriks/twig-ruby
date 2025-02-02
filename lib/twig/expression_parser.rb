@@ -18,7 +18,9 @@ module Twig
 
     # @return [Node::Expression::Base]
     def parse_expression(precedence = 0)
-      # @todo parse arrow
+      if (arrow = parse_arrow)
+        return arrow
+      end
 
       expr = primary
       token = parser.current_token
@@ -567,6 +569,68 @@ module Twig
     end
 
     private
+
+    def parse_arrow
+      stream = parser.stream
+
+      # short array syntax (one argument, no parentheses)?
+      if stream.look(1).test(Token::ARROW_TYPE)
+        line = stream.current.lineno
+        token = stream.expect(Token::NAME_TYPE)
+        names = AutoHash.new.add(Node::Expression::Variable::AssignContext.new(token.value, token.lineno))
+        stream.expect(Token::ARROW_TYPE)
+
+        return Node::Expression::ArrowFunction.new(parse_expression, Node::Nodes.new(names), line)
+      end
+
+      # first, determine if we are parsing an arrow function by finding => (long form)
+      i = 0
+
+      unless stream.look(i).test(Token::PUNCTUATION_TYPE, '(')
+        return nil
+      end
+
+      i += 1
+
+      loop do
+        # variable name
+        i += 1
+        unless stream.look(i).test(Token::PUNCTUATION_TYPE, ',')
+          break
+        end
+
+        i += 1
+      end
+
+      unless stream.look(i).test(Token::PUNCTUATION_TYPE, ')')
+        return nil
+      end
+
+      i += 1
+
+      unless stream.look(i).test(Token::NAME_TYPE)
+        return nil
+      end
+
+      # yes, let's parse it properly
+      token = stream.expect(Token::PUNCTUATION_TYPE, token, '(')
+      line = token.lineno
+      names = AutoHash.new
+
+      loop do
+        token = stream.expect(Token::NAME_TYPE)
+        names << Node::Expression::Variable::AssignContext.new(token.value, token.lineno)
+
+        unless stream.next_if(Token::PUNCTUATION_TYPE, ',')
+          break
+        end
+      end
+
+      stream.expect(Token::PUNCTUATION_TYPE, token, ')')
+      stream.expect(Token::ARROW_TYPE)
+
+      Node::Expression::ArrowFunction.new(parse_expression, Node::Nodes.new(names), line)
+    end
 
     # @param [Integer] lineno
     def create_arguments(lineno)

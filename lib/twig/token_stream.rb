@@ -51,6 +51,16 @@ module Twig
       token
     end
 
+    # @param [Integer] number
+    # @return [Token]
+    def look(number = 1)
+      unless tokens.length >= @current + number
+        raise Error::Syntax.new('Unexpected end of template.', tokens[@current].lineno, source)
+      end
+
+      tokens[@current + number]
+    end
+
     def test(primary, secondary = nil)
       current.test(primary, secondary)
     end
