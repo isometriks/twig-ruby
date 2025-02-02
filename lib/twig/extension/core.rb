@@ -97,7 +97,7 @@ module Twig
           TwigFilter.new('merge', static(:merge)),
           # new TwigFilter('batch', self::batch(...)),
           TwigFilter.new('column', static(:column)),
-          # new TwigFilter('filter', self::filter(...)),
+          TwigFilter.new('filter', static(:filter)),
           TwigFilter.new('map', static(:map)),
           # new TwigFilter('reduce', self::reduce(...)),
           # new TwigFilter('find', self::find(...)),
@@ -269,21 +269,12 @@ module Twig
         object.map { |o| o[column] }
       end
 
-      def self.map(object, proc)
-        unless object.is_a?(Hash)
-          object = AutoHash.new.add(*object)
-        end
+      def self.filter(object, proc)
+        enumerable_function(object, :filter, proc)
+      end
 
-        object.map do |k, v|
-          case proc.arity
-          when 1
-            proc.call(v)
-          when 2
-            proc.call(v, k)
-          else
-            raise Error::Runtime, 'Map only accepts 1 or 2 arguments'
-          end
-        end
+      def self.map(object, proc)
+        enumerable_function(object, :map, proc)
       end
 
       def self.reverse(object)
@@ -373,6 +364,23 @@ module Twig
         end
 
         Node::Expression::Parent.new(block_name, line)
+      end
+
+      def self.enumerable_function(object, function, proc)
+        case proc.arity
+        when 1
+          enumerable = object.is_a?(Hash) ? object.values : object
+          enumerable.public_send(function) do |value|
+            proc.call(value)
+          end
+        when 2
+          enumerable = object.is_a?(Hash) ? object : AutoHash.new.add(object)
+          enumerable.public_send(function) do |key, value|
+            proc.call(value, key)
+          end
+        else
+          raise Error::Runtime, "The #{function.to_s.capitalize} method takes 1 or 2 arguments, given #{proc.arity}."
+        end
       end
     end
   end
