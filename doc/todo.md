@@ -41,7 +41,7 @@
 - default
 - escape
 - ~~filter~~
-- find
+- ~~find~~
 - ~~first~~
 - ~~format~~
 - format_currency

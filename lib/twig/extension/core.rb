@@ -100,7 +100,7 @@ module Twig
           TwigFilter.new('filter', static(:filter)),
           TwigFilter.new('map', static(:map)),
           # new TwigFilter('reduce', self::reduce(...)),
-          # new TwigFilter('find', self::find(...)),
+          TwigFilter.new('find', static(:find)),
 
           # Arrays / Hashes filters
           TwigFilter.new('reverse', static(:reverse)),
@@ -275,6 +275,10 @@ module Twig
 
       def self.map(object, proc)
         enumerable_function(object, :map, proc)
+      end
+
+      def self.find(object, proc)
+        enumerable_function(object, :find, proc)
       end
 
       def self.reverse(object)

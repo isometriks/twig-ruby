@@ -32,6 +32,7 @@ RSpec.describe Twig::Extension::Core do
           {{ [:hello]|merge([:world]) }}
           {{ { greeting: "Hello" }|merge({ subject: "World!" })|raw }}
           {{ [1, 2, 4, 5]|filter(n => n % 2 == 0) }}
+          {{ [1, 2, 4, 5]|find(n => n == 4) }}
         INPUTS
       end
 
@@ -61,6 +62,7 @@ RSpec.describe Twig::Extension::Core do
           [:hello, :world]
           {greeting: "Hello", subject: "World!"}
           [2, 4]
+          4
         OUTPUTS
       end
 
