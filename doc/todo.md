@@ -40,7 +40,7 @@
 - date_modify
 - default
 - escape
-- filter
+- ~~filter~~
 - find
 - ~~first~~
 - ~~format~~

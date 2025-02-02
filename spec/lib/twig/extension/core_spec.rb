@@ -31,6 +31,7 @@ RSpec.describe Twig::Extension::Core do
           {{ array_of_hashes|column(:fruit)|raw }}
           {{ [:hello]|merge([:world]) }}
           {{ { greeting: "Hello" }|merge({ subject: "World!" })|raw }}
+          {{ [1, 2, 4, 5]|filter(n => n % 2 == 0) }}
         INPUTS
       end
 
@@ -59,6 +60,7 @@ RSpec.describe Twig::Extension::Core do
           ["Apple", "Orange"]
           [:hello, :world]
           {greeting: "Hello", subject: "World!"}
+          [2, 4]
         OUTPUTS
       end
 
