@@ -57,7 +57,7 @@
 - ~~length~~
 - locale_name
 - ~~lower~~
-- map
+- ~~map~~
 - ~~merge~~
 - ~~nl2br~~
 - ~~number_format~~

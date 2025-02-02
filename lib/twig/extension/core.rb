@@ -98,7 +98,7 @@ module Twig
           # new TwigFilter('batch', self::batch(...)),
           TwigFilter.new('column', static(:column)),
           # new TwigFilter('filter', self::filter(...)),
-          # new TwigFilter('map', self::map(...)),
+          TwigFilter.new('map', static(:map)),
           # new TwigFilter('reduce', self::reduce(...)),
           # new TwigFilter('find', self::find(...)),
 
@@ -267,6 +267,23 @@ module Twig
 
       def self.column(object, column)
         object.map { |o| o[column] }
+      end
+
+      def self.map(object, proc)
+        unless object.is_a?(Hash)
+          object = AutoHash.new.add(*object)
+        end
+
+        object.map do |k, v|
+          case proc.arity
+          when 1
+            proc.call(v)
+          when 2
+            proc.call(v, k)
+          else
+            raise Error::Runtime, 'Map only accepts 1 or 2 arguments'
+          end
+        end
       end
 
       def self.reverse(object)

@@ -119,5 +119,21 @@ module Twig
         end
       end
     end
+
+    context 'with arrow function' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          <<~INPUTS
+            {{ [1, 2]|map(n => n * 2) }}
+          INPUTS
+        end
+
+        let(:outputs) do
+          <<~OUTPUTS
+            [2, 4]
+          OUTPUTS
+        end
+      end
+    end
   end
 end
