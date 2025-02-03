@@ -99,7 +99,7 @@ module Twig
           TwigFilter.new('column', static(:column)),
           TwigFilter.new('filter', static(:filter)),
           TwigFilter.new('map', static(:map)),
-          # new TwigFilter('reduce', self::reduce(...)),
+          TwigFilter.new('reduce', static(:reduce)),
           TwigFilter.new('find', static(:find)),
 
           # Arrays / Hashes filters
@@ -275,6 +275,25 @@ module Twig
 
       def self.map(object, proc)
         enumerable_function(object, :map, proc)
+      end
+
+      def self.reduce(object, proc, initial = nil)
+        accumulator = initial
+
+        case proc.arity
+        when 2
+          (object.is_a?(Hash) ? object.values : object).each do |value|
+            accumulator = proc.call(accumulator, value)
+          end
+        when 3
+          (object.is_a?(Hash) ? object : object.each_with_index).each do |key, value|
+            accumulator = proc.call(accumulator, value, key)
+          end
+        else
+          raise Error::Runtime, "Reduce takes 2 or 3 arguments, given #{proc.arity}."
+        end
+
+        accumulator
       end
 
       def self.find(object, proc)

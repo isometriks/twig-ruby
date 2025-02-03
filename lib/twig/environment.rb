@@ -45,7 +45,6 @@ module Twig
       # Cache didn't load a class or we should load fresh
       unless attempt_cache && Twig.const_defined?(class_name)
         code = render_ruby(name)
-        puts code
 
         # File cache loader won't rely on eval
         @cache.write(cache_key, code)
