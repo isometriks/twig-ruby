@@ -608,12 +608,12 @@ module Twig
 
       i += 1
 
-      unless stream.look(i).test(Token::NAME_TYPE)
+      unless stream.look(i).test(Token::ARROW_TYPE)
         return nil
       end
 
       # yes, let's parse it properly
-      token = stream.expect(Token::PUNCTUATION_TYPE, token, '(')
+      token = stream.expect(Token::PUNCTUATION_TYPE, '(')
       line = token.lineno
       names = AutoHash.new
 
@@ -626,7 +626,7 @@ module Twig
         end
       end
 
-      stream.expect(Token::PUNCTUATION_TYPE, token, ')')
+      stream.expect(Token::PUNCTUATION_TYPE, ')')
       stream.expect(Token::ARROW_TYPE)
 
       Node::Expression::ArrowFunction.new(parse_expression, Node::Nodes.new(names), line)

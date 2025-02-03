@@ -63,7 +63,7 @@
 - ~~number_format~~
 - ~~plural~~
 - ~~raw~~
-- reduce
+- ~~reduce~~
 - ~~replace~~
 - reverse
 - ~~round~~
