@@ -127,6 +127,7 @@ module Twig
       def tests
         [
           TwigTest.new('even', nil, { node_class: Node::Expression::Test::Even }),
+          TwigTest.new('odd', nil, { node_class: Node::Expression::Test::Odd }),
         ]
       end
 

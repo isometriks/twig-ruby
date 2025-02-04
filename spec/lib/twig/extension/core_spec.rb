@@ -38,6 +38,9 @@ RSpec.describe Twig::Extension::Core do
           {{ 5 is even ? "KO" : "OK" }}
           {{ 4 is even ? "OK" : "KO" }}
           {{ 5 is not even ? "OK" : "KO" }}
+          {{ 5 is odd ? "OK" : "KO" }}
+          {{ 4 is odd ? "KO" : "OK" }}
+          {{ 5 is not odd ? "KO" : "OK" }}
         INPUTS
       end
 
@@ -70,6 +73,9 @@ RSpec.describe Twig::Extension::Core do
           4
           6
           8
+          OK
+          OK
+          OK
           OK
           OK
           OK
