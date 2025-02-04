@@ -29,13 +29,22 @@ module Twig
         operator = binary_operators[token.value.to_sym]
         parser.stream.next
 
-        next_precedence = operator[:precedence]
-        next_precedence += 1 if operator[:associativity] == OPERATOR_LEFT
-
-        expr1 = parse_expression(next_precedence)
-
         # @type [Node::Expression::Binary::Base]
-        expr = operator[:class].new(expr, expr1, token.lineno)
+        expr = if token.value == 'is not'
+                 parse_not_test_expression(expr)
+               elsif token.value == 'is'
+                 parse_test_expression(expr)
+               elsif operator.key?(:callable)
+                 operator[:callable].call(parser, expr)
+               else
+                 next_precedence = operator[:precedence]
+                 next_precedence += 1 if operator[:associativity] == OPERATOR_LEFT
+
+                 expr1 = parse_expression(next_precedence)
+
+                 operator[:class].new(expr, expr1, token.lineno)
+               end
+
         expr.attributes[:operator] = "binary_#{token.value}"
 
         token = parser.current_token
@@ -129,6 +138,8 @@ module Twig
       node
     end
 
+    # @param [Node::Expression::Base] node
+    # @return [Node::Expression::Base]
     def parse_subscript_expression(node)
       if parser.stream.next.value == '.'
         return parse_subscript_expression_dot(node)
@@ -137,6 +148,8 @@ module Twig
       parse_subscript_expression_array(node)
     end
 
+    # @param [Node::Expression::Base] node
+    # @return [Node::Expression::Base]
     def parse_subscript_expression_dot(node)
       stream = parser.stream
       token = stream.current
@@ -172,6 +185,7 @@ module Twig
       Node::Expression::GetAttribute.new(node, attribute, arguments, type, token.lineno)
     end
 
+    # @return [Node::Expression::Base]
     def parse_sequence_expression
       stream = parser.stream
       stream.expect(Token::PUNCTUATION_TYPE, '[', 'A sequence element was expected')
@@ -205,6 +219,7 @@ module Twig
       node
     end
 
+    # @return [Node::Expression::Base]
     def parse_mapping_expression
       stream = parser.stream
       stream.expect(Token::PUNCTUATION_TYPE, '{', 'A mapping element was expected')
@@ -276,7 +291,7 @@ module Twig
 
     def get_function_node(name, line)
       # @todo lots of stuff in this method
-      args = parse_only_arguments
+      args = parse_named_arguments
 
       if (function = environment.function(name))
         if (callable = function.parser_callable)
@@ -294,7 +309,7 @@ module Twig
       end
     end
 
-    def parse_only_arguments
+    def parse_named_arguments
       args = AutoHash.new
       stream = parser.stream
       stream.expect(Token::PUNCTUATION_TYPE, '(', 'A list of arguments must begin with an opening parenthesis')
@@ -380,8 +395,8 @@ module Twig
       parse_primary_expression
     end
 
-    # @param [Node::Expression] expr
-    # @return [Node::Expression]
+    # @param [Node::Expression::Base] expr
+    # @return [Node::Expression::Base]
     def parse_ternary_expression(expr)
       while parser.stream.next_if(Token::PUNCTUATION_TYPE, '?')
         expr2 = parse_expression
@@ -397,18 +412,21 @@ module Twig
       expr
     end
 
+    # @return [Node::Expression::Base]
     def parse_filter_expression(node)
       parser.stream.next
 
       parse_filter_expression_raw(node)
     end
 
+    # @param [Node::Expression::Base] node
+    # @return [Node::Expression::Base]
     def parse_filter_expression_raw(node)
       loop do
         token = parser.stream.expect(Token::NAME_TYPE)
 
         arguments = if parser.stream.test(Token::PUNCTUATION_TYPE, '(')
-                      parse_only_arguments
+                      parse_named_arguments
                     else
                       Node::Empty.new
                     end
@@ -468,6 +486,29 @@ module Twig
       end
 
       Node::Nodes.new(targets)
+    end
+
+    # @param [Node::Base] node
+    def parse_not_test_expression(node)
+      Node::Expression::Unary::Not.new(parse_test_expression(node), parser.current_token.lineno)
+    end
+
+    # @param [Node::Base] node
+    # @return [Node::Expression::Test::Base]
+    def parse_test_expression(node)
+      stream = parser.stream
+      test = get_test(node.lineno)
+
+      arguments = nil
+      if stream.test(Token::PUNCTUATION_TYPE, '(')
+        arguments = parse_named_arguments
+      elsif test.one_mandatory_argument?
+        arguments = Node::Nodes.new(AutoHash.new.add(primary))
+      end
+
+      # @todo Defined macro expresion
+
+      test.node_class.new(node, test, arguments, parser.current_token.lineno)
     end
 
     def parse_string_expression
@@ -632,11 +673,35 @@ module Twig
       Node::Expression::ArrowFunction.new(parse_expression, Node::Nodes.new(names), line)
     end
 
+    # @return [TwigTest]
+    def get_test(line)
+      stream = parser.stream
+      name = stream.expect(Token::NAME_TYPE).value
+
+      if stream.test(Token::NAME_TYPE)
+        # try 2 word tests
+        name = "#{name} #{parser.current_token.value}"
+
+        if (test = environment.test(name))
+          stream.next
+        end
+      else
+        test = environment.test(name)
+      end
+
+      unless test
+        # @todo Check if we're ignoring missing callables
+        raise Error::Syntax.new("Unknown #{name} test.", line, stream.source)
+      end
+
+      test
+    end
+
     # @param [Integer] lineno
     def create_arguments(lineno)
       arguments = Node::Expression::Hash.new({}, lineno)
 
-      parse_only_arguments.nodes.each do |key, node|
+      parse_named_arguments.nodes.each do |key, node|
         arguments.add_element(node, Node::Expression::Variable::Local.new(key, lineno))
       end
 

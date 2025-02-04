@@ -19,6 +19,10 @@ module Twig
         []
       end
 
+      def tests
+        []
+      end
+
       private
 
       def static(method)
