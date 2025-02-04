@@ -44,6 +44,8 @@ RSpec.describe Twig::Extension::Core do
           {{ empty is null ? "OK" : "KO" }}
           {{ empty is nil ? "OK" : "KO" }}
           {{ empty is none ? "OK" : "KO" }}
+          {{ 6 is divisible by(3) ? "OK" : "KO" }}
+          {{ 6 is divisible by(5) ? "KO" : "OK" }}
         INPUTS
       end
 
@@ -76,6 +78,8 @@ RSpec.describe Twig::Extension::Core do
           4
           6
           8
+          OK
+          OK
           OK
           OK
           OK

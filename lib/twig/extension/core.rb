@@ -131,6 +131,9 @@ module Twig
           TwigTest.new('null', nil, { node_class: Node::Expression::Test::Null }),
           TwigTest.new('nil', nil, { node_class: Node::Expression::Test::Null }),
           TwigTest.new('none', nil, { node_class: Node::Expression::Test::Null }),
+          TwigTest.new('divisible by', nil, {
+            node_class: Node::Expression::Test::DivisibleBy, one_mandatory_argument: true
+          }),
         ]
       end
 
