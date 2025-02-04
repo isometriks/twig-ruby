@@ -117,7 +117,7 @@
 - ~~even~~
 - iterable
 - mapping
-- null
-- odd
+- ~~null~~
+- ~~odd~~
 - same as
 - sequence
