@@ -83,17 +83,22 @@ module Twig
       @extension_set.operators
     end
 
-    # @return [TwigFilter]
+    # @return [TwigFilter, nil]
     def filter(name)
       @extension_set.filter(name)
     end
 
-    # @return [TwigFunction]
+    # @return [TwigFunction, nil]
     def function(name)
       @extension_set.function(name)
     end
 
-    # @return [TokenParser::Base]
+    # @return [TwigTest, nil]
+    def test(name)
+      @extension_set.test(name)
+    end
+
+    # @return [TokenParser::Base, nil]
     def token_parser(name)
       @extension_set.token_parser(name)
     end

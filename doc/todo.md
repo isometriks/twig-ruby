@@ -114,7 +114,7 @@
 - defined
 - divisible by
 - empty
-- even
+- ~~even~~
 - iterable
 - mapping
 - null

@@ -124,6 +124,12 @@ module Twig
         ]
       end
 
+      def tests
+        [
+          TwigTest.new('even', nil, { node_class: Node::Expression::Test::Even }),
+        ]
+      end
+
       def token_parsers
         [
           TokenParser::Apply.new,

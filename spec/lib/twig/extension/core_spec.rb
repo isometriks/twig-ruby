@@ -35,6 +35,9 @@ RSpec.describe Twig::Extension::Core do
           {{ [1, 2, 4, 5]|find(n => n == 4) }}
           {{ [1, 2, 3]|reduce((acc, n) => acc + n, 0) }}
           {{ [1, 2, 3]|reduce((acc, v, k) => acc + k * v, 0) }}
+          {{ 5 is even ? "KO" : "OK" }}
+          {{ 4 is even ? "OK" : "KO" }}
+          {{ 5 is not even ? "OK" : "KO" }}
         INPUTS
       end
 
@@ -67,6 +70,9 @@ RSpec.describe Twig::Extension::Core do
           4
           6
           8
+          OK
+          OK
+          OK
         OUTPUTS
       end
 

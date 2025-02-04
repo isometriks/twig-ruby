@@ -55,6 +55,14 @@ module Twig
         to_h { |function| [function.name.to_sym, function] }
     end
 
+    def tests
+      @tests ||= extensions.
+        values.
+        map(&:tests).
+        flatten.
+        to_h { |test| [test.name.to_sym, test] }
+    end
+
     def filter(name)
       filters[name.to_sym]
     end
@@ -63,13 +71,17 @@ module Twig
       functions[name.to_sym]
     end
 
+    def test(name)
+      tests[name.to_sym]
+    end
+
     def token_parsers
       @token_parsers ||= extensions.
         values.map(&:token_parsers).reduce([], :concat).
         to_h { |token_parser| [token_parser.tag.to_sym, token_parser] }
     end
 
-    # @return [TokenParser::Base|nil]
+    # @return [TokenParser::Base, nil]
     def token_parser(name)
       token_parsers[name.to_sym]
     end
