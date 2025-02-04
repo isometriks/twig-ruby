@@ -112,7 +112,7 @@
 
 - constant
 - defined
-- divisible by
+- ~~divisible by~~
 - empty
 - ~~even~~
 - iterable
