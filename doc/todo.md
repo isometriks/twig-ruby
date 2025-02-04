@@ -119,5 +119,5 @@
 - mapping
 - ~~null~~
 - ~~odd~~
-- same as
+- ~~same as~~
 - sequence
