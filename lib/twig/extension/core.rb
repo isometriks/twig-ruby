@@ -128,6 +128,9 @@ module Twig
         [
           TwigTest.new('even', nil, { node_class: Node::Expression::Test::Even }),
           TwigTest.new('odd', nil, { node_class: Node::Expression::Test::Odd }),
+          TwigTest.new('null', nil, { node_class: Node::Expression::Test::Null }),
+          TwigTest.new('nil', nil, { node_class: Node::Expression::Test::Null }),
+          TwigTest.new('none', nil, { node_class: Node::Expression::Test::Null }),
         ]
       end
 

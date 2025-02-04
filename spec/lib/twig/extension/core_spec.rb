@@ -41,6 +41,9 @@ RSpec.describe Twig::Extension::Core do
           {{ 5 is odd ? "OK" : "KO" }}
           {{ 4 is odd ? "KO" : "OK" }}
           {{ 5 is not odd ? "KO" : "OK" }}
+          {{ empty is null ? "OK" : "KO" }}
+          {{ empty is nil ? "OK" : "KO" }}
+          {{ empty is none ? "OK" : "KO" }}
         INPUTS
       end
 
@@ -79,6 +82,9 @@ RSpec.describe Twig::Extension::Core do
           OK
           OK
           OK
+          OK
+          OK
+          OK
         OUTPUTS
       end
 
@@ -88,6 +94,7 @@ RSpec.describe Twig::Extension::Core do
           line: "Hello\nWorld!",
           millennium: DateTime.new(2021, 1, 1, 0, 0, 0),
           array_of_hashes: [{ fruit: 'Apple' }, { fruit: 'Orange' }],
+          empty: nil,
         }
       end
     end
