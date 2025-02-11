@@ -12,13 +12,10 @@ module Twig
         end
 
         def compile(compiler)
-          var = compiler.var_name
-
           compiler.
-            raw("(#{var} = ").
+            write('::Twig::Extension::Core.get_attribute(').
             subcompile(nodes[:node]).
-            raw("\n").
-            write("::Twig::Extension::Core.get_attribute(#{var}, ").
+            raw(', ').
             subcompile(nodes[:attribute]).
             raw(', ').
             repr(attributes[:type])
@@ -30,7 +27,7 @@ module Twig
           end
 
           compiler.
-            raw('))')
+            raw(')')
         end
       end
     end
