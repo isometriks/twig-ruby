@@ -363,20 +363,20 @@ module Twig
         raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
 
-      def self.get_attribute(object, attribute, type, arguments: {})
+      def self.get_attribute(object, attribute, type, arguments: {}, &)
         if type == Template::ARRAY_CALL
           object[attribute] || (attribute.is_a?(String) ? object[attribute.to_sym] : object[attribute.to_s])
         elsif object.respond_to?(attribute)
           positional, kwargs = arguments.partition { |k, _v| k.is_a?(Integer) }.map(&:to_h)
 
           if positional.length.positive? && kwargs.empty?
-            object.send(attribute, *positional.values)
+            object.send(attribute, *positional.values, &)
           elsif positional.empty? && kwargs.length.positive?
-            object.send(attribute, **kwargs)
+            object.send(attribute, **kwargs, &)
           elsif positional.length.positive? && kwargs.length.positive?
-            object.send(attribute, *positional.values, **kwargs)
+            object.send(attribute, *positional.values, **kwargs, &)
           else
-            object.send(attribute)
+            object.send(attribute, &)
           end
         else
           raise NotImplementedError, 'Need to implement other get_attribute calls'
