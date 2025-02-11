@@ -21,7 +21,9 @@ module Twig
     REGEX_NAME = /[a-zA-Z_][a-zA-Z0-9_]*/
     REGEX_SYMBOL = /:#{REGEX_NAME}/
     REGEX_CVAR = /@#{REGEX_NAME}/
-    REGEX_STRING = /\A"([^#"\\]*(?:\\\\.[^#"\\]*)*)"|'([^'\\]*(?:\\\\.[^'\\]*)*)'/su
+    REGEX_STRING = /\A"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/su
+    REGEX_DQ_STRING_PART = /\A[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/su
+    REGEX_DQ_STRING_DELIM = /\A"/
     REGEX_NUMBER = /\A(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
 
     STATE_DATA = 0
@@ -57,6 +59,8 @@ module Twig
           lex_block
         when STATE_VAR
           lex_var
+        when STATE_STRING
+          lex_string
         else
           raise "Unknown state: #{@state}"
         end
@@ -216,15 +220,16 @@ module Twig
       elsif (match = @code[@cursor..].match(REGEX_STRING))
         push_token(Token::STRING_TYPE, match.to_s[1...-1])
         move_cursor(match.to_s)
+      elsif (match = @code[@cursor..].match(REGEX_DQ_STRING_DELIM))
+        @brackets << ['"', @lineno]
+        push_state(STATE_STRING)
+        move_cursor(match.to_s)
+      # @todo inline comment lexing
+      else
+        Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
       end
 
       <<-TEMP
-        // opening double quoted string
-        elseif (preg_match(self::REGEX_DQ_STRING_DELIM, $this->code, $match, 0, $this->cursor)) {
-            $this->brackets[] = ['"', $this->lineno];
-            $this->pushState(self::STATE_STRING);
-            $this->moveCursor($match[0]);
-        }
         // inline comment
         elseif (preg_match(self::REGEX_INLINE_COMMENT, $this->code, $match, 0, $this->cursor)) {
             $this->moveCursor($match[0]);
@@ -234,6 +239,25 @@ module Twig
             throw new SyntaxError(\sprintf('Unexpected character "%s".', $this->code[$this->cursor]), $this->lineno, $this->source);
         }
       TEMP
+    end
+
+    def lex_string
+      # @todo interpolation start
+      if (match = @code[@cursor..].match(REGEX_DQ_STRING_PART)) && match.to_s != ''
+        push_token(Token::STRING_TYPE, match.to_s)
+        move_cursor(match.to_s)
+      elsif @code[@cursor..].match(REGEX_DQ_STRING_DELIM)
+        expect, lineno = @brackets.pop
+
+        unless code_at?(0, '"')
+          raise Error::Syntax.new("Unclosed '#{expect}'", lineno, @source)
+        end
+
+        pop_state
+        @cursor += 1
+      else
+        Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
+      end
     end
 
     def push_token(type, value = '')
