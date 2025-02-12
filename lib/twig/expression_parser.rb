@@ -444,10 +444,6 @@ module Twig
       node
     end
 
-    def parse_arguments
-      raise NotImplementedError
-    end
-
     # @return [Node::Nodes]
     def parse_assignment_expression
       stream = parser.stream
