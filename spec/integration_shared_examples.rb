@@ -11,7 +11,8 @@ RSpec.shared_examples 'render_and_assert' do
 
   it 'matches the output' do
     results = outputs.is_a?(Array) ? outputs : outputs.strip.split("\n")
-    inputs.strip.split("\n").each_with_index do |line, index|
+    templates = inputs.is_a?(Array) ? inputs : inputs.strip.split("\n")
+    templates.each_with_index do |line, index|
       expect(render(line, locals)).to eq(results[index])
     end
   end
