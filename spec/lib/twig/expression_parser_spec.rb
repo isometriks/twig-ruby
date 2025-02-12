@@ -135,5 +135,21 @@ module Twig
         end
       end
     end
+
+    context 'with multiline strings' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ "Hello " ~
+                 # Stopping by for a comment
+               "World!" }}',
+          ]
+        end
+
+        let(:outputs) do
+          ['Hello World!']
+        end
+      end
+    end
   end
 end

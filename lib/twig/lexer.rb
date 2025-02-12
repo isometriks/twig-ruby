@@ -23,6 +23,7 @@ module Twig
     REGEX_CVAR = /@#{REGEX_NAME}/
     REGEX_STRING = /\A"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/su
     REGEX_DQ_STRING_PART = /\A[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/su
+    REGEX_INLINE_COMMENT = /#[^\n]*/
     REGEX_DQ_STRING_DELIM = /\A"/
     REGEX_NUMBER = /\A(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
 
@@ -224,21 +225,11 @@ module Twig
         @brackets << ['"', @lineno]
         push_state(STATE_STRING)
         move_cursor(match.to_s)
-      # @todo inline comment lexing
+      elsif (match = @code[@cursor..].match(REGEX_INLINE_COMMENT))
+        move_cursor(match.to_s)
       else
         Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
       end
-
-      <<-TEMP
-        // inline comment
-        elseif (preg_match(self::REGEX_INLINE_COMMENT, $this->code, $match, 0, $this->cursor)) {
-            $this->moveCursor($match[0]);
-        }
-        // unlexable
-        else {
-            throw new SyntaxError(\sprintf('Unexpected character "%s".', $this->code[$this->cursor]), $this->lineno, $this->source);
-        }
-      TEMP
     end
 
     def lex_string
