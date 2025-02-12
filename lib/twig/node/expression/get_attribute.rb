@@ -13,7 +13,7 @@ module Twig
 
         def compile(compiler)
           compiler.
-            write('::Twig::Extension::Core.get_attribute(').
+            raw('::Twig::Extension::Core.get_attribute(').
             subcompile(nodes[:node]).
             raw(', ').
             subcompile(nodes[:attribute]).
