@@ -12,7 +12,7 @@ module Twig
 
       def get_source_context(name)
         if (file = find_template(name))
-          return Source.new(File.read(file), name)
+          return Source.new(File.read(file), name, file)
         end
 
         raise "Unable to find '#{name}'"
