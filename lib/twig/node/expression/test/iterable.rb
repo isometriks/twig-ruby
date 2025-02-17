@@ -4,15 +4,15 @@ module Twig
   module Node
     module Expression
       module Test
-        # Checks if a variable is a mapping (Hash)
+        # Checks if a variable is iterable
         #
-        #  {{ var is mapping }}
-        class Mapping < Test::Base
+        #  {{ var is iterable }}
+        class Iterable < Test::Base
           def compile(compiler)
             compiler.
               raw('(').
               subcompile(nodes[:node]).
-              raw(').is_a?(Hash)')
+              raw(').respond_to?(:each)')
           end
         end
       end

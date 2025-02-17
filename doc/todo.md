@@ -115,7 +115,7 @@
 - ~~divisible by~~
 - empty
 - ~~even~~
-- iterable
+- ~~iterable~~
 - ~~mapping~~
 - ~~null~~
 - ~~odd~~

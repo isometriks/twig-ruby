@@ -6,7 +6,7 @@ module Twig
       module Test
         # Checks if a variable is a sequence (array)
         #
-        #  {{ var is a sequence }}
+        #  {{ var is sequence }}
         class Sequence < Test::Base
           def compile(compiler)
             compiler.

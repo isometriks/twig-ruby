@@ -52,6 +52,9 @@ RSpec.describe Twig::Extension::Core do
           {{ {a: 1, b: 2} is sequence ? 'KO' : 'OK' }}
           {{ {a: 1, b: 2} is mapping ? 'OK' : 'KO' }}
           {{ [1, 2] is mapping ? 'KO' : 'OK' }}
+          {{ [1, 2] is iterable ? 'OK' : 'KO' }}
+          {{ {a: 1, b: 2} is iterable ? 'OK' : 'KO' }}
+          {{ "Hello World!" is iterable ? 'KO' : 'OK' }}
         INPUTS
       end
 
@@ -84,6 +87,9 @@ RSpec.describe Twig::Extension::Core do
           4
           6
           8
+          OK
+          OK
+          OK
           OK
           OK
           OK
