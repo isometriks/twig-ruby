@@ -116,8 +116,8 @@
 - empty
 - ~~even~~
 - iterable
-- mapping
+- ~~mapping~~
 - ~~null~~
 - ~~odd~~
 - ~~same as~~
-- sequence
+- ~~sequence~~

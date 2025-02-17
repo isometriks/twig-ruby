@@ -137,6 +137,8 @@ module Twig
           TwigTest.new('divisible by', nil, {
             node_class: Node::Expression::Test::DivisibleBy, one_mandatory_argument: true
           }),
+          TwigTest.new('sequence', nil, { node_class: Node::Expression::Test::Sequence }),
+          TwigTest.new('mapping', nil, { node_class: Node::Expression::Test::Mapping }),
         ]
       end
 
