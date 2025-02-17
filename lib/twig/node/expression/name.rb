@@ -35,9 +35,11 @@ module Twig
           compiler.
             raw("(#{check}").
             raw(" ? #{get}").
-            raw(' : raise("#{').
+            raw(' : raise(::Twig::Error::Runtime.new("#{').
             string(name).
-            raw('} does not exist"))')
+            raw('} does not exist", ').
+            repr(lineno).
+            raw(', source_context)))')
         end
       end
     end
