@@ -48,6 +48,10 @@ RSpec.describe Twig::Extension::Core do
           {{ 6 is divisible by(5) ? "KO" : "OK" }}
           {{ name is same as("world") ? "OK" : "KO" }}
           {{ name is not same as("hello") ? "OK" : "KO" }}
+          {{ [1, 2] is sequence ? 'OK' : 'KO' }}
+          {{ {a: 1, b: 2} is sequence ? 'KO' : 'OK' }}
+          {{ {a: 1, b: 2} is mapping ? 'OK' : 'KO' }}
+          {{ [1, 2] is mapping ? 'KO' : 'OK' }}
         INPUTS
       end
 
@@ -80,6 +84,10 @@ RSpec.describe Twig::Extension::Core do
           4
           6
           8
+          OK
+          OK
+          OK
+          OK
           OK
           OK
           OK
