@@ -137,6 +137,7 @@ module Twig
           TwigTest.new('divisible by', nil, {
             node_class: Node::Expression::Test::DivisibleBy, one_mandatory_argument: true
           }),
+          TwigTest.new('empty', static(:test_empty?)),
           TwigTest.new('iterable', nil, { node_class: Node::Expression::Test::Iterable }),
           TwigTest.new('sequence', nil, { node_class: Node::Expression::Test::Sequence }),
           TwigTest.new('mapping', nil, { node_class: Node::Expression::Test::Mapping }),
@@ -384,6 +385,10 @@ module Twig
         else
           raise NotImplementedError, 'Need to implement other get_attribute calls'
         end
+      end
+
+      def self.test_empty?(object)
+        object.nil? || object.empty?
       end
 
       # @param [Parser] parser

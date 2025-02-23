@@ -113,7 +113,7 @@
 - constant
 - defined
 - ~~divisible by~~
-- empty
+- ~~empty~~
 - ~~even~~
 - ~~iterable~~
 - ~~mapping~~
