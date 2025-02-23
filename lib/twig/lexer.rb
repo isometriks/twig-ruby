@@ -228,7 +228,7 @@ module Twig
       elsif (match = @code[@cursor..].match(REGEX_INLINE_COMMENT))
         move_cursor(match.to_s)
       else
-        Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
+        raise Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
       end
     end
 
