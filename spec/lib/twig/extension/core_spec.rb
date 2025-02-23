@@ -55,6 +55,8 @@ RSpec.describe Twig::Extension::Core do
           {{ [1, 2] is iterable ? 'OK' : 'KO' }}
           {{ {a: 1, b: 2} is iterable ? 'OK' : 'KO' }}
           {{ "Hello World!" is iterable ? 'KO' : 'OK' }}
+          {{ [] is empty ? 'OK' : 'KO' }}
+          {{ [1, 2, 3] is not empty ? 'OK' : 'KO' }}
         INPUTS
       end
 
@@ -87,6 +89,8 @@ RSpec.describe Twig::Extension::Core do
           4
           6
           8
+          OK
+          OK
           OK
           OK
           OK
