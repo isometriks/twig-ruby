@@ -4,12 +4,14 @@ module Twig
   module Node
     module Expression
       class Constant < Expression::Base
+        include Expression::SupportDefinedTest
+
         def initialize(value, lineno)
           super({}, { value: }, lineno)
         end
 
         def compile(compiler)
-          compiler.repr(attributes[:value])
+          compiler.repr(define_test_enabled? ? true : attributes[:value])
         end
       end
     end

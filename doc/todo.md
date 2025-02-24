@@ -111,7 +111,7 @@
 ## Tests
 
 - constant
-- defined
+- defined*
 - ~~divisible by~~
 - ~~empty~~
 - ~~even~~
