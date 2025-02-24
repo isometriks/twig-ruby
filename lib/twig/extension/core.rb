@@ -117,6 +117,9 @@ module Twig
           TwigFunction.new('parent', nil, {
             parser_callable: static(:parse_parent_function),
           }),
+          TwigFunction.new('block', nil, {
+            parser_callable: static(:parse_block_function),
+          }),
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
@@ -411,6 +414,12 @@ module Twig
         end
 
         Node::Expression::Parent.new(block_name, line)
+      end
+
+      # @param [Parser] parser
+      # @param [Node::Base] fake_node
+      def self.parse_block_function(parser, fake_node, args, line)
+        Node::Expression::BlockReference.new(args.nodes[0], args.nodes.key?(1) ? args.nodes[1] : nil, line)
       end
 
       def self.enumerable_function(object, function, proc)

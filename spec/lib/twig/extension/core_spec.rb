@@ -57,6 +57,7 @@ RSpec.describe Twig::Extension::Core do
           {{ "Hello World!" is iterable ? 'KO' : 'OK' }}
           {{ [] is empty ? 'OK' : 'KO' }}
           {{ [1, 2, 3] is not empty ? 'OK' : 'KO' }}
+          {% block hello "Hello" %}{{ block("hello") }}
         INPUTS
       end
 
@@ -111,6 +112,7 @@ RSpec.describe Twig::Extension::Core do
           OK
           OK
           OK
+          HelloHello
         OUTPUTS
       end
 
