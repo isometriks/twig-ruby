@@ -5,6 +5,10 @@ module Twig
     module Expression
       class Hash < Array
         def compile(compiler)
+          if define_test_enabled?
+            return compiler.repr(true)
+          end
+
           compiler.
             raw('{').
             indent

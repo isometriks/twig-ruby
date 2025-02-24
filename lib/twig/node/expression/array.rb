@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require_relative 'support_defined_test'
+
 module Twig
   module Node
     module Expression
       class Array < Expression::Base
+        include Expression::SupportDefinedTest
+
         def initialize(elements, lineno)
           super(elements, {}, lineno)
 
@@ -22,6 +26,10 @@ module Twig
         end
 
         def compile(compiler)
+          if define_test_enabled?
+            return compiler.repr(true)
+          end
+
           compiler.
             raw('[').
             indent

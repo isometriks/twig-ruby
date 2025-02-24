@@ -131,6 +131,7 @@ module Twig
         [
           TwigTest.new('even', nil, { node_class: Node::Expression::Test::Even }),
           TwigTest.new('odd', nil, { node_class: Node::Expression::Test::Odd }),
+          TwigTest.new('defined', nil, { node_class: Node::Expression::Test::Defined }),
           TwigTest.new('same as', nil, {
             node_class: Node::Expression::Test::SameAs, one_mandatory_argument: true
           }),

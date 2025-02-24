@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require_relative 'support_defined_test'
+
 module Twig
   module Node
     module Expression
       class Name < Expression::Base
+        include Expression::SupportDefinedTest
+
         SPECIAL_VARS = {
           '_self' => 'get_template_name',
           '_context' => 'context',
@@ -17,7 +21,7 @@ module Twig
             name:,
             is_defined_test: false,
             ignore_strict_check: false,
-            alwways_defined: false,
+            always_defined: false,
           }, lineno)
         end
 
@@ -32,14 +36,22 @@ module Twig
             get = "context[:#{name}]"
           end
 
-          compiler.
-            raw("(#{check}").
-            raw(" ? #{get}").
-            raw(' : raise(::Twig::Error::Runtime.new("#{').
-            string(name).
-            raw('} does not exist", ').
-            repr(lineno).
-            raw(', source_context)))')
+          if define_test_enabled?
+            if attributes[:always_defined] || SPECIAL_VARS.key?(name)
+              compiler.repr(true)
+            else
+              compiler.raw(check)
+            end
+          else
+            compiler.
+              raw("(#{check}").
+              raw(" ? #{get}").
+              raw(' : raise(::Twig::Error::Runtime.new("#{').
+              string(name).
+              raw('} does not exist", ').
+              repr(lineno).
+              raw(', source_context)))')
+          end
         end
       end
     end
