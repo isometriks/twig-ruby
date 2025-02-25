@@ -23,5 +23,9 @@ module Twig
     def one_mandatory_argument?
       @options[:one_mandatory_argument]
     end
+
+    def needs_context?
+      false
+    end
   end
 end

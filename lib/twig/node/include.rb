@@ -21,7 +21,7 @@ module Twig
       def compile(compiler)
         if attributes[:ignore_missing]
           # @todo
-          raise 'not implemented yet'
+          raise Error::NotImplemented.new('Need to implement ignore_missing for include', lineno)
         else
           compiler.
             write('')

@@ -14,7 +14,7 @@ module Twig
           safe = true
           capture = false
 
-          if values.is_a?(Nodes) && values.empty?
+          if values.is_a?(Nodes) && values.nodes.empty?
             values = Expression::Constant.new('', values.lineno)
           elsif values.is_a?(Text)
             values = Expression::Constant.new(values.attributes[:data], values.lineno)

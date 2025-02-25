@@ -3,7 +3,7 @@
 module Twig
   class Environment
     # @return [Cache::Base]
-    attr_reader :cache
+    attr_reader :cache, :charset
 
     # @param [::Twig::Loader::Base] loader
     def initialize(loader, options = {})
@@ -12,12 +12,14 @@ module Twig
       @options = {
         cache: false,
         debug: false,
+        charset: 'UTF-8',
         auto_escape: 'html',
         auto_reload: nil,
         allow_helper_methods: false,
       }.merge(options)
 
       @auto_reload = options[:auto_reload].nil? ? options[:debug] : options[:auto_reload]
+      @charset = options[:charset]
 
       self.cache = @options[:cache]
 
