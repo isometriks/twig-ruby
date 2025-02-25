@@ -124,6 +124,9 @@ module Twig
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
           TwigFunction.new('date', method(:convert_date)),
+          TwigFunction.new('include', static(:include), {
+            needs_environment: true, needs_context: true, is_safe: ['all']
+          }),
         ]
       end
 
@@ -143,6 +146,7 @@ module Twig
           }),
           TwigTest.new('empty', static(:test_empty?)),
           TwigTest.new('iterable', nil, { node_class: Node::Expression::Test::Iterable }),
+          # @todo: These should probably check enumerables etc. move to a method?
           TwigTest.new('sequence', nil, { node_class: Node::Expression::Test::Sequence }),
           TwigTest.new('mapping', nil, { node_class: Node::Expression::Test::Mapping }),
         ]
@@ -387,12 +391,26 @@ module Twig
             object.send(attribute, &)
           end
         else
+          if object.respond_to?(:[])
+            return object[attribute]
+          end
+
           raise NotImplementedError, 'Need to implement other get_attribute calls'
         end
       end
 
       def self.test_empty?(object)
         object.nil? || object.empty?
+      end
+
+      # @param [Environment] environment
+      # @param [Context] context
+      def self.include(template, variables = {}, environment:, context:, with_context: true)
+        variables = context.merge(variables) if with_context
+
+        # @todo: Missing some sandbox, ignore_missing / exception catching
+
+        environment.load_template(template).render(variables)
       end
 
       # @param [Parser] parser
@@ -420,7 +438,9 @@ module Twig
       # @param [Parser] parser
       # @param [Node::Base] fake_node
       def self.parse_block_function(parser, fake_node, args, line)
-        Node::Expression::BlockReference.new(args.nodes[0], args.nodes.key?(1) ? args.nodes[1] : nil, line)
+        # @todo Not really extracted, could have named args out of order
+        extracted = args.nodes.values[0..1]
+        Node::Expression::BlockReference.new(extracted[0], extracted[1], line)
       end
 
       def self.enumerable_function(object, function, proc)

@@ -151,5 +151,27 @@ module Twig
         end
       end
     end
+
+    context 'parses comment blocks' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          <<~INPUTS
+            Hello{# nothing here #} World!
+          INPUTS
+        end
+
+        let(:outputs) do
+          <<~OUTPUTS
+            Hello World!
+          OUTPUTS
+        end
+
+        let(:locals) do
+          {
+            foo: { not: 'not' },
+          }
+        end
+      end
+    end
   end
 end

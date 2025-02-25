@@ -36,6 +36,8 @@ module Twig
 
         def compile_arguments(compiler)
           first = true
+          # @type [Twig::Callable] callable
+          callable = attributes[:twig_callable]
 
           compiler.
             raw('(')
@@ -51,6 +53,24 @@ module Twig
             compiler.raw(', ') unless first
             compiler.subcompile(node)
 
+            first = false
+          end
+
+          if callable.needs_charset?
+            compiler.raw(', ') unless first
+            compiler.raw('charset: env.charset')
+            first = false
+          end
+
+          if callable.needs_environment?
+            compiler.raw(', ') unless first
+            compiler.raw('environment: env')
+            first = false
+          end
+
+          if callable.needs_context?
+            compiler.raw(', ') unless first
+            compiler.raw('context:')
             first = false
           end
 

@@ -17,5 +17,17 @@ module Twig
         is_variadic: false,
       }.merge(options)
     end
+
+    def needs_charset?
+      @options[:needs_charset]
+    end
+
+    def needs_environment?
+      @options[:needs_environment]
+    end
+
+    def needs_context?
+      @options[:needs_context]
+    end
   end
 end

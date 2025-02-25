@@ -127,4 +127,30 @@ RSpec.describe Twig::Extension::Core do
       end
     end
   end
+
+  context 'functions' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          Hello {{ include("include.twig") }}
+        INPUTS
+      end
+
+      let(:outputs) do
+        <<~OUTPUTS
+          Hello World!
+        OUTPUTS
+      end
+
+      let(:locals) do
+        {}
+      end
+
+      let(:templates) do
+        {
+          'include.twig' => 'World!',
+        }
+      end
+    end
+  end
 end

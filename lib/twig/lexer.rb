@@ -21,11 +21,13 @@ module Twig
     REGEX_NAME = /[a-zA-Z_][a-zA-Z0-9_]*/
     REGEX_SYMBOL = /:#{REGEX_NAME}/
     REGEX_CVAR = /@#{REGEX_NAME}/
-    REGEX_STRING = /\A"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/su
-    REGEX_DQ_STRING_PART = /\A[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/su
+    REGEX_STRING = /\G"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/mu
+    REGEX_DQ_STRING_PART = /\G[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/mu
     REGEX_INLINE_COMMENT = /#[^\n]*/
-    REGEX_DQ_STRING_DELIM = /\A"/
-    REGEX_NUMBER = /\A(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
+    REGEX_DQ_STRING_DELIM = /\G"/
+    REGEX_INTERP_START = /\G#\{\s*/
+    REGEX_INTERP_END = /\G\s*\}/
+    REGEX_NUMBER = /\G(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
 
     STATE_DATA = 0
     STATE_BLOCK = 1
@@ -62,6 +64,8 @@ module Twig
           lex_var
         when STATE_STRING
           lex_string
+        when STATE_INTERPOLATION
+          lex_interpolation
         else
           raise "Unknown state: #{@state}"
         end
@@ -103,11 +107,13 @@ module Twig
       move_cursor(text_content + position.to_s)
 
       case @positions[@position][1]
+      when TAG_COMMENT[0]
+        lex_comment
       when TAG_BLOCK[0]
-        if (match = @code[@cursor...].match(lex_block_raw_regex))
+        if (match = @code.match(lex_block_raw_regex, @cursor))
           move_cursor(match.to_s)
           lex_raw_data
-        elsif (match = @code[@cursor...].match(lex_block_line_regex))
+        elsif (match = @code.match(lex_block_line_regex, @cursor))
           move_cursor(match[0].to_s)
           @lineno = match[1].to_i
         else
@@ -120,12 +126,12 @@ module Twig
         push_state(STATE_VAR)
         @current_var_block_line = @lineno
       else
-        raise "Invalid start token #{@positions[@position]}"
+        raise Error::Syntax.new("Invalid start token #{@positions[@position]}", @lineno)
       end
     end
 
     def lex_raw_data
-      unless (match = @code[@cursor...].match(lex_raw_data_regex))
+      unless (match = @code.match(lex_raw_data_regex, @cursor))
         raise "Uexpected end of file. Unclosed 'verbatim' block"
       end
 
@@ -145,7 +151,7 @@ module Twig
     end
 
     def lex_block
-      if @brackets.empty? && (match = @code[@cursor..].match(lex_block_regex))
+      if @brackets.empty? && (match = @code.match(lex_block_regex, @cursor))
         push_token(Token::BLOCK_END_TYPE)
         move_cursor(match.to_s)
         pop_state
@@ -155,7 +161,7 @@ module Twig
     end
 
     def lex_var
-      match = @code[@cursor...].match(lex_var_regex)
+      match = @code.match(lex_var_regex, @cursor)
 
       if @brackets.empty? && match
         push_token(Token::VAR_END_TYPE)
@@ -167,7 +173,7 @@ module Twig
     end
 
     def lex_expression
-      @code[@cursor..].match(/\A\s+/) do |match|
+      @code.match(/\G\s+/, @cursor) do |match|
         move_cursor(match.to_s)
 
         if @cursor >= @end
@@ -183,19 +189,19 @@ module Twig
       elsif code_at?(0, '=') && (@cursor + 1 < @end) && code_at?(1, '>')
         push_token(Token::ARROW_TYPE)
         move_cursor('=>')
-      elsif (match = @code[@cursor..].match(operator_regex))
+      elsif (match = @code.match(operator_regex, @cursor))
         push_token(Token::OPERATOR_TYPE, match.to_s.gsub('/\s+/', ' '))
         move_cursor(match.to_s)
-      elsif (match = @code[@cursor..].match(/\A#{REGEX_NAME}\??/))
+      elsif (match = @code.match(/\G#{REGEX_NAME}\??/, @cursor))
         push_token(Token::NAME_TYPE, match.to_s)
         move_cursor(match.to_s)
-      elsif (match = @code[@cursor..].match(/\A#{REGEX_SYMBOL}/))
+      elsif (match = @code.match(/\G#{REGEX_SYMBOL}/, @cursor))
         push_token(Token::SYMBOL_TYPE, match.to_s[1..])
         move_cursor(match.to_s)
-      elsif (match = @code[@cursor..].match(/\A#{REGEX_CVAR}/))
+      elsif (match = @code.match(/\G#{REGEX_CVAR}/, @cursor))
         push_token(Token::CLASS_VAR_TYPE, match.to_s)
         move_cursor(match.to_s)
-      elsif (match = @code[@cursor..].match(REGEX_NUMBER))
+      elsif (match = @code.match(REGEX_NUMBER, @cursor))
         value = match.to_s.tr('_', '')
         value = value.to_i.to_s == value ? value.to_i : value.to_f
         push_token(Token::NUMBER_TYPE, value)
@@ -218,26 +224,38 @@ module Twig
 
         push_token(Token::PUNCTUATION_TYPE, code_at)
         @cursor += 1
-      elsif (match = @code[@cursor..].match(REGEX_STRING))
+      elsif (match = @code.match(REGEX_STRING, @cursor))
         push_token(Token::STRING_TYPE, match.to_s[1...-1])
         move_cursor(match.to_s)
-      elsif (match = @code[@cursor..].match(REGEX_DQ_STRING_DELIM))
+      elsif (match = @code.match(REGEX_DQ_STRING_DELIM, @cursor))
         @brackets << ['"', @lineno]
         push_state(STATE_STRING)
         move_cursor(match.to_s)
-      elsif (match = @code[@cursor..].match(REGEX_INLINE_COMMENT))
+      elsif (match = @code.match(REGEX_INLINE_COMMENT, @cursor))
         move_cursor(match.to_s)
       else
         raise Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
       end
     end
 
+    def lex_comment
+      unless (match = @code.match(lex_comment_regex, @cursor))
+        raise Error::Syntax.new('Unclosed comment', @lineno, @source)
+      end
+
+      move_cursor(@code[@cursor...match.offset(0)[1]])
+    end
+
     def lex_string
-      # @todo interpolation start
-      if (match = @code[@cursor..].match(REGEX_DQ_STRING_PART)) && match.to_s != ''
+      if (match = @code.match(REGEX_INTERP_START, @cursor))
+        @brackets << ['#{', @lineno]
+        push_token(Token::INTERPOLATION_START_TYPE)
+        move_cursor(match.to_s)
+        push_state(STATE_INTERPOLATION)
+      elsif (match = @code.match(REGEX_DQ_STRING_PART, @cursor)) && match.to_s != ''
         push_token(Token::STRING_TYPE, match.to_s)
         move_cursor(match.to_s)
-      elsif @code[@cursor..].match(REGEX_DQ_STRING_DELIM)
+      elsif @code.match(REGEX_DQ_STRING_DELIM, @cursor)
         expect, lineno = @brackets.pop
 
         unless code_at?(0, '"')
@@ -255,6 +273,18 @@ module Twig
       return if type == Token::TEXT_TYPE && value.empty?
 
       @tokens << Token.new(type, value, @lineno)
+    end
+
+    def lex_interpolation
+      bracket = @brackets.last
+      if bracket[0] == '#{' && (match = @code.match(REGEX_INTERP_END, @cursor))
+        @brackets.pop
+        push_token(Token::INTERPOLATION_END_TYPE)
+        move_cursor(match.to_s)
+        pop_state
+      else
+        lex_expression
+      end
     end
 
     def push_state(state)
@@ -306,36 +336,47 @@ module Twig
 
     def lex_var_regex
       @lex_var_regex ||=
-        /\A\s*(?:
+        /\G\s*(?:
           #{Regexp.union(
-            "#{WHITESPACE_TRIM}#{TAG_VARIABLE[1]}\\s*",
-            WHITESPACE_LINE_TRIM + TAG_VARIABLE[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            /#{WHITESPACE_TRIM}#{TAG_VARIABLE[1]}\s*/,
+            /#{WHITESPACE_LINE_TRIM}#{TAG_VARIABLE[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             TAG_VARIABLE[1]
           )}
         )/x
     end
 
+    def lex_comment_regex
+      @lex_comment_regex ||=
+        /
+          (?:#{Regexp.union(
+            /#{WHITESPACE_TRIM}#{TAG_COMMENT[1]}\s*\n?/,
+            /#{WHITESPACE_LINE_TRIM}#{TAG_COMMENT[1]}[#{WHITESPACE_LINE_CHARS}]*/,
+            /#{TAG_COMMENT[1]}\n?/
+          )})
+        /mxu
+    end
+
     def lex_block_raw_regex
       @lex_block_raw_regex ||=
-        /\A\s*verbatim\s*(?:
+        /\G\s*verbatim\s*(?:
           #{Regexp.union(
-            "#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\\s*",
-            WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\s*/,
+            /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             TAG_BLOCK[1]
           )}
-        )/sx
+        )/mxu
     end
 
     def lex_block_line_regex
-      @lex_block_line_regex ||= /\A\s*line\s+(\d+)\s*#{Regexp.escape(TAG_BLOCK[1])}/s
+      @lex_block_line_regex ||= /\G\s*line\s+(\d+)\s*#{Regexp.escape(TAG_BLOCK[1])}/mu
     end
 
     def lex_block_regex
       @lex_block_regex ||=
-        /\A\s*(?:
+        /\G\s*(?:
           #{Regexp.union(
             /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\s*\n?/,
-            WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             /#{TAG_BLOCK[1]}\n?/
           )}
         )/x
@@ -347,11 +388,11 @@ module Twig
           #{TAG_BLOCK[0]}
           (#{Regexp.union(WHITESPACE_TRIM, WHITESPACE_LINE_TRIM)})?\s*endverbatim\s*
           (?:#{Regexp.union(
-            "#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\\s*",
-            WHITESPACE_LINE_TRIM + TAG_BLOCK[1] + "[#{WHITESPACE_LINE_CHARS}]*",
+            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\s*/,
+            /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             TAG_BLOCK[1]
           )})
-        /sx
+        /mx
     end
 
     def operator_regex
@@ -385,7 +426,7 @@ module Twig
         chain << regex
       end
 
-      @operator_regex = Regexp.new("\\A(?:#{chain.join('|')})")
+      @operator_regex = Regexp.new("\\G(?:#{chain.join('|')})")
     end
   end
 end

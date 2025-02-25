@@ -10,7 +10,7 @@ module Twig
 
     def merge!(other)
       unless other.class <= Hash
-        raise 'Must merge! another Hash'
+        raise "Must merge! another Hash, given #{other.class.name}"
       end
 
       other.each do |k, v|
