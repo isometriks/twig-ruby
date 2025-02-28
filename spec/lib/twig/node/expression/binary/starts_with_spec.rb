@@ -23,4 +23,21 @@ RSpec.describe Twig::Node::Expression::Binary::StartsWith do
 
     let(:locals) { { a: 'Hello', b: 'World' } }
   end
+
+  context 'multi line' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ 'foo' starts
+                  with 'f' ? 'OK' : 'KO' }}",
+        ]
+      end
+
+      let(:outputs) do
+        [
+          'OK',
+        ]
+      end
+    end
+  end
 end

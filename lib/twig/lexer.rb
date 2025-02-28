@@ -197,7 +197,7 @@ module Twig
         push_token(Token::ARROW_TYPE)
         move_cursor('=>')
       elsif (match = @code.match(operator_regex, @cursor))
-        push_token(Token::OPERATOR_TYPE, match.to_s.gsub('/\s+/', ' '))
+        push_token(Token::OPERATOR_TYPE, match.to_s.gsub(/\s+/, ' '))
         move_cursor(match.to_s)
       elsif (match = @code.match(/\G#{REGEX_NAME}\??/, @cursor))
         push_token(Token::NAME_TYPE, match.to_s)
