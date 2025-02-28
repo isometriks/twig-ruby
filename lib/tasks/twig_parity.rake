@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
+require_relative '../twig_ruby'
+
 desc 'Tests against Twig PHP fixtures.'
 
 GIT_LOCATION = "#{__dir__}/../../tmp/twig-php".freeze
 
 task :twig_parity do
   `git clone -b 4.x https://github.com/twigphp/Twig.git #{GIT_LOCATION}`
-
-  require_relative '../twig_ruby'
 
   stats = { pass: 0, fail: 0, total: 0 }
 
@@ -52,6 +52,7 @@ class TwigFixture
     environment = ::Twig::Environment.new(loader, {
       cache: false,
     })
+    environment.add_extension(::TwigTestExtension.new)
 
     begin
       environment.load_template('index.twig')
@@ -124,5 +125,17 @@ class TwigFixture
     end
 
     templates
+  end
+end
+
+class TwigTestExtension < Twig::Extension::Base
+  def filters
+    [
+      ::Twig::TwigFilter.new('not', static(:not_filter)),
+    ]
+  end
+
+  def self.not_filter(value)
+    "not #{value}"
   end
 end
