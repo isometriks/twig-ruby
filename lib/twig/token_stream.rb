@@ -76,8 +76,7 @@ module Twig
     def debug
       tokens.
         map(&:debug).
-        map { |type, value| "#{type}(#{value})" }.
-        join("\n")
+        map { |type, value| "#{type}(#{value})" }
     end
   end
 end

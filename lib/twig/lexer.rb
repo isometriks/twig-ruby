@@ -101,7 +101,14 @@ module Twig
       # Push the template text first
       text = text_content = @code[@cursor, (position.begin(0) - @cursor)]
 
-      # TODO: Trim
+      # trim?
+      char = @positions[@position][2]
+
+      if char == WHITESPACE_TRIM
+        text = text.rstrip
+      elsif char == WHITESPACE_LINE_TRIM
+        text = text.gsub(/[ \t\0\x0B]*\z/, '')
+      end
 
       push_token(Token::TEXT_TYPE, text)
       move_cursor(text_content + position.to_s)
@@ -141,7 +148,7 @@ module Twig
       # trim
       if match[1]
         text = if match[1] == WHITESPACE_TRIM
-                 text.gsub(/ *$/, '') # space trim
+                 text.gsub(/[ \t\0\x0B]*\z/, '') # space trim
                else
                  text.rstrip # line trim
                end
