@@ -109,6 +109,9 @@ module Twig
           TwigFilter.new('slice', static(:slice)),
           TwigFilter.new('first', static(:first)),
           TwigFilter.new('last', static(:last)),
+
+          # iteration and runtime
+          TwigFilter.new('keys', static(:keys)),
         ]
       end
 
@@ -373,6 +376,12 @@ module Twig
 
       def self.last(object)
         (object.is_a?(Hash) ? object.values : object).last
+      end
+
+      def self.keys(object)
+        return object.keys if object.respond_to?(:keys)
+
+        (0...object.length).to_a
       end
 
       def self.ensure_hash(value)
