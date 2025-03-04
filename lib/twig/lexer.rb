@@ -25,8 +25,8 @@ module Twig
     REGEX_DQ_STRING_PART = /\G[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/mu
     REGEX_INLINE_COMMENT = /#[^\n]*/
     REGEX_DQ_STRING_DELIM = /\G"/
-    REGEX_INTERP_START = /\G#\{\s*/
-    REGEX_INTERP_END = /\G\s*\}/
+    REGEX_INTERP_START = /\G#\{[[:space:]]*/
+    REGEX_INTERP_END = /\G[[:space:]]*\}/
     REGEX_NUMBER = /\G(?:#{REGEX_DNUM}(?:#{REGEX_EXPONENT})?)/x
 
     STATE_DATA = 0
@@ -180,7 +180,7 @@ module Twig
     end
 
     def lex_expression
-      @code.match(/\G\s+/, @cursor) do |match|
+      @code.match(/\G[[:space:]]+/, @cursor) do |match|
         move_cursor(match.to_s)
 
         if @cursor >= @end
@@ -197,7 +197,7 @@ module Twig
         push_token(Token::ARROW_TYPE)
         move_cursor('=>')
       elsif (match = @code.match(operator_regex, @cursor))
-        push_token(Token::OPERATOR_TYPE, match.to_s.gsub(/\s+/, ' '))
+        push_token(Token::OPERATOR_TYPE, match.to_s.gsub(/[[:space:]]+/, ' '))
         move_cursor(match.to_s)
       elsif (match = @code.match(/\G#{REGEX_NAME}\??/, @cursor))
         push_token(Token::NAME_TYPE, match.to_s)
@@ -343,9 +343,9 @@ module Twig
 
     def lex_var_regex
       @lex_var_regex ||=
-        /\G\s*(?:
+        /\G[[:space:]]*(?:
           #{Regexp.union(
-            /#{WHITESPACE_TRIM}#{TAG_VARIABLE[1]}\s*/,
+            /#{WHITESPACE_TRIM}#{TAG_VARIABLE[1]}[[:space:]]*/,
             /#{WHITESPACE_LINE_TRIM}#{TAG_VARIABLE[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             TAG_VARIABLE[1]
           )}
@@ -356,7 +356,7 @@ module Twig
       @lex_comment_regex ||=
         /
           (?:#{Regexp.union(
-            /#{WHITESPACE_TRIM}#{TAG_COMMENT[1]}\s*\n?/,
+            /#{WHITESPACE_TRIM}#{TAG_COMMENT[1]}[[:space:]]*\n?/,
             /#{WHITESPACE_LINE_TRIM}#{TAG_COMMENT[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             /#{TAG_COMMENT[1]}\n?/
           )})
@@ -365,9 +365,9 @@ module Twig
 
     def lex_block_raw_regex
       @lex_block_raw_regex ||=
-        /\G\s*verbatim\s*(?:
+        /\G[[:space:]]*verbatim[[:space:]]*(?:
           #{Regexp.union(
-            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\s*/,
+            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}[[:space:]]*/,
             /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             TAG_BLOCK[1]
           )}
@@ -375,14 +375,14 @@ module Twig
     end
 
     def lex_block_line_regex
-      @lex_block_line_regex ||= /\G\s*line\s+(\d+)\s*#{Regexp.escape(TAG_BLOCK[1])}/mu
+      @lex_block_line_regex ||= /\G[[:space:]]*line[[:space:]]+(\d+)[[:space:]]*#{Regexp.escape(TAG_BLOCK[1])}/mu
     end
 
     def lex_block_regex
       @lex_block_regex ||=
-        /\G\s*(?:
+        /\G[[:space:]]*(?:
           #{Regexp.union(
-            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\s*\n?/,
+            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}[[:space:]]*\n?/,
             /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             /#{TAG_BLOCK[1]}\n?/
           )}
@@ -393,9 +393,9 @@ module Twig
       @lex_raw_data_regex ||=
         /
           #{TAG_BLOCK[0]}
-          (#{Regexp.union(WHITESPACE_TRIM, WHITESPACE_LINE_TRIM)})?\s*endverbatim\s*
+          (#{Regexp.union(WHITESPACE_TRIM, WHITESPACE_LINE_TRIM)})?[[:space:]]*endverbatim[[:space:]]*
           (?:#{Regexp.union(
-            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}\s*/,
+            /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}[[:space:]]*/,
             /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             TAG_BLOCK[1]
           )})
@@ -419,7 +419,7 @@ module Twig
         # an operator that ends with a character must be followed by
         # a whitespace, a parenthesis, an opening map [ or sequence {
         if operator[-1].match(/\w/)
-          regex << '(?=[\s()\[{])'
+          regex << '(?=[[[:space:]]()\[{])'
         end
 
         # an operator that begins with a character must not have a dot or pipe before
@@ -428,7 +428,7 @@ module Twig
         end
 
         # an operator with a space can be any amount of whitespaces
-        regex.gsub!(/(\\\s)+/, '\s+')
+        regex.gsub!(/(\\\s)+/, '[[:space:]]+')
 
         chain << regex
       end
