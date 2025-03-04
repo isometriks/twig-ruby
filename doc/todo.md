@@ -13,7 +13,7 @@
 - flush
 - for*
 - from
-- guard
+- ~~guard~~
 - ~~if~~
 - import
 - include*

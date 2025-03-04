@@ -302,6 +302,9 @@ module Twig
         else
           Node::Expression::Function.new(function, args, line)
         end
+      elsif parser.ignore_unknown_twig_callables?
+        function = TwigFunction.new(name, -> {})
+        Node::Expression::Function.new(function, Node::Nodes.new({}), line)
       elsif environment.allow_helper_methods?
         Node::Expression::HelperMethod.new(name, args, line)
       else
@@ -599,7 +602,11 @@ module Twig
     # @return [Filter]
     def get_filter(name, lineno)
       unless (filter = environment.filter(name))
-        raise Error::Syntax.new("Unknown '#{name}' filter", lineno, parser.stream.source)
+        unless parser.ignore_unknown_twig_callables?
+          raise Error::Syntax.new("Unknown '#{name}' filter", lineno, parser.stream.source)
+        end
+
+        filter = TwigFilter.new(name, -> {})
       end
 
       filter
@@ -685,8 +692,11 @@ module Twig
         test = environment.test(name)
       end
 
+      if test.nil? && parser.ignore_unknown_twig_callables?
+        test = TwigTest.new(name, -> {})
+      end
+
       unless test
-        # @todo Check if we're ignoring missing callables
         raise Error::Syntax.new("Unknown #{name} test.", line, stream.source)
       end
 
