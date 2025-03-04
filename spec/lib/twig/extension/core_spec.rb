@@ -140,6 +140,8 @@ RSpec.describe Twig::Extension::Core do
           {{ [1, 2, 3]|join }}
           {{ [1, 2, 3]|join(", ") }}
           {{ [1, 2, 3]|join(", ", ", and ") }}
+          {{ [1, 2, 3]|keys }}
+          {{ {a: 1, b: 2, c: 3 }|keys|join(", ") }}
         INPUTS
       end
 
@@ -153,6 +155,8 @@ RSpec.describe Twig::Extension::Core do
           123
           1, 2, 3
           1, 2, and 3
+          [0, 1, 2]
+          a, b, c
         OUTPUTS
       end
 

@@ -51,7 +51,7 @@
 - format_time
 - ~~join~~
 - ~~json_encode~~
-- keys
+- ~~keys~~
 - language_name
 - ~~last~~
 - ~~length~~
