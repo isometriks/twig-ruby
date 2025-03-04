@@ -126,6 +126,18 @@ class TwigFixture
 
     templates
   end
+
+  def parse_return_value(object)
+    if object.is_a?(Array) && object.length == 1
+      return parse_return_value(object.first)
+    end
+
+    if object.is_a?(Hash)
+      return object.transform_values { |v| parse_return_value(v) }
+    end
+
+    object
+  end
 end
 
 class TwigTestExtension < Twig::Extension::Base
