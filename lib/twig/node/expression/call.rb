@@ -14,10 +14,19 @@ module Twig
         def compile_callable(compiler)
           callable = attributes[:twig_callable].callable
 
-          if callable.is_a?(::Array)
+          case callable
+          when ::Array
+            extension, method = callable[0, 2]
+            extension = extension.class.name if extension.is_a?(Extension::Base)
+
             compiler.
-              raw("env.extension(%q[#{callable[0].class.name}]).#{callable[1]}")
-          elsif callable.is_a?(::Method)
+              raw("env.extension(%q[#{extension.delete_prefix('::')}]).#{method}")
+          when ::String
+            class_name, method = callable.split('.', 1)
+
+            compiler.
+              raw("env.extension(%q[#{class_name.delete_prefix('::')}]).#{method}")
+          when ::Method
             # Instance method
             if callable.receiver.is_a?(Extension::Base)
               compiler.

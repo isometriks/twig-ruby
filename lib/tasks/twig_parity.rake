@@ -144,10 +144,31 @@ class TwigTestExtension < Twig::Extension::Base
   def filters
     [
       ::Twig::TwigFilter.new('not', static(:not_filter)),
+      ::Twig::TwigFilter.new('magic_call', [self, :magic_call]),
+      ::Twig::TwigFilter.new('magic_call_string', 'TwigTestExtension.magicStaticCall'),
+      ::Twig::TwigFilter.new('magic_call_array', %w[TwigTestExtension magicStaticCall]),
+    ]
+  end
+
+  def tests
+    [
+      ::Twig::TwigTest.new('multi word', static(:multi_word?)),
     ]
   end
 
   def self.not_filter(value)
     "not #{value}"
+  end
+
+  def self.method_missing(method)
+    raise method.inspect
+  end
+
+  def self.respond_to_missing?(_method)
+    true
+  end
+
+  def self.multi_word?(string)
+    string.include?(' ')
   end
 end
