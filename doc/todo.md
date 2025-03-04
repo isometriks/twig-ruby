@@ -49,7 +49,7 @@
 - format_datetime
 - format_number
 - format_time
-- join
+- ~~join~~
 - ~~json_encode~~
 - keys
 - language_name
