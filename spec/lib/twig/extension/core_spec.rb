@@ -137,6 +137,9 @@ RSpec.describe Twig::Extension::Core do
           {{ [3, 2, 1]|sort }}
           {{ { a: 2, b: 1 }|sort((a, b) => (a[1] - b[1])) }}
           {{ { b: 2, a: 1 }|sort }}
+          {{ [1, 2, 3]|join }}
+          {{ [1, 2, 3]|join(", ") }}
+          {{ [1, 2, 3]|join(", ", ", and ") }}
         INPUTS
       end
 
@@ -147,6 +150,9 @@ RSpec.describe Twig::Extension::Core do
           [1, 2, 3]
           {b: 1, a: 2}
           {a: 1, b: 2}
+          123
+          1, 2, 3
+          1, 2, and 3
         OUTPUTS
       end
 

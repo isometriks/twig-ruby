@@ -91,7 +91,7 @@ module Twig
           TwigFilter.new('slug', static(:slug)),
 
           # array helpers
-          # new TwigFilter('join', self::join(...)),
+          TwigFilter.new('join', static(:join)),
           # new TwigFilter('split', self::split(...), ['needs_charset' => true]),
           TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
@@ -283,6 +283,18 @@ module Twig
 
       def self.slug(string, separator = '-', locale = 'en')
         string.parameterize(separator:, locale:)
+      end
+
+      def self.join(value, glue = '', and_glue = nil)
+        return value unless value.respond_to?(:to_a)
+
+        value = value.values if value.is_a?(Hash)
+        return '' if value.empty?
+
+        return value.join(glue) if and_glue.nil? || and_glue == glue
+        return value[0] if value.length == 1
+
+        value[..-2].join(glue) + and_glue.to_s + value[-1].to_s
       end
 
       # @param [Hash, Array, Enumerable] object
