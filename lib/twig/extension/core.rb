@@ -112,6 +112,7 @@ module Twig
 
           # iteration and runtime
           TwigFilter.new('keys', static(:keys)),
+          TwigFilter.new('values', static(:values)),
         ]
       end
 
@@ -382,6 +383,12 @@ module Twig
         return object.keys if object.respond_to?(:keys)
 
         (0...object.length).to_a
+      end
+
+      def self.values(object)
+        return object.values if object.respond_to?(:values)
+
+        object.to_a
       end
 
       def self.ensure_hash(value)
