@@ -93,7 +93,7 @@ module Twig
           # array helpers
           # new TwigFilter('join', self::join(...)),
           # new TwigFilter('split', self::split(...), ['needs_charset' => true]),
-          # new TwigFilter('sort', self::sort(...)),
+          TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
           # new TwigFilter('batch', self::batch(...)),
           TwigFilter.new('column', static(:column)),
@@ -283,6 +283,17 @@ module Twig
 
       def self.slug(string, separator = '-', locale = 'en')
         string.parameterize(separator:, locale:)
+      end
+
+      # @param [Hash, Array, Enumerable] object
+      def self.sort(object, arrow = nil)
+        if arrow.nil?
+          object.is_a?(Hash) ? object.sort.to_h : object.sort
+        else
+          object.sort { |a, b| arrow.call(a, b) }.then do |sorted|
+            object.is_a?(Hash) ? sorted.to_h : sorted
+          end
+        end
       end
 
       def self.merge(*enumerables)
