@@ -6,6 +6,9 @@ module Twig
   class Parser
     attr_reader :stream, :block_stack
 
+    # @return [Environment]
+    attr_reader :environment
+
     # @param [Environment] environment
     def initialize(environment)
       @environment = environment
@@ -19,6 +22,7 @@ module Twig
       @blocks = {}
       @block_stack = []
       @imported_symbols = [{}]
+      @ignore_unknown_twig_callables = false
 
       body = subparse(test, drop_needle:)
 
@@ -81,6 +85,17 @@ module Twig
       Node::Nodes.new(rv)
     end
 
+    def subparse_ignore_unknown_twig_callables(test, drop_needle: false)
+      previous = @ignore_unknown_twig_callables
+      @ignore_unknown_twig_callables = true
+
+      begin
+        subparse(test, drop_needle:)
+      ensure
+        @ignore_unknown_twig_callables = previous
+      end
+    end
+
     # @return [Token]
     def current_token
       stream.current
@@ -132,6 +147,10 @@ module Twig
       end
 
       @parent = parent
+    end
+
+    def ignore_unknown_twig_callables?
+      @ignore_unknown_twig_callables
     end
   end
 end

@@ -163,6 +163,7 @@ module Twig
           TokenParser::Do.new,
           TokenParser::Extends.new,
           TokenParser::For.new,
+          TokenParser::Guard.new,
           TokenParser::If.new,
           TokenParser::Include.new,
           TokenParser::Set.new,
