@@ -71,7 +71,7 @@
 - ~~singular~~
 - slice
 - ~~slug~~
-- sort
+- ~~sort~~
 - spaceless
 - split
 - ~~striptags~~
