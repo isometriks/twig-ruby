@@ -259,7 +259,7 @@ module Twig
           # {a} is a shortcut for {a: a}
           if stream.test(Token::PUNCTUATION_TYPE, %w[, }])
             value = Node::Expression::Variable::Context.new(key.attributes[:value], key.lineno)
-            node.add_element(value, key.to_sym)
+            node.add_element(value, key)
 
             next
           end

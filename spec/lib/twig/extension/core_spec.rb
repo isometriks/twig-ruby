@@ -142,6 +142,8 @@ RSpec.describe Twig::Extension::Core do
           {{ [1, 2, 3]|join(", ", ", and ") }}
           {{ [1, 2, 3]|keys }}
           {{ {a: 1, b: 2, c: 3 }|keys|join(", ") }}
+          {{ {a, b: 2, c: 3 }|values|join(", ") }}
+          {{ [1, 2, 3]|values|join(", ") }}
         INPUTS
       end
 
@@ -157,11 +159,13 @@ RSpec.describe Twig::Extension::Core do
           1, 2, and 3
           [0, 1, 2]
           a, b, c
+          1, 2, 3
+          1, 2, 3
         OUTPUTS
       end
 
       let(:locals) do
-        {}
+        { a: 1 }
       end
 
       let(:templates) do
