@@ -21,7 +21,7 @@
 - sandbox
 - ~~set~~
 - types
-- use
+- ~~use~~
 - verbatim
 - ~~with~~
 

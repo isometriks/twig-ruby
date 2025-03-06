@@ -18,7 +18,8 @@ module Twig
     def parse(stream, test = nil, drop_needle: false)
       @stream = stream
       @parent = nil
-      @traits = {}
+      @traits = AutoHash.new
+      @macros = {}
       @blocks = {}
       @block_stack = []
       @imported_symbols = [{}]
@@ -26,10 +27,17 @@ module Twig
 
       body = subparse(test, drop_needle:)
 
-      Node::Module.new(body, @parent, Node::Nodes.new(@blocks), stream.source)
+      Node::Module.new(
+        Node::Body.new({ 0 => body }),
+        @parent,
+        @blocks.empty? ? Node::Empty.new : Node::Nodes.new(@blocks),
+        @macros.empty? ? Node::Empty.new : Node::Nodes.new(@macros),
+        @traits.empty? ? Node::Empty.new : Node::Nodes.new(@traits),
+        stream.source
+      )
     end
 
-    # @param [Proc] test
+    # @param [Proc, nil] test
     # @return [Node::Base]
     def subparse(test, drop_needle: false)
       lineno = current_token.lineno
@@ -133,6 +141,10 @@ module Twig
 
     def block?(name)
       @blocks.key?(name)
+    end
+
+    def add_trait(trait)
+      @traits << trait
     end
 
     # @todo type value as BlockNode and also set it to a BodyNode

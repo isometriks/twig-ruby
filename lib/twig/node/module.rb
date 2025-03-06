@@ -3,10 +3,13 @@
 module Twig
   module Node
     class Module < Node::Base
-      def initialize(body, parent, blocks, source)
+      # @param [Node::Body] body
+      def initialize(body, parent, blocks, macros, traits, source)
         nodes = {
           body:,
           blocks:,
+          macros:,
+          traits:,
         }
         nodes[:parent] = parent if parent
 
@@ -28,6 +31,7 @@ module Twig
           raw(class_begin).
           indent
 
+        compile_constructor(compiler)
         compile_get_parent(compiler)
 
         compiler.
@@ -38,7 +42,7 @@ module Twig
           compiler.
             write('load_template(').
             subcompile(nodes[:parent]).
-            raw(").call(context, block_list.merge(blocks));\n")
+            raw(").call(context, self.blocks.merge(blocks));\n")
         else
           compiler.
             subcompile(nodes[:body])
@@ -48,29 +52,10 @@ module Twig
           write("@output_buffer\n").
           outdent.
           write("end\n\n").
-          subcompile(nodes[:blocks]).
-          outdent
-
-        compiler.
-          indent.
-          write("def block_list\n").
-          indent.
-          write("{\n").
-          indent
-
-        nodes[:blocks].nodes.each_value do |block|
-          compiler.
-            write("#{block.attributes[:name]}: self,\n")
-        end
-
-        compiler.
-          outdent.
-          write("}\n").
-          outdent.
-          write("end\n").
-          raw("\n")
+          subcompile(nodes[:blocks])
 
         compile_get_template_name(compiler)
+        compile_traitable(compiler)
         compile_get_source_context(compiler)
 
         compiler.
@@ -79,6 +64,112 @@ module Twig
       end
 
       private
+
+      # @param [Compiler] compiler
+      def compile_constructor(compiler)
+        compiler.
+          write("def initialize(*, **)\n").
+          indent.
+          write("super\n\n").
+          write("@source = source_context\n")
+
+        unless nodes.key?(:parent)
+          compiler.write("@parent = false\n")
+        end
+
+        traits_count = nodes[:traits].length
+
+        if traits_count.positive?
+          nodes[:traits].nodes.each do |i, trait|
+            node = trait.nodes[:template]
+
+            compiler.
+              write("_trait_#{i} = load_template(").
+              subcompile(node).
+              raw(', ').
+              repr(node.lineno).
+              raw(")\n").
+              write("unless _trait_#{i}.traitable?\n").
+              indent.
+              write(%q[raise ::Twig::Error::Runtime.new('Template "' + ]).
+              subcompile(node).
+              raw(%q(+ '" cannot be used as a trait.', )).
+              repr(node.lineno).
+              raw(", @source)\n").
+              outdent.
+              write("end\n").
+              write("_trait_#{i}_blocks = _trait_#{i}.blocks.dup\n\n")
+
+            trait.nodes[:targets].nodes.each do |key, value|
+              compiler.
+                write("unless _trait_#{i}_blocks.key?(").
+                string(key).
+                raw(".to_sym)\n").
+                indent.
+                write('raise ::Twig::Error::Runtime.new("Block \"#{').
+                string(key).
+                raw('}\" is not defined in trait \"#{').
+                subcompile(node).
+                raw('}\"", ').
+                repr(node.lineno).
+                raw(", @source)\n").
+                outdent.
+                write("end\n\n").
+
+                write("_trait_#{i}_blocks[").
+                subcompile(value).
+                raw(".to_sym] = _trait_#{i}_blocks[").
+                symbol(key).
+                raw("]\n").
+                write("_trait_#{i}_blocks.delete(").
+                symbol(key).
+                raw(")\n").
+                write('@trait_aliases[').
+                subcompile(value).
+                raw('.to_sym] = ').
+                symbol(key).
+                raw("\n\n")
+            end
+          end
+
+          if traits_count > 1
+            trait_names = (0...traits_count).map { |i| "_trait_#{i}_blocks" }
+
+            compiler.
+              write("@traits = {}.merge(#{trait_names.join(', ')})\n\n")
+          else
+            compiler.
+              write("@traits = _trait_0_blocks\n\n")
+          end
+
+          compiler.
+            write("@blocks = @traits.merge({\n")
+        else
+          compiler.
+            write("@blocks = {\n")
+        end
+
+        compiler.indent
+
+        nodes[:blocks].nodes.each_key do |name|
+          compiler.
+            write("#{name}: [self, 'block_#{name}'],\n")
+        end
+
+        compiler.outdent
+
+        if traits_count.positive?
+          compiler.
+            write("})\n")
+        else
+          compiler.
+            write("}\n")
+        end
+
+        compiler.
+          outdent.
+          write("end\n\n")
+      end
 
       # @param [Compiler] compiler
       def compile_get_parent(compiler)
@@ -119,6 +210,43 @@ module Twig
           write('').
           repr(source_context.name).
           raw("\n").
+          outdent.
+          write("end\n\n")
+      end
+
+      def compile_traitable(compiler)
+        # A template can be used as a trait if:
+        #   * it has no parent
+        #   * it has no macros
+        #   * it has no body
+        #
+        # Put another way, a template can be used as a trait if it
+        # only contains blocks and use statements.
+        traitable = !nodes.key?(:parent) && nodes[:macros].empty?
+
+        if traitable
+          body_node = nodes[:body].nodes[0]
+
+          if body_node.empty?
+            body_node = Node::Nodes.new({ 0 => body_node })
+          end
+
+          body_node.nodes.each_value do |node|
+            if node.length.positive?
+              traitable = false
+              break
+            end
+          end
+        end
+
+        if traitable
+          return
+        end
+
+        compiler.
+          write("def traitable?\n").
+          indent.
+          write("false\n").
           outdent.
           write("end\n\n")
       end

@@ -52,6 +52,14 @@ module Twig
       self
     end
 
+    # @param [String, Symbol] value
+    # @return [Compiler]
+    def symbol(value)
+      @source << "%q[#{value}].to_sym"
+
+      self
+    end
+
     # @param [String] string
     # @return [Compiler]
     def raw(string)
