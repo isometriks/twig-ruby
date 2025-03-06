@@ -7,12 +7,16 @@ module Twig
     METHOD_CALL = :method_call
     ANY_CALL = :any_call
 
+    attr_accessor :blocks
+
     # @param [Environment] environment
     def initialize(environment, call_context: nil, output_buffer: nil)
       @environment = environment
       @parent = nil
       @parents = {}
+      @blocks = {}
       @traits = {}
+      @trait_aliases = {}
       @call_context = call_context
       @output_buffer = output_buffer || OutputBuffer.new
     end
@@ -30,21 +34,21 @@ module Twig
 
       template = if use_blocks && blocks.key?(name)
                    blocks[name]
-                 elsif block_list.key?(name)
-                   block_list[name]
+                 elsif self.blocks.key?(name)
+                   self.blocks[name]
                  end
 
       # avoid RCEs when sandbox is enabled
-      if !template.nil? && !template.is_a?(::Twig::Template)
+      if !template.nil? && !template[0].is_a?(::Twig::Template)
         raise Error::Logic, 'A block must be a method on a ::Twig::Template instance.'
       end
 
       if !template.nil?
         begin
-          template.public_send(:"block_#{name}", context, blocks)
+          template[0].public_send(template[1], context, blocks)
         rescue Error::Base => e
           unless e.source_context
-            e.source_context = template.source_context
+            e.source_context = template[0].source_context
           end
 
           # @todo Guess template line
@@ -53,11 +57,11 @@ module Twig
           raise Error::Runtime.new(
             "An exception has been thrown during the rendering of a template (#{e})",
             -1,
-            template.source_context
+            template[0].source_context
           )
         end
       elsif (parent = get_parent(context))
-        parent.yield_block(name, context, block_list.merge(blocks), use_blocks: false, template_context:)
+        parent.yield_block(name, context, self.blocks.merge(blocks), use_blocks: false, template_context:)
       elsif blocks.key?(name)
         raise Error::Runtime.new(
           "Block '#{name}' should not call parent() in #{blocks[name].template_name}",
@@ -95,8 +99,8 @@ module Twig
       raise NotImplementedError
     end
 
-    def block_list
-      raise NotImplementedError
+    def traitable?
+      true
     end
 
     private

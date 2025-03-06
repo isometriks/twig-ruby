@@ -64,6 +64,10 @@ module Twig
       def length
         nodes.length
       end
+
+      def empty?
+        nodes.empty?
+      end
     end
   end
 end

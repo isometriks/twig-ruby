@@ -9,7 +9,7 @@ module Twig
 
       def compile(compiler)
         compiler.
-          write("yield_block(:#{attributes[:name]}, context, block_list.merge(blocks));").
+          write("yield_block(:#{attributes[:name]}, context, self.blocks.merge(blocks));").
           raw("\n")
       end
     end

@@ -167,6 +167,7 @@ module Twig
           TokenParser::If.new,
           TokenParser::Include.new,
           TokenParser::Set.new,
+          TokenParser::Use.new,
           TokenParser::With.new,
           TokenParser::Yield.new,
         ]
