@@ -124,6 +124,9 @@ module Twig
     # @param [Source] source
     def compile_source(source)
       compile(parse(tokenize(source)))
+    rescue Error::Base => e
+      e.source_context = source
+      raise e
     end
 
     # @return [String]

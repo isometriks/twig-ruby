@@ -99,14 +99,14 @@ module Twig
           node = parse_mapping_expression
         else
           Error::Syntax.new(
-            "Unexpected token #{token.type} of value #{token.value}",
+            "Unexpected token \"#{token.type}\" of value \"#{token.value}\"",
             token.lineno,
             parser.stream.source
           )
         end
       else
         raise Error::Syntax.new(
-          "Unexpected token '#{token.type}' of value '#{token.value}'",
+          "Unexpected token \"#{token.type}\" of value \"#{token.value}\"",
           token.lineno,
           parser.stream.source
         )

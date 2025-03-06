@@ -6,6 +6,20 @@ desc 'Tests against Twig PHP fixtures.'
 
 GIT_LOCATION = "#{__dir__}/../../tmp/twig-php".freeze
 
+class Color
+  def self.colorize(text, color_code)
+    "\e[#{color_code}m#{text}\e[0m"
+  end
+
+  def self.red(text)
+    colorize(text, 31)
+  end
+
+  def self.green(text)
+    colorize(text, 32)
+  end
+end
+
 task :twig_parity do
   `git clone -b 4.x https://github.com/twigphp/Twig.git #{GIT_LOCATION}`
 
@@ -19,17 +33,19 @@ task :twig_parity do
       stats[:pass] += 1
     else
       stats[:fail] += 1
+      puts '============================='
       puts "FAIL: #{data[:file].delete_prefix("#{GIT_LOCATION}/tests/Fixtures/")}"
-      puts "  => #{data[:error].message}"
-      puts "  Link: #{data[:file]}:#{data[:error].lineno}"
+      puts "--------\n#{data[:error]}\n--------"
+      puts "Link: #{data[:file]}:#{data[:lineno]}"
+      puts "=============================\n\n"
     end
   end
 
   puts <<~STATS
 
     Stats:
-      #{stats[:pass]} passed,
-      #{stats[:fail]} failed,
+      #{Color.green("#{stats[:pass]} passed")}
+      #{Color.red("#{stats[:fail]} failed")}
       correct: #{(stats[:pass] * 100 / stats[:total]).round(2)}%
   STATS
 
@@ -63,11 +79,20 @@ class TwigFixture
         status: true,
       }
     rescue ::Twig::Error::Base => e
+      if exception
+        message_only = exception.match(/Twig\\Error\\\w+: (.*)/).captures[0]
+        exception_matches = message_only == e.message
+        error = "#{Color.red("- #{message_only}")}\n#{Color.green("+ #{e.message}")}"
+      else
+        error = Color.red(e.message)
+      end
+
       {
         message:,
         file: @file,
-        status: false,
-        error: e,
+        status: exception_matches,
+        lineno: e.lineno,
+        error:,
       }
     end
   end
