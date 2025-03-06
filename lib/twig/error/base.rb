@@ -42,9 +42,9 @@ module Twig
 
       def to_s
         parts = [@raw_message]
-        parts << [" in #{@name}"] if @name
-        parts << [":#{@lineno}"] if @name && @lineno
-        parts << [" on line #{@lineno}"] if !@name && @lineno
+        parts << [" in \"#{@name}\""] if @name
+        parts << [" at line #{@lineno}"] if @lineno&.positive?
+        parts << ['.']
 
         parts.join
       end
