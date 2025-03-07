@@ -308,7 +308,7 @@ module Twig
       elsif environment.allow_helper_methods?
         Node::Expression::HelperMethod.new(name, args, line)
       else
-        raise Error::Syntax.new("Unknown function '#{name}'", line, parser.stream.source)
+        raise Error::Syntax.new("Unknown \"#{name}\" function", line, parser.stream.source)
       end
     end
 
