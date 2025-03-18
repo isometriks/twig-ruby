@@ -58,3 +58,6 @@ Metrics/ParameterLists:
 
 Metrics/ModuleLength:
   Enabled: false
+
+Metrics/BlockNesting:
+  Enabled: false

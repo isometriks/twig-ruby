@@ -27,6 +27,9 @@ module Twig
 
     def render(context = {})
       call(Context.new(context))
+    rescue Error::Base => e
+      e.source_context = source_context unless e.source_context
+      raise e
     end
 
     def yield_block(name, context = {}, blocks = {}, use_blocks: true, template_context: self)
@@ -54,6 +57,16 @@ module Twig
           # @todo Guess template line
           raise e
         rescue StandardError => e
+          # Rails wraps exceptions that happened using render
+          if e.respond_to?(:cause) && e.cause.is_a?(Error::Base)
+            e = e.cause
+            unless e.source_context
+              e.source_context = template[0].source_context
+            end
+
+            raise e
+          end
+
           raise Error::Runtime.new(
             "An exception has been thrown during the rendering of a template (#{e})",
             -1,
