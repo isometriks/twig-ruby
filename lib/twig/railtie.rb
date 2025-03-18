@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'English'
+
 module Twig
   class RailsRenderer
     def call(template, source)
@@ -13,22 +15,18 @@ module Twig
       TEMPLATE
     end
 
-    def translate_location(spot, backtrace_location, source)
-      template = backtrace_location.path.delete_prefix(Rails.root.to_s)
+    def translate_location(spot, _backtrace_location, source)
+      exception = $ERROR_INFO
 
-      # Attempt to recompile the template to find where the syntax error is
-      # otherwise just do what would have happened anyway
-      begin
-        self.class.environment.render_ruby(template)
-      rescue ::Twig::Error::Syntax => e
-        return spot.merge({
-          first_lineno: e.lineno,
-          last_lineno: e.lineno + 1,
-          script_lines: source.lines,
-        })
-      rescue StandardError
-        # Nothing, don't add another exception to the problem
-      end
+      return nil unless exception.is_a?(::ActionView::Template::Error)
+
+      twig_exception = exception.cause
+
+      return nil unless twig_exception.is_a?(::Twig::Error::Base)
+
+      spot[:script_lines] = twig_exception.source_context&.code&.lines || source.lines
+      spot[:first_lineno] = spot[:last_lineno] = twig_exception.lineno
+      spot[:first_column] = spot[:last_column] = 0
 
       spot
     end
