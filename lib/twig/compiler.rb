@@ -81,7 +81,7 @@ module Twig
           raw(Marshal.dump(value).inspect).
           raw(')')
       when Symbol
-        raw(":#{value}")
+        symbol(value)
       else
         string(value)
       end

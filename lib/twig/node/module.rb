@@ -40,7 +40,7 @@ module Twig
 
         if nodes.key?(:parent)
           compiler.
-            write('load_template(').
+            write('@parent = load_template(').
             subcompile(nodes[:parent]).
             raw(").call(context, self.blocks.merge(blocks));\n")
         else
