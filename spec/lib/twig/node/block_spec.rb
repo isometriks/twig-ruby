@@ -9,6 +9,7 @@ RSpec.describe Twig::Node::Block do
       <<~INPUTS
         {% block test %}Hello World!{% endblock %}
         {% block test %}Hello World!{% endblock test %}
+        {% extends 'second.twig' %}{% block test %}{{ parent() }}{% endblock %}
       INPUTS
     end
 
@@ -16,7 +17,15 @@ RSpec.describe Twig::Node::Block do
       <<~OUTPUTS
         Hello World!
         Hello World!
+        Hello Nobody!
       OUTPUTS
+    end
+
+    let(:templates) do
+      {
+        'base.twig': '{% block test %}Hello Nobody!{% endblock %}',
+        'second.twig': '{% extends "base.twig" %}{% block test %}{{ parent() }}{% endblock %}',
+      }
     end
   end
 end
