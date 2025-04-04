@@ -20,8 +20,34 @@ module Twig
 
       def compile(compiler)
         if attributes[:ignore_missing]
-          # @todo
-          raise Error::NotImplemented.new('Need to implement ignore_missing for include', lineno)
+          template = compiler.var_name
+
+          compiler.
+            write("begin\n").
+            indent.
+            write("#{template} = ")
+
+          add_get_template(compiler)
+
+          compiler.
+            raw("\n").
+            outdent.
+            write("rescue ::Twig::Error::Loader => e\n").
+            indent.
+            write("# ignore missing template\n").
+            write("#{template} = nil\n").
+            outdent.
+            write("end\n").
+            write("if #{template}\n").
+            indent.
+            write("#{template}.call(")
+
+          add_template_arguments(compiler)
+
+          compiler.
+            raw(");\n").
+            outdent.
+            write("end\n")
         else
           compiler.
             write('')

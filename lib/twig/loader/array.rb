@@ -23,7 +23,7 @@ module Twig
 
       def get_cache_key(name)
         name = name.to_sym
-        raise "LoaderError: Template #{name} is not defined" unless @templates[name]
+        raise Error::Loader, "Template #{name} is not defined." unless @templates[name]
 
         "#{name}:#{@templates[name]}"
       end
