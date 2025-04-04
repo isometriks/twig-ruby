@@ -127,6 +127,7 @@ module Twig
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
+          TwigFunction.new('cycle', static(:cycle)),
           TwigFunction.new('date', method(:convert_date)),
           TwigFunction.new('include', static(:include), {
             needs_environment: true, needs_context: true, is_safe: ['all']
@@ -245,6 +246,22 @@ module Twig
 
       def self.range(start, finish, step = 1)
         Range.new(start, finish).step(step)
+      end
+
+      def self.cycle(values, position)
+        unless values.respond_to?(:[])
+          raise Error::Runtime, 'The "cycle" function only works with arrays'
+        end
+
+        unless values.respond_to?(:length)
+          raise Error::Runtime, 'The "cycle" function expects a countable sequence as first argument.'
+        end
+
+        unless values.length.positive?
+          raise Error::Runtime, 'The "cycle" function expects a non-empty sequence.'
+        end
+
+        values[position % values.length]
       end
 
       def self.json_encode(object)
