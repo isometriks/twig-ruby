@@ -22,7 +22,7 @@
 - ~~set~~
 - types
 - ~~use~~
-- verbatim
+- ~~verbatim~~
 - ~~with~~
 
 ## Filters

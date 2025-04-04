@@ -139,11 +139,11 @@ module Twig
 
     def lex_raw_data
       unless (match = @code.match(lex_raw_data_regex, @cursor))
-        raise "Uexpected end of file. Unclosed 'verbatim' block"
+        raise Error::Syntax.new("Uexpected end of file. Unclosed 'verbatim' block", @lineno, @source)
       end
 
-      text = @code[@cursor, match.begin(0)]
-      move_cursor(@code[@cursor, (match.begin(0) + match.to_s.length)])
+      text = @code[@cursor, match.begin(0) - @cursor]
+      move_cursor(@code[@cursor, (text.length + match.to_s.length)])
 
       # trim
       if match[1]
@@ -399,7 +399,7 @@ module Twig
             /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
             TAG_BLOCK[1]
           )})
-        /mx
+        /xu
     end
 
     def operator_regex

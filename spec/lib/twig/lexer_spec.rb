@@ -123,4 +123,21 @@ RSpec.describe Twig::Lexer do
       ])
     end
   end
+
+  context 'when template has verbatim tags' do
+    let(:template) do
+      <<~TEMPLATE.rstrip
+        {%- verbatim -%}
+        {{ 'bla' }}
+        {%~ endverbatim %}
+      TEMPLATE
+    end
+
+    it 'parses verbatim tags' do
+      expect(tokens).to eq([
+        "text({{ 'bla' }})",
+        'eof()',
+      ])
+    end
+  end
 end
