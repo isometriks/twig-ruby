@@ -84,12 +84,12 @@
 
 ## Functions
 
-- block
+- block*
 - constant
 - country_names
 - country_timezones
 - currency_names
-- cycle
+- ~~cycle~~
 - ~~date~~
 - dump
 - enum

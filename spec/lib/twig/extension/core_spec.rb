@@ -144,6 +144,7 @@ RSpec.describe Twig::Extension::Core do
           {{ {a: 1, b: 2, c: 3 }|keys|join(", ") }}
           {{ {a, b: 2, c: 3 }|values|join(", ") }}
           {{ [1, 2, 3]|values|join(", ") }}
+          {% for i in range(0, 5) %}{{ cycle(cycles, i) }}-{% endfor %}
         INPUTS
       end
 
@@ -161,11 +162,15 @@ RSpec.describe Twig::Extension::Core do
           a, b, c
           1, 2, 3
           1, 2, 3
+          tic-tac-toe-tic-tac-toe-
         OUTPUTS
       end
 
       let(:locals) do
-        { a: 1 }
+        {
+          a: 1,
+          cycles: %w[tic tac toe],
+        }
       end
 
       let(:templates) do
