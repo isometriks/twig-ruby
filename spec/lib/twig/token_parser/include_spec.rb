@@ -10,12 +10,18 @@ RSpec.describe Twig::TokenParser::Include do
         Hello {% include "include" %}
         Hello {% include template %}
         Hello {% include "deep" %}
+        Hello-{% include "missing" ignore missing %}-World!
+        {% include "vars" with { var: "Hello World!" } %}
+        {% include "vars" ignore missing with { var: "Hello World!" } %}
       INPUTS
     end
 
     let(:outputs) do
       <<~OUTPUTS
         Hello World!
+        Hello World!
+        Hello World!
+        Hello--World!
         Hello World!
         Hello World!
       OUTPUTS
@@ -27,6 +33,7 @@ RSpec.describe Twig::TokenParser::Include do
       {
         include: 'World!',
         deep: '{% include "include" %}',
+        vars: '{{ var }}',
       }
     end
   end

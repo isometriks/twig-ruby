@@ -15,7 +15,7 @@ module Twig
           return Source.new(File.read(file), name, file)
         end
 
-        raise "Unable to find '#{name}'"
+        raise Error::Loader, "Unable to find template \"#{name}\" (looked into: #{@paths.inspect})."
       end
 
       def get_cache_key(name)
@@ -39,6 +39,8 @@ module Twig
           absolute = File.join(@root_path, path, name)
           return absolute if File.file?(absolute)
         end
+
+        false
       end
     end
   end
