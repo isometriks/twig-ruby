@@ -69,6 +69,7 @@ class TwigFixture
       cache: false,
     })
     environment.add_extension(::TwigTestExtension.new)
+    environment.add_extension(::Twig::Extension::Debug.new)
 
     begin
       environment.load_template('index.twig')

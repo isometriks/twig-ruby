@@ -91,7 +91,7 @@
 - currency_names
 - ~~cycle~~
 - ~~date~~
-- dump
+- ~~dump~~
 - enum
 - enum_cases
 - html_classes
