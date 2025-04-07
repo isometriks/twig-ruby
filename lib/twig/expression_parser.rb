@@ -98,7 +98,7 @@ module Twig
         when '{'
           node = parse_mapping_expression
         else
-          Error::Syntax.new(
+          raise Error::Syntax.new(
             "Unexpected token \"#{token.type}\" of value \"#{token.value}\"",
             token.lineno,
             parser.stream.source
