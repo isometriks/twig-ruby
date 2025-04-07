@@ -47,6 +47,7 @@ module Twig
 
       @environment ||= ::Twig::Environment.new(loader, options).tap do |env|
         env.add_extension(::Twig::Extension::Rails.new)
+        env.add_extension(::Twig::Extension::Debug.new)
       end
     end
   end
