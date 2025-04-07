@@ -35,3 +35,17 @@ RSpec.shared_examples 'render_and_assert' do
       to_s
   end
 end
+
+RSpec.shared_examples 'render_and_raise' do
+  let(:template) { raise NotImplementedError, 'Set template to render' }
+  let(:loader) { Twig::Loader::Array.new({ 'template.twig' => template }) }
+  let(:environment) { Twig::Environment.new(loader) }
+  let(:error) { NotImplementedError }
+  let(:message) { raise NotImplementedError, 'Add regex error message to match' }
+
+  it 'raises expected error' do
+    expect do
+      environment.load_template('template.twig').render
+    end.to raise_error(error, message)
+  end
+end

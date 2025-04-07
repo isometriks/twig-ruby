@@ -173,5 +173,13 @@ module Twig
         end
       end
     end
+
+    context 'when template has invalid mapping' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ var.call(4,5,,) }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /Unexpected token "punctuation" of value ","/ }
+      end
+    end
   end
 end
