@@ -119,12 +119,29 @@ module Twig
       @parent || @traits.length.positive?
     end
 
+    def main_scope?
+      @imported_symbols.one?
+    end
+
     def push_local_scope
       @imported_symbols.unshift({})
     end
 
     def pop_local_scope
       @imported_symbols.shift
+    end
+
+    def add_imported_symbol(type, symbol_alias, name = nil, internal_ref = nil)
+      @imported_symbols[0][type] ||= {}
+      @imported_symbols[0][type][symbol_alias] = { name:, node: internal_ref }
+    end
+
+    def imported_symbol(type, symbol_alias)
+      if (symbol = @imported_symbols.dig(0, type, symbol_alias))
+        symbol
+      else
+        @imported_symbols.dig(-1, type, symbol_alias)
+      end
     end
 
     def peek_block_stack
@@ -145,6 +162,12 @@ module Twig
 
     def add_trait(trait)
       @traits << trait
+    end
+
+    # @param [String] name
+    # @param [Node::Macro] node
+    def set_macro(name, node)
+      @macros[name] = node
     end
 
     # @param [String] name

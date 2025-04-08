@@ -180,7 +180,17 @@ module Twig
         arguments = create_arguments(token.lineno)
       end
 
-      # @todo Macro reference here
+      if node.is_a?(Node::Expression::Name) && (
+          parser.imported_symbol(:template, node.attributes[:name]) ||
+            (node.attributes[:name] == '_self' && attribute.is_a?(Node::Expression::Constant))
+        )
+        return Node::Expression::MacroReference.new(
+          Node::Expression::Variable::Template.new(node.attributes[:name], node.lineno),
+          "macro_#{attribute.attributes[:value]}",
+          arguments,
+          node.lineno
+        )
+      end
 
       Node::Expression::GetAttribute.new(node, attribute, arguments, type, token.lineno)
     end

@@ -52,8 +52,6 @@ module Twig
             raw(']')
         end
 
-        private
-
         def key_value_pairs
           nodes.each_value.each_slice(2)
         end
