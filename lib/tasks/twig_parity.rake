@@ -5,6 +5,7 @@ require_relative '../twig_ruby'
 desc 'Tests against Twig PHP fixtures.'
 
 GIT_LOCATION = "#{__dir__}/../../tmp/twig-php".freeze
+WONT_IMPLEMENT = ['super_globals.test'].freeze
 
 class Color
   def self.colorize(text, color_code)
@@ -26,6 +27,8 @@ task :twig_parity do
   stats = { pass: 0, fail: 0, total: 0 }
 
   Dir.glob("#{GIT_LOCATION}/tests/Fixtures/**/*.test").each do |fixture|
+    next if WONT_IMPLEMENT.include?(File.basename(fixture))
+
     data = TwigFixture.new(fixture).call
     stats[:total] += 1
 

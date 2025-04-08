@@ -15,9 +15,9 @@
 - from
 - ~~guard~~
 - ~~if~~
-- import
+- ~~import~~
 - ~~include~~
-- macro
+- ~~macro~~
 - sandbox
 - ~~set~~
 - types

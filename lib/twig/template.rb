@@ -16,6 +16,7 @@ module Twig
       @parents = {}
       @blocks = {}
       @traits = {}
+      @macros = {}
       @trait_aliases = {}
       @call_context = call_context
       @output_buffer = output_buffer || OutputBuffer.new
@@ -108,27 +109,6 @@ module Twig
       ''
     end
 
-    def source_context
-      raise NotImplementedError
-    end
-
-    def traitable?
-      true
-    end
-
-    private
-
-    # @param [String] name
-    # @return ]Template]
-    def load_template(name, template_name = '', template_line = nil)
-      env.load_template(name, call_context: @call_context, output_buffer: @output_buffer)
-    end
-
-    # Overloaded by children
-    def do_get_parent(context)
-      false
-    end
-
     # @return [Template, false]
     def get_parent(context)
       if @parent
@@ -148,6 +128,85 @@ module Twig
       end
 
       @parents[parent]
+    end
+
+    def macro?(name, context)
+      if respond_to?(name.to_sym)
+        return true
+      end
+
+      unless (parent = get_parent(context))
+        return false
+      end
+
+      parent.macro?(name, context)
+    end
+
+    def render_macro(name, context, args, lineno, source)
+      macro_method = macro_template_reference(name, context, lineno, source)
+      macro_arguments = macro_method.parameters.select { |type, _| type == :key }.map { |_, arg| arg }
+      mapped_arguments = {}
+      kwarg = false
+
+      args.each do |key, value|
+        if !kwarg && key.is_a?(Integer)
+          mapped_key = macro_arguments[key]
+        elsif kwarg && key.is_a?(Integer)
+          raise Error::Runtime.new('Cannot place a positional argument after a keyword argument', lineno, source)
+        else
+          kwarg = true
+          mapped_key = key.to_sym
+        end
+
+        if mapped_arguments.key?(mapped_key)
+          raise Error::Runtime.new("Argument \"#{mapped_key}\" passed twice", lineno, source)
+        end
+
+        mapped_arguments[mapped_key] = value
+      end
+
+      macro_method.call(**mapped_arguments)
+    end
+
+    # @return [Method]
+    def macro_template_reference(name, context, lineno, source)
+      if respond_to?(name.to_sym)
+        return method(name.to_sym)
+      end
+
+      parent = self
+      while (parent = parent.get_parent(context))
+        if parent.respond_to?(name.to_sym)
+          return parent.method(name.to_sym)
+        end
+      end
+
+      raise Error::Runtime.new(
+        "Macro \"#{name.delete_prefix('macro_')}\" is not defined in #{template_name}",
+        lineno,
+        source
+      )
+    end
+
+    def source_context
+      raise NotImplementedError
+    end
+
+    def traitable?
+      true
+    end
+
+    private
+
+    # @param [String] name
+    # @return ]Template]
+    def load_template(name, template_name = '', template_line = nil)
+      env.load_template(name, call_context: @call_context, output_buffer: @output_buffer)
+    end
+
+    # Overloaded by children
+    def do_get_parent(context)
+      false
     end
 
     # @return [Environment]

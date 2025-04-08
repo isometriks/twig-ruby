@@ -36,7 +36,8 @@ module Twig
 
         compiler.
           write("def call(context = {}, blocks = {})\n").
-          indent
+          indent.
+          write("macros = @macros.dup\n")
 
         if nodes.key?(:parent)
           compiler.
@@ -51,8 +52,15 @@ module Twig
         compiler.
           write("@output_buffer\n").
           outdent.
-          write("end\n\n").
+          write("end\n\n")
+
+        # Blocks
+        compiler.
           subcompile(nodes[:blocks])
+
+        # Macros
+        compiler.
+          subcompile(nodes[:macros])
 
         compile_get_template_name(compiler)
         compile_traitable(compiler)

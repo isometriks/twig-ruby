@@ -55,7 +55,11 @@ module Twig
     # @param [String, Symbol] value
     # @return [Compiler]
     def symbol(value)
-      @source << "%q[#{value}].to_sym"
+      @source << if value.is_a?(Symbol)
+                   value.inspect
+                 else
+                   "%q[#{value}].to_sym"
+                 end
 
       self
     end

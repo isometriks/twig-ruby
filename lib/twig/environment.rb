@@ -108,6 +108,10 @@ module Twig
       @extension_set.token_parser(name)
     end
 
+    def globals
+      {}
+    end
+
     # @param [Source] source
     # @return [TokenStream]
     def tokenize(source)

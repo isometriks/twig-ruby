@@ -57,3 +57,19 @@ or cache
   ...
 {% endyield %}
 ```
+
+Macros can also use Ruby notation for default values:
+
+Typical Twig:
+```twig
+{% macro input(name, value, type = "text", size = 20) %}
+  <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}" size="{{ size }}"/>
+{% endmacro %}
+```
+
+Twig Ruby (Both versions work)
+```twig
+{% macro input(name, value, type: "text", size: 20) %}
+  <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}" size="{{ size }}"/>
+{% endmacro %}
+```
