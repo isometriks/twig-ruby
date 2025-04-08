@@ -5,6 +5,9 @@ module Twig
     # @return [Cache::Base]
     attr_reader :cache, :charset
 
+    # @return [Twig::Loader::Base]
+    attr_reader :loader
+
     # @param [::Twig::Loader::Base] loader
     def initialize(loader, options = {})
       @loader = loader
@@ -164,9 +167,6 @@ module Twig
     end
 
     private
-
-    # @return [Twig::Loader::Base]
-    attr_reader :loader
 
     def lexer
       @lexer ||= Lexer.new(self)
