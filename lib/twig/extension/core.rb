@@ -132,6 +132,9 @@ module Twig
           TwigFunction.new('include', static(:include), {
             needs_environment: true, needs_context: true, is_safe: ['all']
           }),
+          TwigFunction.new('source', static(:source), {
+            needs_environment: true, is_safe: ['all']
+          }),
         ]
       end
 
@@ -469,6 +472,15 @@ module Twig
         # @todo: Missing some sandbox, ignore_missing / exception catching
 
         environment.load_template(template).render(variables)
+      end
+
+      # @param [String] name
+      # @param [Boolean] ignore_missing
+      # @param [Environment] environment
+      def self.source(name, environment:, ignore_missing: false)
+        environment.loader.get_source_context(name).code
+      rescue Error::Loader => e
+        raise e unless ignore_missing
       end
 
       # @param [Parser] parser
