@@ -147,9 +147,18 @@ module Twig
       @traits << trait
     end
 
-    # @todo type value as BlockNode and also set it to a BodyNode
+    # @param [String] name
+    # @param [Node::Body] value
     def set_block(name, value)
-      @blocks[name] = value
+      if @blocks.key?(name)
+        raise Error::Syntax.new(
+          "The block \"#{name}\" has already been defined line #{@blocks[name].lineno}",
+          current_token.lineno,
+          @blocks[name].source_context
+        )
+      end
+
+      @blocks[name] = Node::Body.new({ 0 => value }, {}, value.lineno)
     end
 
     # @param [Node::Base] parent
