@@ -18,11 +18,17 @@ RSpec.describe Twig::Node::Expression::Test::Defined do
         {{ "test" is defined ? 'OK' : 'KO' }}
         {{ ["hello"] is defined ? 'OK' : 'KO' }}
         {{ {hello: "world"} is defined ? 'OK' : 'KO' }}
+        {{ block("hey") is defined ? 'KO' : 'OK' }}
+        {% block hey "" %}{{ block("hey") is defined ? 'OK' : 'KO' }}
+        {% extends "parent.twig" %}{% block content %}{{ block("hey") is defined ? 'OK' : 'KO' }}{% endblock %}
       INPUTS
     end
 
     let(:outputs) do
       <<~OUTPUTS
+        OK
+        OK
+        OK
         OK
         OK
         OK
@@ -41,6 +47,12 @@ RSpec.describe Twig::Node::Expression::Test::Defined do
       {
         a: nil,
         b: true,
+      }
+    end
+
+    let(:templates) do
+      {
+        'parent.twig': '{% block content ""%}{% block hey "" %}',
       }
     end
 

@@ -91,6 +91,23 @@ module Twig
       end
     end
 
+    def block?(name, context, blocks = {})
+      name = name.to_sym
+      if blocks.key?(name) && blocks[name][0].is_a?(self.class)
+        return true
+      end
+
+      if @blocks&.key?(name)
+        return true
+      end
+
+      if (parent = get_parent(context))
+        return parent.block?(name, context)
+      end
+
+      false
+    end
+
     def render_parent_block(name, context, blocks = {})
       if @traits.key?(name)
         # @todo traits
