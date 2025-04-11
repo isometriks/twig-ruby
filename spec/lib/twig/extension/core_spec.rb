@@ -146,6 +146,7 @@ RSpec.describe Twig::Extension::Core do
           {{ [1, 2, 3]|values|join(", ") }}
           {% for i in range(0, 5) %}{{ cycle(cycles, i) }}-{% endfor %}
           {{ source('source.twig') }}
+          {{ block("greeting", "blocks.twig") }} {{ block("message", "blocks.twig")}}
         INPUTS
       end
 
@@ -165,6 +166,7 @@ RSpec.describe Twig::Extension::Core do
           1, 2, 3
           tic-tac-toe-tic-tac-toe-
           {{ Hello World! }}
+          Hello World!
         OUTPUTS
       end
 
@@ -179,6 +181,7 @@ RSpec.describe Twig::Extension::Core do
         {
           'include.twig' => 'World!',
           'source.twig' => '{{ Hello World! }}',
+          'blocks.twig' => '{% block greeting "Hello" %}{% block message "World!" %}',
         }
       end
     end

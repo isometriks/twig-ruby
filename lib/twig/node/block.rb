@@ -11,6 +11,7 @@ module Twig
         compiler.
           write("def block_#{attributes[:name]}(context, blocks)\n").
           indent.
+          write("macros = @macros.dup\n").
           subcompile(nodes[:body]).
           outdent.
           write("end\n\n")
