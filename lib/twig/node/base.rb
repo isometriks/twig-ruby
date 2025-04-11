@@ -14,7 +14,7 @@ module Twig
       # @return [Source]
       attr_reader :source_context
 
-      # @return [AutoHash<Node::Base>]
+      # @return [AutoHash{Symbol => Node::Base}]
       attr_reader :nodes
 
       # @param [Hash<Node::Base>] nodes
