@@ -53,7 +53,9 @@ module Twig
       key = key.to_sym
 
       if (frame = stack.last)
-        if key?(key) && !frame[:replace].key?(key) && !frame[:remove].include?(key)
+        super and return if frame[:replace].key?(key) || frame[:remove].include?(key)
+
+        if key?(key)
           frame[:replace][key] = self[key]
         else
           frame[:remove].push(key)

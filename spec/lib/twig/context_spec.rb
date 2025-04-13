@@ -4,24 +4,24 @@ require 'spec_helper'
 
 RSpec.describe Twig::Context do
   it 'accepts an initial state' do
-    context = Twig::Context.new({ initial: 'state' })
+    context = described_class.new({ initial: 'state' })
 
     expect('state').to eq(context[:initial])
   end
 
   it 'converts all keys to symbols' do
-    context = Twig::Context.new({ 'a' => 'b', 'c' => 'd' })
+    context = described_class.new({ 'a' => 'b', 'c' => 'd' })
     expect(%i[a c]).to eq(context.keys)
   end
 
   it 'fetches keys as symbols' do
-    context = Twig::Context.new({ 'a' => 'b', 'c' => 'd' })
+    context = described_class.new({ 'a' => 'b', 'c' => 'd' })
     expect('b').to eq(context[:a])
     expect('d').to eq(context[:c])
   end
 
   it 'removes context variables after popping state' do
-    context = Twig::Context.new({ initial: 'state' })
+    context = described_class.new({ initial: 'state' })
     context.push_stack
     context[:initial] = 'inside stack'
     context[:pushed] = 'pushed'
@@ -33,7 +33,7 @@ RSpec.describe Twig::Context do
   end
 
   it 'can clear all context from a scope' do
-    context = Twig::Context.new({ initial: 'state' })
+    context = described_class.new({ initial: 'state' })
     context.push_stack
     context.clear
 
@@ -59,5 +59,14 @@ RSpec.describe Twig::Context do
 
     expect(context.length).to eq(1)
     expect(context[:initial]).to eq('state')
+  end
+
+  it 'records single replacement for multiple assignments' do
+    context = described_class.new({ initial: 'state' })
+    context.push_stack
+    context[:initial] = 'replacement'
+    context[:initial] = 'another replacement'
+
+    expect(context.instance_variable_get(:@stack)).to eq([{ remove: [], replace: { initial: 'state' } }])
   end
 end
