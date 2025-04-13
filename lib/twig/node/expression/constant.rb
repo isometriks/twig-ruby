@@ -11,7 +11,7 @@ module Twig
         end
 
         def compile(compiler)
-          compiler.repr(define_test_enabled? ? true : attributes[:value])
+          compiler.repr(define_test_enabled? || attributes[:value])
         end
       end
     end
