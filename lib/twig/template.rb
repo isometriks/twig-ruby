@@ -161,7 +161,7 @@ module Twig
 
     def render_macro(name, context, args, lineno, source)
       macro_method = macro_template_reference(name, context, lineno, source)
-      macro_arguments = macro_method.parameters.select { |type, _| type == :key }.map { |_, arg| arg }
+      macro_arguments = macro_method.parameters.select { |arg| arg[0] == :key }.map { |_, arg| arg }
       mapped_arguments = {}
       kwarg = false
 

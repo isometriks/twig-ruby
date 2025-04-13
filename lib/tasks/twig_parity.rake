@@ -52,7 +52,7 @@ task :twig_parity do
       correct: #{(stats[:pass] * 100 / stats[:total]).round(2)}%
   STATS
 
-  if (stats[:fail]).positive?
+  if stats[:fail].positive?
     exit 1
   else
     exit 0
@@ -60,6 +60,24 @@ task :twig_parity do
 end
 
 class TwigFixture
+  EXCEPTION_REGEX = /
+    --TEST--\s*(.*?)\s*
+    (?:--CONDITION--\s*(.*))?\s*
+    (?:--DEPRECATION--\s*(.*?))?\s*
+    ((?:--TEMPLATE(?:\(.*?\))?--(?:.*?))+)\s*
+    (?:--DATA--\s*(.*))?\s*
+    --EXCEPTION--\s*(.*)
+  /mx
+
+  EXPECT_REGEX = /
+    --TEST--\s*(.*?)\s*
+    (?:--CONDITION--\s*(.*))?\s*
+    (?:--DEPRECATION--\s*(.*?))?\s*
+    ((?:--TEMPLATE(?:\(.*?\))?--(?:.*?))+)
+    --DATA--.*?
+    --EXPECT--.*
+  /mx
+
   def initialize(file)
     @file = file
   end
@@ -104,24 +122,6 @@ class TwigFixture
   private
 
   attr_accessor :message, :condition, :deprecation, :templates, :exception, :outputs
-
-  EXCEPTION_REGEX = /
-    --TEST--\s*(.*?)\s*
-    (?:--CONDITION--\s*(.*))?\s*
-    (?:--DEPRECATION--\s*(.*?))?\s*
-    ((?:--TEMPLATE(?:\(.*?\))?--(?:.*?))+)\s*
-    (?:--DATA--\s*(.*))?\s*
-    --EXCEPTION--\s*(.*)
-  /mx
-
-  EXPECT_REGEX = /
-    --TEST--\s*(.*?)\s*
-    (?:--CONDITION--\s*(.*))?\s*
-    (?:--DEPRECATION--\s*(.*?))?\s*
-    ((?:--TEMPLATE(?:\(.*?\))?--(?:.*?))+)
-    --DATA--.*?
-    --EXPECT--.*
-  /mx
 
   def contents
     @contents ||= File.read(@file)
