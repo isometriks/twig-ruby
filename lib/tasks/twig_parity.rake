@@ -5,7 +5,17 @@ require_relative '../twig_ruby'
 desc 'Tests against Twig PHP fixtures.'
 
 GIT_LOCATION = "#{__dir__}/../../tmp/twig-php".freeze
-WONT_IMPLEMENT = ['super_globals.test'].freeze
+WONT_IMPLEMENT = %w[
+  tags/macro/super_globals.test
+  functions/enum/invalid_dynamic_enum.test
+  functions/enum/invalid_enum.test
+  functions/enum/invalid_literal_type.test
+  functions/enum/valid.test
+  functions/enum_cases/invalid_dynamic_enum.test
+  functions/enum_cases/invalid_enum.test
+  functions/enum_cases/invalid_literal_type.test
+  functions/enum_cases/valid.test
+].freeze
 
 class Color
   def self.colorize(text, color_code)
@@ -27,7 +37,7 @@ task :twig_parity do
   stats = { pass: 0, fail: 0, total: 0 }
 
   Dir.glob("#{GIT_LOCATION}/tests/Fixtures/**/*.test").each do |fixture|
-    next if WONT_IMPLEMENT.include?(File.basename(fixture))
+    next if WONT_IMPLEMENT.include?(fixture.delete_prefix("#{GIT_LOCATION}/tests/Fixtures/"))
 
     data = TwigFixture.new(fixture).call
     stats[:total] += 1
