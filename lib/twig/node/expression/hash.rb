@@ -22,19 +22,23 @@ module Twig
 
             first = false
 
-            case key
-            when Variable::Context
-              key = Unary::StringCast.new(key, key.lineno)
-            when Variable::Local
-              key_value = key.attributes[:name]
-              key = Constant.new(key_value, key.lineno)
-            when Constant
-              key.attributes[:value]
+            unless value.is_a?(Expression::Unary::HashSpread)
+              case key
+              when Variable::Context
+                key = Unary::StringCast.new(key, key.lineno)
+              when Variable::Local
+                key_value = key.attributes[:name]
+                key = Constant.new(key_value, key.lineno)
+              when Constant
+                key.attributes[:value]
+              end
+
+              compiler.
+                subcompile(key).
+                raw(' => ')
             end
 
             compiler.
-              subcompile(key).
-              raw(' => ').
               subcompile(value)
           end
 

@@ -42,6 +42,12 @@ module Twig
             else
               compiler.raw(check)
             end
+          # @todo always defined, special vars
+          elsif attributes[:ignore_strict_check]
+            compiler.
+              raw('(context[').
+              string(name).
+              raw('] || nil)')
           else
             compiler.
               raw("(#{check}").

@@ -61,3 +61,6 @@ Metrics/ModuleLength:
 
 Metrics/BlockNesting:
   Enabled: false
+
+Naming/MethodParameterName:
+  Enabled: false
