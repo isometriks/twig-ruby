@@ -58,6 +58,20 @@ RSpec.describe Twig::Extension::Core do
           {{ [] is empty ? 'OK' : 'KO' }}
           {{ [1, 2, 3] is not empty ? 'OK' : 'KO' }}
           {% block hello "Hello" %}{{ block("hello") }}
+          {{ hash.(:key) }}
+          {{ hash.(key) }}
+          {{ madeup|default("Hello World!") }}
+          {{ madeup[name]|default("Hello World!") }}
+          {{ madeup['key']|default("Hello World!") }}
+          {{ madeup.foo|default("Hello World!") }}
+          {{ class.attribute(...args) }}
+          {{ class.attribute("Hello", ...args2) }}
+          {{ class.attribute(sep: "-", ...args) }}
+          {{ class.attribute(...{ sep: "*" }, ...args) }}
+          {{ class.attribute_hash(arg1: "Hello", arg2: "World!") }}
+          {{ class.attribute_hash(...args_hash) }}
+          {{ [...[1, 2, 3], ...[4, 5]]|join(", ") }}
+          {{ { ...{ a: "Hello" }, ...{ b: "World!" } }|values|join(" ") }}
         INPUTS
       end
 
@@ -113,6 +127,20 @@ RSpec.describe Twig::Extension::Core do
           OK
           OK
           HelloHello
+          value
+          value
+          Hello World!
+          Hello World!
+          Hello World!
+          Hello World!
+          Hello World!
+          Hello Hello
+          Hello-World!
+          Hello*World!
+          Hello World!
+          Hello World!
+          1, 2, 3, 4, 5
+          Hello World!
         OUTPUTS
       end
 
@@ -123,6 +151,20 @@ RSpec.describe Twig::Extension::Core do
           millennium: DateTime.new(2021, 1, 1, 0, 0, 0),
           array_of_hashes: [{ fruit: 'Apple' }, { fruit: 'Orange' }],
           empty: nil,
+          key: :key,
+          hash: { key: 'value' },
+          args: %w[Hello World!],
+          args2: ['Hello'],
+          args_hash: { arg1: 'Hello', arg2: 'World!' },
+          class: Class.new do
+            def attribute(arg1, arg2, sep: ' ')
+              [arg1, arg2].join(sep)
+            end
+
+            def attribute_hash(arg1: nil, arg2: nil)
+              [arg1, arg2].join(' ')
+            end
+          end.new,
         }
       end
     end

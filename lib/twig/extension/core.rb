@@ -113,6 +113,9 @@ module Twig
           # iteration and runtime
           TwigFilter.new('keys', static(:keys)),
           TwigFilter.new('values', static(:values)),
+          TwigFilter.new('default', static(:default), {
+            node_class: Node::Expression::Filter::Default,
+          }),
         ]
       end
 
@@ -415,6 +418,12 @@ module Twig
         object.to_a
       end
 
+      def self.default(object, default = nil)
+        present = object.respond_to(:empty?) ? object.empty? : !object
+
+        present ? object : default
+      end
+
       def self.ensure_hash(value)
         return value if value.is_a?(Hash)
 
@@ -438,24 +447,64 @@ module Twig
         raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
 
-      def self.get_attribute(object, attribute, type, arguments: {}, &)
+      def self.get_attribute(object, attribute, type, arguments: {}, defined_test: false, &)
         if type == Template::ARRAY_CALL
-          object[attribute] || (attribute.is_a?(String) ? object[attribute.to_sym] : object[attribute.to_s])
+          if object.respond_to?(:[]) && (
+            (object.is_a?(Array) && attribute.is_a?(Integer) && attribute < object.length) ||
+            (object.is_a?(Hash) && (object.key?(attribute) || object.key?(attribute.to_sym)))
+          )
+            return true if defined_test
+
+            return object[attribute] || (attribute.is_a?(String) ? object[attribute.to_sym] : object[attribute.to_s])
+          end
+
+          if defined_test
+            return false
+          end
+
+          raise Error::Runtime, "Can't find key #{attribute} in #{object.inspect}"
         elsif object.respond_to?(attribute)
-          positional, kwargs = arguments.partition { |k, _v| k.is_a?(Integer) }.map(&:to_h)
+          positional = []
+          arguments.each do |k, v|
+            if !v.is_a?(Spread) && k.is_a?(Integer)
+              positional << v
+            elsif v.is_a?(Spread) && v.array?
+              positional = [*positional, *v.value]
+            end
+          end
+
+          kwargs = {}
+          arguments.each do |k, v|
+            if !v.is_a?(Spread) && !k.is_a?(Integer)
+              kwargs[k] = v
+            elsif v.is_a?(Spread) && v.hash?
+              kwargs = kwargs.merge(v.value)
+            end
+          end
+
+          kwargs = kwargs.transform_keys(&:to_sym)
 
           if positional.length.positive? && kwargs.empty?
-            object.send(attribute, *positional.values, &)
+            object.send(attribute, *positional, &)
           elsif positional.empty? && kwargs.length.positive?
             object.send(attribute, **kwargs, &)
           elsif positional.length.positive? && kwargs.length.positive?
-            object.send(attribute, *positional.values, **kwargs, &)
+            object.send(attribute, *positional, **kwargs, &)
           else
-            object.send(attribute, &)
+            case object
+            when Hash, Array
+              object[attribute]
+            else
+              object.send(attribute, &)
+            end
           end
         else
           if object.respond_to?(:[])
             return object[attribute]
+          end
+
+          if defined_test
+            return false
           end
 
           raise NotImplementedError, 'Need to implement other get_attribute calls'

@@ -36,7 +36,9 @@ module Twig
           Not: '!',
           Neg: '-',
           Pos: '+',
-          Spread: '**',
+          Spread: '(not rendered)',
+          ArraySpread: '*',
+          HashSpread: '**',
         }.freeze
 
         # Lots of simple operator classes can just be generated dynamically

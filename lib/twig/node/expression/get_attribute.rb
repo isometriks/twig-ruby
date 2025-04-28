@@ -4,16 +4,29 @@ module Twig
   module Node
     module Expression
       class GetAttribute < Expression::Base
+        include SupportDefinedTest
+
         def initialize(node, attribute, arguments, type, lineno)
           nodes = { node:, attribute: }
           nodes[:arguments] = arguments if arguments
 
-          super(nodes, { type: }, lineno)
+          super(nodes, { type:, ignore_strict_check: false }, lineno)
+        end
+
+        def enable_defined_test
+          super
+          change_ignore_strict_check(self)
         end
 
         def compile(compiler)
           compiler.
-            raw('::Twig::Extension::Core.get_attribute(').
+            raw('::Twig::Extension::Core.get_attribute(')
+
+          if attributes[:ignore_strict_check]
+            nodes[:node].attributes[:ignore_strict_check] = true
+          end
+
+          compiler.
             subcompile(nodes[:node]).
             raw(', ').
             subcompile(nodes[:attribute]).
@@ -26,8 +39,27 @@ module Twig
               subcompile(nodes[:arguments])
           end
 
+          if define_test_enabled?
+            compiler.
+              raw(', defined_test: true')
+          end
+
           compiler.
             raw(')')
+        end
+
+        private
+
+        # @param [GetAttribute] node]
+        def change_ignore_strict_check(node)
+          node.attributes[:optimizable] = false
+          node.attributes[:ignore_strict_check] = true
+
+          object_node = node.nodes[:node]
+
+          if object_node.is_a?(GetAttribute)
+            change_ignore_strict_check(object_node)
+          end
         end
       end
     end

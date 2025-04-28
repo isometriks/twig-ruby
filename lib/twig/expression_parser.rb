@@ -217,8 +217,7 @@ module Twig
 
         if stream.next_if(Token::SPREAD_TYPE)
           expr = parse_expression
-          expr.attributes[:spread] = true
-          node.add_element(expr)
+          node.add_element(Node::Expression::Unary::ArraySpread.new(expr, expr.lineno))
         else
           node.add_element(parse_expression)
         end
@@ -251,8 +250,7 @@ module Twig
 
         if stream.next_if(Token::SPREAD_TYPE)
           value = parse_expression
-          value.attributes[:spread] = true
-          node.add_element(value)
+          node.add_element(Node::Expression::Unary::HashSpread.new(value, value.lineno))
 
           next
         end
