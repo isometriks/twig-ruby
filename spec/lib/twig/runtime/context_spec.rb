@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Twig::Context do
+RSpec.describe Twig::Runtime::Context do
   it 'accepts an initial state' do
     context = described_class.new({ initial: 'state' })
 
