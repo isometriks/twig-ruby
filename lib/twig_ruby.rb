@@ -15,6 +15,7 @@ require 'cgi'
   error
   extension
   loader
+  runtime
   node
   node/expression
   node/expression/binary

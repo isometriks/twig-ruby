@@ -43,7 +43,7 @@ module Twig
           raw('**varargs').
           raw(")\n").
           write("  macros = @macros\n").
-          write("  context = ::Twig::Context.new({\n")
+          write("  context = ::Twig::Runtime::Context.new({\n")
 
         arguments.key_value_pairs.each do |pair|
           key = pair[0]
