@@ -7,7 +7,7 @@ module Twig
         class Spread < Unary::Base
           def compile(compiler)
             compiler.
-              raw('::Twig::Spread.new(').
+              raw('::Twig::Runtime::Spread.new(').
               subcompile(nodes[:node]).
               raw(')')
           end

@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe Twig::ArgumentSpreader do
+RSpec.describe Twig::Runtime::ArgumentSpreader do
   let(:callee) do
     Class.new do
       def none; end
@@ -38,7 +38,7 @@ RSpec.describe Twig::ArgumentSpreader do
 
     it 'calls the method' do
       expect(callee).to receive(method_name).with(1, 2, 3)
-      spreader.call(Twig::Spread.new([1, 2, 3]))
+      spreader.call(Twig::Runtime::Spread.new([1, 2, 3]))
     end
   end
 
@@ -47,7 +47,7 @@ RSpec.describe Twig::ArgumentSpreader do
 
     it 'calls the method' do
       expect(callee).to receive(method_name).with(1, 2, 3)
-      spreader.call(Twig::Spread.new([1]), Twig::Spread.new([2]), Twig::Spread.new([3]))
+      spreader.call(Twig::Runtime::Spread.new([1]), Twig::Runtime::Spread.new([2]), Twig::Runtime::Spread.new([3]))
     end
   end
 
@@ -56,7 +56,7 @@ RSpec.describe Twig::ArgumentSpreader do
 
     it 'calls the method' do
       expect(callee).to receive(method_name).with(1, 2, 3)
-      spreader.call(1, Twig::Spread.new([2, 3]))
+      spreader.call(1, Twig::Runtime::Spread.new([2, 3]))
     end
   end
 
@@ -74,7 +74,11 @@ RSpec.describe Twig::ArgumentSpreader do
 
     it 'calls the method' do
       expect(callee).to receive(method_name).with({ a: 1, b: 2, c: 3 })
-      spreader.call(Twig::Spread.new({ a: 1 }), Twig::Spread.new({ b: 2 }), Twig::Spread.new({ c: 3 }))
+      spreader.call(
+        Twig::Runtime::Spread.new({ a: 1 }),
+        Twig::Runtime::Spread.new({ b: 2 }),
+        Twig::Runtime::Spread.new({ c: 3 })
+      )
     end
   end
 
@@ -92,7 +96,7 @@ RSpec.describe Twig::ArgumentSpreader do
 
     it 'calls the method' do
       expect(callee).to receive(method_name).with(1, 2, c: 3, d: 4)
-      spreader.call(Twig::Spread.new([1, 2]), Twig::Spread.new({ c: 3, d: 4 }))
+      spreader.call(Twig::Runtime::Spread.new([1, 2]), Twig::Runtime::Spread.new({ c: 3, d: 4 }))
     end
   end
 end

@@ -467,18 +467,18 @@ module Twig
         elsif object.respond_to?(attribute)
           positional = []
           arguments.each do |k, v|
-            if !v.is_a?(Spread) && k.is_a?(Integer)
+            if !v.is_a?(Runtime::Spread) && k.is_a?(Integer)
               positional << v
-            elsif v.is_a?(Spread) && v.array?
+            elsif v.is_a?(Runtime::Spread) && v.array?
               positional = [*positional, *v.value]
             end
           end
 
           kwargs = {}
           arguments.each do |k, v|
-            if !v.is_a?(Spread) && !k.is_a?(Integer)
+            if !v.is_a?(Runtime::Spread) && !k.is_a?(Integer)
               kwargs[k] = v
-            elsif v.is_a?(Spread) && v.hash?
+            elsif v.is_a?(Runtime::Spread) && v.hash?
               kwargs = kwargs.merge(v.value)
             end
           end
