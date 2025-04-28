@@ -49,7 +49,7 @@ module Twig
           has_spread = argument_nodes.any? { |node| node.is_a?(Unary::Spread) }
 
           if has_spread
-            compiler.write('::Twig::ArgumentSpreader.new(callable).call')
+            compiler.write('::Twig::Runtime::ArgumentSpreader.new(callable).call')
           else
             compiler.write('callable.call')
           end
