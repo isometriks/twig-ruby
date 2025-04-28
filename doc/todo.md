@@ -12,7 +12,7 @@
 - ~~extends~~
 - flush
 - for*
-- from
+- ~~from~~
 - ~~guard~~
 - ~~if~~
 - ~~import~~

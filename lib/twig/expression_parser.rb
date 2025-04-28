@@ -299,6 +299,16 @@ module Twig
 
     def get_function_node(name, line)
       # @todo lots of stuff in this method
+
+      if (aliased = parser.imported_symbol(:function, name))
+        return Node::Expression::MacroReference.new(
+          aliased[:node].nodes[:var],
+          aliased[:name],
+          create_arguments(line),
+          line
+        )
+      end
+
       args = parse_named_arguments
 
       if (function = environment.function(name))

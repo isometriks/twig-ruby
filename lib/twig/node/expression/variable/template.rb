@@ -27,7 +27,7 @@ module Twig
           # @param [Compiler] compiler
           # @return [String]
           def name(compiler)
-            unless attributes.key?(:name)
+            if attributes[:name].nil?
               attributes[:name] = compiler.var_name
             end
 
