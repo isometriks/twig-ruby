@@ -12,6 +12,10 @@ RSpec.describe Twig::Node::Expression::Binary::NullCoalesce do
         {{ null ?? "Hello" }}
         {{ b ?? "Hello" }}
         {{ a ?? "Hello" }}
+        {{ nil ?? html }}
+        {{ nil ?? html|raw }}
+        {{ html ?? "KO" }}
+        {{ html|raw ?? "KO" }}
       INPUTS
     end
 
@@ -22,9 +26,13 @@ RSpec.describe Twig::Node::Expression::Binary::NullCoalesce do
         Hello
         Hello
         false
+        &lt;h1&gt;
+        <h1>
+        &lt;h1&gt;
+        <h1>
       OUTPUTS
     end
 
-    let(:locals) { { a: false, b: nil } }
+    let(:locals) { { a: false, b: nil, html: '<h1>' } }
   end
 end

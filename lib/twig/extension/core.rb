@@ -85,7 +85,7 @@ module Twig
           TwigFilter.new('upper', static(:upper)),
           TwigFilter.new('lower', static(:lower)),
           TwigFilter.new('trim', static(:trim)),
-          TwigFilter.new('nl2br', static(:nl2br)),
+          TwigFilter.new('nl2br', static(:nl2br), { pre_escape: :html, is_safe: [:html] }),
           TwigFilter.new('plural', static(:pluralize)),
           TwigFilter.new('singular', static(:singularize)),
           TwigFilter.new('slug', static(:slug)),
@@ -133,10 +133,10 @@ module Twig
           TwigFunction.new('cycle', static(:cycle)),
           TwigFunction.new('date', method(:convert_date)),
           TwigFunction.new('include', static(:include), {
-            needs_environment: true, needs_context: true, is_safe: ['all']
+            needs_environment: true, needs_context: true, is_safe: [:all]
           }),
           TwigFunction.new('source', static(:source), {
-            needs_environment: true, is_safe: ['all']
+            needs_environment: true, is_safe: [:all]
           }),
         ]
       end
@@ -299,10 +299,7 @@ module Twig
       end
 
       def self.nl2br(string)
-        OutputBuffer.
-          render(string).
-          gsub("\n", "<br>\n").
-          html_safe
+        string.gsub("\n", "<br>\n")
       end
 
       def self.singularize(string, count = nil)

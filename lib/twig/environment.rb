@@ -16,7 +16,7 @@ module Twig
         cache: false,
         debug: false,
         charset: 'UTF-8',
-        auto_escape: 'html',
+        autoescape: :html,
         auto_reload: nil,
         allow_helper_methods: false,
       }.merge(options)
@@ -26,8 +26,14 @@ module Twig
 
       self.cache = @options[:cache]
 
+      @runtimes = {}
+      @runtime_loaders = []
+      @default_runtime_loader = RuntimeLoader::Factory.new({
+        Runtime::Escaper => -> { Runtime::Escaper.new(@charset) },
+      })
+
       add_extension(Extension::Core.new)
-      add_extension(Extension::Escaper.new(options[:auto_escape]))
+      add_extension(Extension::Escaper.new(options[:autoescape]))
     end
 
     def template_class(name)
@@ -78,9 +84,29 @@ module Twig
       @extension_set.extensions[name]
     end
 
+    def extension?(name)
+      @extension_set.has?(name)
+    end
+
     # @param [Extension::Base] extension
     def add_extension(extension)
       @extension_set.add(extension)
+    end
+
+    def runtime(klass)
+      return runtimes[klass] if runtimes.key?(klass)
+
+      runtime_loaders.each do |loader|
+        if (runtime = loader.load(klass))
+          return runtimes[klass] = runtime
+        end
+      end
+
+      if (runtime = default_runtime_loader.load(klass))
+        return runtimes[klass] = runtime
+      end
+
+      raise Error::Runtime, "Unable to load the \"#{klass}\" runtime."
     end
 
     # @return [Array]
@@ -106,6 +132,11 @@ module Twig
     # @return [TokenParser::Base, nil]
     def token_parser(name)
       @extension_set.token_parser(name)
+    end
+
+    # @return [Array<NodeVisitor::Base>]
+    def node_visitors
+      @extension_set.node_visitors
     end
 
     def globals
@@ -171,6 +202,14 @@ module Twig
     end
 
     private
+
+    # @return [RuntimeLoader::Base]
+    attr_reader :default_runtime_loader
+
+    # @return [Array<RuntimeLoader::Base>]
+    attr_reader :runtime_loaders
+
+    attr_reader :runtimes
 
     def lexer
       @lexer ||= Lexer.new(self)

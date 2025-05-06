@@ -3,7 +3,7 @@
 ## Tags
 
 - ~~apply~~
-- autoescape
+- ~~autoescape~~
 - ~~block~~
 - cache
 - deprecated
@@ -39,7 +39,7 @@
 - ~~date~~
 - date_modify
 - default
-- escape
+- ~~escape~~
 - ~~filter~~
 - ~~find~~
 - ~~first~~

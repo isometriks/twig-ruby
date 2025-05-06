@@ -18,7 +18,7 @@ module Twig
           else
             vars.one? ? vars.first : vars
           end
-        end.inspect.html_safe
+        end.inspect
       end
     end
   end

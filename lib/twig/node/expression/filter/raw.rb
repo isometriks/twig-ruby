@@ -12,7 +12,7 @@ module Twig
           def initialize(node, filter, arguments, lineno)
             super(
               node,
-              filter || TwigFilter.new('raw', nil, { is_safe: ['all'] }),
+              filter || TwigFilter.new('raw', nil, { is_safe: [:all] }),
               arguments || Node::Empty.new,
               lineno
             )
@@ -22,7 +22,7 @@ module Twig
             compiler.
               raw('(').
               subcompile(nodes[:node]).
-              raw(').to_s.html_safe')
+              raw(')')
           end
         end
       end

@@ -23,10 +23,18 @@ module Twig
         []
       end
 
+      def node_visitors
+        []
+      end
+
       private
 
       def static(method)
         self.class.method(method)
+      end
+
+      def runtime(klass, method)
+        [:runtime, klass, method]
       end
     end
   end

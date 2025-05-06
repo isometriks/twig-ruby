@@ -4,6 +4,8 @@ module Twig
   module Node
     module Expression
       class Ternary < Expression::Base
+        include OperatorEscape
+
         def initialize(test, left, right, lineno)
           super({
             test:,
@@ -21,6 +23,10 @@ module Twig
             raw(') : (').
             subcompile(nodes[:right]).
             raw('))')
+        end
+
+        def operand_names_to_escape
+          %i[left right]
         end
       end
     end

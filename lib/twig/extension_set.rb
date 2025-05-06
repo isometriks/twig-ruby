@@ -75,6 +75,7 @@ module Twig
       tests[name.to_sym]
     end
 
+    # @return [Array<TokenParser::Base>]
     def token_parsers
       @token_parsers ||= extensions.
         values.map(&:token_parsers).reduce([], :concat).
@@ -84,6 +85,12 @@ module Twig
     # @return [TokenParser::Base, nil]
     def token_parser(name)
       token_parsers[name.to_sym]
+    end
+
+    # @return [Array<NodeVisitor::Base>]
+    def node_visitors
+      @node_visitors ||= extensions.
+        values.map(&:node_visitors).reduce([], :concat)
     end
   end
 end

@@ -13,6 +13,14 @@ module Twig
       }.merge(@options)
     end
 
+    # @param [Node::Base] function_args
+    def safe(function_args)
+      return @options[:is_safe] unless @options[:is_safe].nil?
+      return @options[:is_safe_callback].call(function_args) unless @options[:is_safe_callback].nil?
+
+      []
+    end
+
     def type
       :function
     end

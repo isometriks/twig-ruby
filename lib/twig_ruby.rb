@@ -16,6 +16,7 @@ require 'cgi'
   extension
   loader
   runtime
+  runtime_loader
   node
   node/expression
   node/expression/binary
@@ -23,6 +24,7 @@ require 'cgi'
   node/expression/unary
   node/expression/variable
   node/expression/test
+  node_visitor
   token_parser
 ].each do |directory|
   directory = __dir__ + "/twig/#{directory}/"
