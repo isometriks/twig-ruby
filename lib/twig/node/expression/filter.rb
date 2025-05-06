@@ -24,7 +24,7 @@ module Twig
             type: 'filter',
           }, lineno)
 
-          if filter.is_a?(Filter)
+          if filter.is_a?(TwigFilter)
             attributes[:twig_callable] = filter
           end
         end

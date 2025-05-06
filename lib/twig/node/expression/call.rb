@@ -12,18 +12,28 @@ module Twig
 
         # @param [Compiler] compiler
         def compile_callable(compiler)
+          callable_var = Variable::Local.new(nil, nil)
           callable = attributes[:twig_callable].callable
           compiler.raw("(\n").
             indent.
-            write('callable = ')
+            write('').
+            subcompile(callable_var).
+            raw(' = ')
 
           case callable
           when ::Array
-            extension, method = callable[0, 2]
-            extension = extension.class.name if extension.is_a?(Extension::Base)
+            if callable[0] == :runtime
+              _, klass, method = callable
 
-            compiler.
-              raw("env.extension(%q[#{extension.delete_prefix('::')}]).method(:#{method})")
+              compiler.
+                raw("env.runtime(%q[#{klass}]).method(:#{method})")
+            else
+              extension, method = callable[0, 2]
+              extension = extension.class.name if extension.is_a?(Extension::Base)
+
+              compiler.
+                raw("env.extension(%q[#{extension.delete_prefix('::')}]).method(:#{method})")
+            end
           when ::String
             class_name, method = callable.split('.', 2)
 
@@ -49,9 +59,15 @@ module Twig
           has_spread = argument_nodes.any? { |node| node.is_a?(Unary::Spread) }
 
           if has_spread
-            compiler.write('::Twig::Runtime::ArgumentSpreader.new(callable).call')
+            compiler.
+              write('::Twig::Runtime::ArgumentSpreader.new(').
+              subcompile(callable_var).
+              raw(').call')
           else
-            compiler.write('callable.call')
+            compiler.
+              write('').
+              subcompile(callable_var).
+              raw('.call')
           end
 
           compile_arguments(compiler)

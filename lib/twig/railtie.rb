@@ -8,8 +8,12 @@ module Twig
       <<~TEMPLATE
         ::#{self.class.name}.
           environment.
-          load_template("#{template.short_identifier}", call_context: self, output_buffer: @output_buffer).
-            render(local_assigns)
+          load_template(
+            "#{template.short_identifier}",
+            call_context: self,
+            output_buffer: Twig::OutputBuffer.new(@output_buffer),
+          ).
+          render(local_assigns)
 
         @output_buffer
       TEMPLATE

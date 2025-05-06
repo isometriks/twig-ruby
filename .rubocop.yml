@@ -64,3 +64,6 @@ Metrics/BlockNesting:
 
 Naming/MethodParameterName:
   Enabled: false
+
+Style/OptionalBooleanParameter:
+  Enabled: false

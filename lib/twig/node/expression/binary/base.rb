@@ -31,7 +31,6 @@ module Twig
         end
 
         OPERATORS = {
-          Elvis: '||',
           Or: '||',
           Xor: '^',
           And: '&&',

@@ -8,8 +8,8 @@ RSpec.describe Twig::Extension::Debug do
     let(:extensions) { [Twig::Extension::Debug.new] }
     let(:inputs) do
       <<~INPUTS
-        {{ dump(hash) }}
-        {{ dump() }}
+        {{ dump(hash)|raw }}
+        {{ dump()|raw }}
       INPUTS
     end
 

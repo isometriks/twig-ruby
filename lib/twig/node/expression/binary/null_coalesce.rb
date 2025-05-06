@@ -5,6 +5,8 @@ module Twig
     module Expression
       module Binary
         class NullCoalesce < Binary::Base
+          include OperatorEscape
+
           # @param [Compiler] compiler
           def compile(compiler)
             compiler.
@@ -15,6 +17,10 @@ module Twig
               raw(') : (').
               subcompile(nodes[:left]).
               raw('))')
+          end
+
+          def operand_names_to_escape
+            %i[left right]
           end
         end
       end

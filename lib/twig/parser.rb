@@ -15,6 +15,7 @@ module Twig
     end
 
     # @param [TokenStream] stream
+    # @return [Node::Module]
     def parse(stream, test = nil, drop_needle: false)
       @stream = stream
       @parent = nil
@@ -27,7 +28,7 @@ module Twig
 
       body = subparse(test, drop_needle:)
 
-      Node::Module.new(
+      node = Node::Module.new(
         Node::Body.new({ 0 => body }),
         @parent,
         @blocks.empty? ? Node::Empty.new : Node::Nodes.new(@blocks),
@@ -35,6 +36,12 @@ module Twig
         @traits.empty? ? Node::Empty.new : Node::Nodes.new(@traits),
         stream.source
       )
+
+      @visitors ||= environment.node_visitors
+
+      NodeTraverser.
+        new(environment, @visitors).
+        traverse(node)
     end
 
     # @param [Proc, nil] test
