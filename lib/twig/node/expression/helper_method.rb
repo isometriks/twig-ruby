@@ -3,31 +3,15 @@
 module Twig
   module Node
     module Expression
-      class HelperMethod < Expression::Base
-        def initialize(name, args, lineno)
-          super({ args: }, { name: }, lineno)
+      class HelperMethod < Call
+        def initialize(name, arguments, lineno)
+          super({ arguments: }, { name: }, lineno)
         end
 
-        def compile(compiler)
-          compiler.
-            raw("@call_context.#{attributes[:name]}(")
+        private
 
-          first = true
-          nodes[:args].nodes.each do |key, value|
-            compiler.raw(', ') unless first
-
-            unless key.is_a?(Integer)
-              compiler.raw("'#{key}': ")
-            end
-
-            compiler.
-              subcompile(value)
-
-            first = false
-          end
-
-          compiler.
-            raw(')')
+        def callable_method
+          "@call_context.method(:#{attributes[:name]})"
         end
       end
     end

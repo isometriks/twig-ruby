@@ -8,7 +8,6 @@ module Twig
         Node::Expression::BlockReference,
         Node::Expression::Parent,
         Node::Expression::MacroReference,
-        Node::Expression::HelperMethod,
       ].freeze
 
       def initialize

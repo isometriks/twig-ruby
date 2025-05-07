@@ -28,8 +28,11 @@ module Twig
 
       return nil unless twig_exception.is_a?(::Twig::Error::Base)
 
+      lineno = twig_exception.lineno
+      lineno = 1 if lineno == -1
+
       spot[:script_lines] = twig_exception.source_context&.code&.lines || source.lines
-      spot[:first_lineno] = spot[:last_lineno] = twig_exception.lineno
+      spot[:first_lineno] = spot[:last_lineno] = lineno
       spot[:first_column] = spot[:last_column] = 0
 
       spot

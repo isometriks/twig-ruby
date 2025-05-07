@@ -12,63 +12,24 @@ module Twig
 
         # @param [Compiler] compiler
         def compile_callable(compiler)
-          callable_var = Variable::Local.new(nil, nil)
-          callable = attributes[:twig_callable].callable
-          compiler.raw("(\n").
-            indent.
-            write('').
-            subcompile(callable_var).
-            raw(' = ')
-
-          case callable
-          when ::Array
-            if callable[0] == :runtime
-              _, klass, method = callable
-
-              compiler.
-                raw("env.runtime(%q[#{klass}]).method(:#{method})")
-            else
-              extension, method = callable[0, 2]
-              extension = extension.class.name if extension.is_a?(Extension::Base)
-
-              compiler.
-                raw("env.extension(%q[#{extension.delete_prefix('::')}]).method(:#{method})")
-            end
-          when ::String
-            class_name, method = callable.split('.', 2)
-
-            compiler.
-              raw("env.extension(%q[#{class_name.delete_prefix('::')}]).method(:#{method})")
-          when ::Method
-            # Instance method
-            if callable.receiver.is_a?(Extension::Base)
-              compiler.
-                raw("env.extension(%q[#{callable.owner.name}]).method(:#{callable.name})")
-            # Class method
-            else
-              compiler.
-                raw("#{callable.receiver.name}.method(:#{callable.name})")
-            end
-          else
-            raise "Callable not supported: #{callable.inspect}"
-          end
-
-          compiler.raw("\n")
-
           argument_nodes = [nodes.key?(:node) ? nodes[:node] : nil, *nodes[:arguments].nodes.values]
           has_spread = argument_nodes.any? { |node| node.is_a?(Unary::Spread) }
 
           if has_spread
             compiler.
-              write('::Twig::Runtime::ArgumentSpreader.new(').
-              subcompile(callable_var).
+              raw('::Twig::Runtime::ArgumentSpreader.new(').
+              raw(callable_method).
               raw(').call')
           else
             compiler.
-              write('').
-              subcompile(callable_var).
+              raw(callable_method).
               raw('.call')
           end
+
+          compiler.
+            raw("(\n").
+            indent.
+            write('')
 
           compile_arguments(compiler)
 
@@ -78,13 +39,43 @@ module Twig
             write(')')
         end
 
+        # @return [String]
+        def callable_method
+          callable = attributes[:twig_callable].callable
+
+          case callable
+          when ::Array
+            if callable[0] == :runtime
+              _, klass, method = callable
+
+              "env.runtime(%q[#{klass}]).method(:#{method})"
+            else
+              extension, method = callable[0, 2]
+              extension = extension.class.name if extension.is_a?(Extension::Base)
+
+              "env.extension(%q[#{extension.delete_prefix('::')}]).method(:#{method})"
+            end
+          when ::String
+            class_name, method = callable.split('.', 2)
+
+            "env.extension(%q[#{class_name.delete_prefix('::')}]).method(:#{method})"
+          when ::Method
+            # Instance method
+            if callable.receiver.is_a?(Extension::Base)
+              "env.extension(%q[#{callable.owner.name}]).method(:#{callable.name})"
+              # Class method
+            else
+              "#{callable.receiver.name}.method(:#{callable.name})"
+            end
+          else
+            raise "Callable not supported: #{callable.inspect}"
+          end
+        end
+
         def compile_arguments(compiler)
           first = true
           # @type [Twig::Callable] callable
-          callable = attributes[:twig_callable]
-
-          compiler.
-            raw('(')
+          callable = attributes.fetch(:twig_callable, nil)
 
           if nodes.key?(:node)
             compiler.
@@ -107,32 +98,29 @@ module Twig
           kwargs.each do |key, node|
             compiler.raw(', ') unless first
             compiler.
-              raw("#{key}: ").
+              raw("'#{key}': ").
               subcompile(node)
 
             first = false
           end
 
-          if callable.needs_charset?
+          if callable&.needs_charset?
             compiler.raw(', ') unless first
             compiler.raw('charset: env.charset')
             first = false
           end
 
-          if callable.needs_environment?
+          if callable&.needs_environment?
             compiler.raw(', ') unless first
             compiler.raw('environment: env')
             first = false
           end
 
-          if callable.needs_context?
+          if callable&.needs_context?
             compiler.raw(', ') unless first
             compiler.raw('context:')
             first = false
           end
-
-          compiler.
-            raw(')')
         end
       end
     end
