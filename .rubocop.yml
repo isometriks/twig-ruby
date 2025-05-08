@@ -67,3 +67,6 @@ Naming/MethodParameterName:
 
 Style/OptionalBooleanParameter:
   Enabled: false
+
+Style/DoubleNegation:
+  Enabled: false
