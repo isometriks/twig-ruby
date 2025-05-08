@@ -417,7 +417,7 @@ module Twig
       end
 
       def self.default(object, default = nil)
-        present = object.respond_to(:empty?) ? object.empty? : !object
+        present = object.respond_to?(:empty?) ? !object.empty? : !!object
 
         present ? object : default
       end
