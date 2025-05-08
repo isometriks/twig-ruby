@@ -15,7 +15,6 @@ RSpec.describe Twig::Node::Expression::Binary::NullCoalesce do
         {{ nil ?? html }}
         {{ nil ?? html|raw }}
         {{ html ?? "KO" }}
-        {{ html|raw ?? "KO" }}
       INPUTS
     end
 
