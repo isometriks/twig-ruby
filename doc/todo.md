@@ -85,7 +85,7 @@
 ## Functions
 
 - block*
-- constant
+- ~~constant~~
 - country_names
 - country_timezones
 - currency_names
@@ -110,7 +110,7 @@
 
 ## Tests
 
-- constant
+- ~~constant~~
 - defined*
 - ~~divisible by~~
 - ~~empty~~
