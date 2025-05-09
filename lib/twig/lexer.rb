@@ -18,7 +18,7 @@ module Twig
     REGEX_EXPONENT = /[eE][+-]?#{REGEX_LNUM}/
     REGEX_DNUM = /#{REGEX_LNUM}(?:#{REGEX_FRAC})?/
 
-    REGEX_NAME = /[a-zA-Z_][a-zA-Z0-9_]*/
+    REGEX_NAME = /[a-zA-Z_\u{007f}-\u{00ff}][a-zA-Z0-9_\u{007f}-\u{00ff}]*/u
     REGEX_SYMBOL = /:#{REGEX_NAME}/
     REGEX_CVAR = /@#{REGEX_NAME}/
     REGEX_STRING = /\G"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/mu

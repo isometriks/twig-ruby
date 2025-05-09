@@ -35,11 +35,15 @@ RSpec.describe Twig::TokenParser::Macro do
 
         '{% from "macro.twig" import greeting %}{{ greeting("Hello", "World!") }}',
         '{% from "macro.twig" import greeting as greet %}{{ greet("Hello", "World!") }}',
+
+        '{% macro §(message) %}{{ message }}{% endmacro %}
+         {{- _self.§("Hello World!") }}',
       ]
     end
 
     let(:outputs) do
       <<~OUTPUTS
+        Hello World!
         Hello World!
         Hello World!
         Hello World!

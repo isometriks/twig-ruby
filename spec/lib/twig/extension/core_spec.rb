@@ -73,6 +73,7 @@ RSpec.describe Twig::Extension::Core do
           {{ class.attribute_hash(...args_hash) }}
           {{ [...[1, 2, 3], ...[4, 5]]|join(", ") }}
           {{ { ...{ a: "Hello" }, ...{ b: "World!" } }|values|join(" ") }}
+          {{ § }}
         INPUTS
       end
 
@@ -143,6 +144,7 @@ RSpec.describe Twig::Extension::Core do
           Hello World!
           1, 2, 3, 4, 5
           Hello World!
+          Special character
         OUTPUTS
       end
 
@@ -167,6 +169,7 @@ RSpec.describe Twig::Extension::Core do
               [arg1, arg2].join(' ')
             end
           end.new,
+          §: 'Special character',
         }
       end
     end
