@@ -15,6 +15,9 @@ WONT_IMPLEMENT = %w[
   functions/enum_cases/invalid_enum.test
   functions/enum_cases/invalid_literal_type.test
   functions/enum_cases/valid.test
+  functions/attribute.legacy.test
+  functions/attribute_with_wrong_args.legacy.test
+  tests/defined_for_attribute.legacy.test
 ].freeze
 
 class Color
