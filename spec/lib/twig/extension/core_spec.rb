@@ -173,6 +173,13 @@ RSpec.describe Twig::Extension::Core do
   end
 
   context 'functions' do
+    before do
+      stub_const('A', Class.new)
+      stub_const('A::CONST', 'Hello World!')
+      stub_const('A::INT', 5)
+      stub_const('A::B::CONST', 'Goodbye World!')
+    end
+
     it_behaves_like 'render_and_assert' do
       let(:inputs) do
         <<~INPUTS
@@ -191,6 +198,14 @@ RSpec.describe Twig::Extension::Core do
           {% for i in range(0, 5) %}{{ cycle(cycles, i) }}-{% endfor %}
           {{ source('source.twig') }}
           {{ block("greeting", "blocks.twig") }} {{ block("message", "blocks.twig")}}
+          {{ constant("A::CONST") }}
+          {{ constant("CONST", instance) }}
+          {{ constant("A::B::CONST") }}
+          {{ constant("A::CONST") is defined ? "OK" : "KO" }}
+          {{ constant("A::B::CONST") is defined ? "OK" : "KO" }}
+          {{ constant("A::ASDF") is defined ? "KO" : "OK" }}
+          {{ 5 is constant("A::INT") ? "OK" : "KO" }}
+          {{ 5 is constant("INT", instance) ? "OK" : "KO" }}
         INPUTS
       end
 
@@ -211,6 +226,14 @@ RSpec.describe Twig::Extension::Core do
           tic-tac-toe-tic-tac-toe-
           {{ Hello World! }}
           Hello World!
+          Hello World!
+          Hello World!
+          Goodbye World!
+          OK
+          OK
+          OK
+          OK
+          OK
         OUTPUTS
       end
 
@@ -218,6 +241,7 @@ RSpec.describe Twig::Extension::Core do
         {
           a: 1,
           cycles: %w[tic tac toe],
+          instance: A.new,
         }
       end
 

@@ -4,6 +4,8 @@ module Twig
   module Node
     module Expression
       class Function < Call
+        include SupportDefinedTest
+
         # @param [TwigFunction] function
         # @param [Node::Base] arguments
         # @param [Integer] lineno
@@ -16,9 +18,15 @@ module Twig
           }, lineno)
         end
 
+        def enable_defined_test
+          if attributes[:name] == 'constant'
+            super
+          end
+        end
+
         def compile(compiler)
-          if attributes[:name] == 'constant' && attributes[:is_defined_test]
-            nodes[:arguments].nodes[:check_defined] = Expression::Constant.new(true, lineno)
+          if attributes[:name] == 'constant' && define_test_enabled?
+            nodes[:arguments].nodes[:defined_test] = Expression::Constant.new(true, lineno)
           end
 
           super

@@ -130,6 +130,7 @@ module Twig
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
+          TwigFunction.new('constant', static(:constant)),
           TwigFunction.new('cycle', static(:cycle)),
           TwigFunction.new('date', method(:convert_date)),
           TwigFunction.new('include', static(:include), {
@@ -155,6 +156,7 @@ module Twig
           TwigTest.new('divisible by', nil, {
             node_class: Node::Expression::Test::DivisibleBy, one_mandatory_argument: true
           }),
+          TwigTest.new('constant', nil, { node_class: Node::Expression::Test::Constant }),
           TwigTest.new('empty', static(:test_empty?)),
           TwigTest.new('iterable', nil, { node_class: Node::Expression::Test::Iterable }),
           # @todo: These should probably check enumerables etc. move to a method?
@@ -255,6 +257,43 @@ module Twig
 
       def self.range(start, finish, step = 1)
         Range.new(start, finish).step(step)
+      end
+
+      # @param [String] constant
+      # @param [Object, nil] object
+      # @param [Boolean] defined_test
+      def self.constant(constant, object = nil, defined_test: false)
+        unless object.nil?
+          if defined_test
+            return object.class.const_defined?(constant)
+          end
+
+          return object.class.const_get(constant)
+        end
+
+        unless constant.include?('::')
+          raise Error::Runtime, 'constant() expects string in format A::CONST'
+        end
+
+        class_name, _, constant = constant.rpartition('::')
+
+        unless Object.const_defined?(class_name)
+          return false if defined_test
+
+          raise Error::Runtime, "Class #{class_name} does not exist"
+        end
+
+        klass = Object.const_get(class_name)
+
+        unless klass.const_defined?(constant)
+          return false if defined_test
+
+          raise Error::Runtime, "Class #{class_name} does not have a constant #{constant}"
+        end
+
+        return true if defined_test
+
+        klass.const_get(constant)
       end
 
       def self.cycle(values, position)
