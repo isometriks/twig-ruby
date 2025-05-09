@@ -39,8 +39,14 @@ module Twig
       token = current
 
       unless token.test(type, value)
+        expected = Token.type_to_english(type)
+        unexpected = Token.type_to_english(token.type)
+        token_value = token.value.empty? ? '' : " of value \"#{token.value}\""
+        value = " with value \"#{value}\"" if value
+        message = "#{message} " if message
+
         raise Error::Syntax.new(
-          "Expected #{type}(#{value}) but got #{token.type}(#{token.value}) #{message}".rstrip,
+          "#{message}Unexpected token \"#{unexpected}\"#{token_value} (\"#{expected}\" expected#{value})",
           token.lineno,
           source
         )
