@@ -28,7 +28,7 @@
 ## Filters
 
 - ~~abs~~
-- batch
+- ~~batch~~
 - ~~capitalize~~
 - ~~column~~
 - convert_encoding
