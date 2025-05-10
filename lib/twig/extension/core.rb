@@ -95,7 +95,7 @@ module Twig
           # new TwigFilter('split', self::split(...), ['needs_charset' => true]),
           TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
-          # new TwigFilter('batch', self::batch(...)),
+          TwigFilter.new('batch', static(:batch)),
           TwigFilter.new('column', static(:column)),
           TwigFilter.new('filter', static(:filter)),
           TwigFilter.new('map', static(:map)),
@@ -382,6 +382,31 @@ module Twig
         else
           enumerables.reduce(&:concat)
         end
+      end
+
+      # @param [Array, Hash] object
+      # @param [Integer, Float] count
+      # @param [Object] fill
+      # @param [Boolean] preserve_keys
+      def self.batch(object, count, fill = nil, preserve_keys = true)
+        hash = object.is_a?(Array) ? object.each_with_index.to_h.invert : object
+        size = count.ceil
+
+        result = hash.each_slice(size).map do |slice|
+          unless preserve_keys
+            slice = [*0...size].zip(slice.to_h.values)
+          end
+
+          slice.to_h
+        end
+
+        return result if fill.nil?
+
+        [*0...(size - result[-1].length)].each do
+          result[-1][result[-1].length] = fill
+        end
+
+        result
       end
 
       def self.column(object, column)
