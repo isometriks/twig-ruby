@@ -36,15 +36,15 @@ module Twig
       add_extension(Extension::Escaper.new(options[:autoescape]))
     end
 
-    def template_class(name)
+    def template_class(name, index = nil)
       key = loader.get_cache_key(name)
 
-      "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}"
+      "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{index ? "__#{index}" : ''}"
     end
 
     # @return [Twig::Template]
-    def load_template(name, **)
-      class_name = template_class(name)
+    def load_template(name, index: nil, **)
+      class_name = template_class(name, index)
       cache_key = cache.generate_key(name, class_name)
 
       attempt_cache = !@auto_reload && template_fresh?(name, cache.timestamp(cache_key))
@@ -66,7 +66,7 @@ module Twig
         Twig.module_eval(code) unless Twig.const_defined?(class_name)
       end
 
-      Twig.const_get(template_class(name)).
+      Twig.const_get(template_class(name, index)).
         new(self, **)
     end
 
