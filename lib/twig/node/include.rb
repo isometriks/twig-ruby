@@ -27,7 +27,7 @@ module Twig
             indent.
             write("#{template} = ")
 
-          add_get_template(compiler)
+          add_get_template(compiler, template)
 
           compiler.
             raw("\n").
@@ -67,12 +67,10 @@ module Twig
       private
 
       # @param [Compiler] compiler
-      def add_get_template(compiler)
+      def add_get_template(compiler, template = '')
         compiler.
           raw('load_template(').
           subcompile(nodes[:expr]).
-          raw(', ').
-          repr(template_name).
           raw(', ').
           repr(lineno).
           raw(')')

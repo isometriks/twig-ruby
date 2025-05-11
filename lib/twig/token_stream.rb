@@ -84,5 +84,10 @@ module Twig
         map(&:debug).
         map { |type, value| "#{type}(#{value})" }
     end
+
+    # @param [Array<Token>] tokens
+    def inject(tokens)
+      @tokens.insert(@current, *tokens)
+    end
   end
 end

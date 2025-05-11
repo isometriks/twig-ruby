@@ -8,7 +8,7 @@
 - cache
 - deprecated
 - ~~do~~
-- embed
+- ~~embed~~
 - ~~extends~~
 - flush
 - for*

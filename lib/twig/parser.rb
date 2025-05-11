@@ -9,19 +9,40 @@ module Twig
     # @return [Environment]
     attr_reader :environment
 
+    STACKABLE = %i[
+      stream
+      parent
+      blocks
+      block_stack
+      macros
+      imported_symbols
+      traits
+      embedded_templates
+      ignore_unknown_twig_callables
+    ].freeze
+
     # @param [Environment] environment
     def initialize(environment)
       @environment = environment
+      @stack = []
     end
 
     # @param [TokenStream] stream
     # @return [Node::Module]
     def parse(stream, test = nil, drop_needle: false)
+      # Save the current value to stack
+      frame = {}
+      STACKABLE.each do |attr|
+        frame[attr] = instance_variable_get("@#{attr}")
+      end
+
+      @stack << frame
       @stream = stream
       @parent = nil
       @traits = AutoHash.new
       @macros = {}
       @blocks = {}
+      @embedded_templates = AutoHash.new
       @block_stack = []
       @imported_symbols = [{}]
       @ignore_unknown_twig_callables = false
@@ -34,14 +55,23 @@ module Twig
         @blocks.empty? ? Node::Empty.new : Node::Nodes.new(@blocks),
         @macros.empty? ? Node::Empty.new : Node::Nodes.new(@macros),
         @traits.empty? ? Node::Empty.new : Node::Nodes.new(@traits),
+        @embedded_templates.empty? ? Node::Empty.new : Node::Nodes.new(@embedded_templates),
         stream.source
       )
 
       @visitors ||= environment.node_visitors
 
-      NodeTraverser.
+      node = NodeTraverser.
         new(environment, @visitors).
         traverse(node)
+
+      # Restore stack
+      frame = @stack.pop
+      STACKABLE.each do |attr|
+        instance_variable_set("@#{attr}", frame[attr])
+      end
+
+      node
     end
 
     # @param [Proc, nil] test
@@ -149,6 +179,13 @@ module Twig
       else
         @imported_symbols.dig(-1, type, symbol_alias)
       end
+    end
+
+    # @param [Node::Module] template
+    def embed_template(template)
+      template.index = rand(2**32)
+
+      @embedded_templates << template
     end
 
     def peek_block_stack

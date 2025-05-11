@@ -4,7 +4,7 @@ module Twig
   module Node
     class Module < Node::Base
       # @param [Node::Body] body
-      def initialize(body, parent, blocks, macros, traits, source)
+      def initialize(body, parent, blocks, macros, traits, embedded_templates, source)
         nodes = {
           body:,
           blocks:,
@@ -13,14 +13,25 @@ module Twig
         }
         nodes[:parent] = parent if parent
 
-        super(nodes)
+        super(
+          nodes,
+          {
+            index: nil,
+            embedded_templates:,
+          },
+          1
+        )
 
         self.source_context = source
       end
 
+      def index=(index)
+        attributes[:index] = index
+      end
+
       def compile(compiler)
         class_begin = <<~CLASS
-          class Twig::#{compiler.environment.template_class(source_context.name)} < ::Twig::Template
+          class Twig::#{compiler.environment.template_class(source_context.name, attributes[:index])} < ::Twig::Template
         CLASS
 
         class_end = <<~CLASS
@@ -43,6 +54,8 @@ module Twig
           compiler.
             write('@parent = load_template(').
             subcompile(nodes[:parent]).
+            raw(', ').
+            repr(nodes[:parent].lineno).
             raw(").call(context, self.blocks.merge(blocks));\n")
         else
           compiler.
@@ -69,6 +82,10 @@ module Twig
         compiler.
           outdent.
           raw(class_end)
+
+        attributes[:embedded_templates].nodes.each_value do |template|
+          compiler.subcompile(template)
+        end
       end
 
       private
@@ -198,8 +215,6 @@ module Twig
           compiler.
             raw('load_template(').
             subcompile(parent).
-            raw(', ').
-            repr(source_context.name).
             raw(', ').
             repr(parent.lineno).
             raw(')')

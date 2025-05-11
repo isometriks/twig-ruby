@@ -141,7 +141,7 @@ module Twig
       end
 
       unless @parents.key?(parent)
-        @parents[parent] = load_template(parent)
+        @parents[parent] = load_template(parent, -1)
       end
 
       @parents[parent]
@@ -217,8 +217,8 @@ module Twig
 
     # @param [String] name
     # @return ]Template]
-    def load_template(name, template_name = '', template_line = nil)
-      env.load_template(name, call_context: @call_context, output_buffer: @output_buffer)
+    def load_template(name, line, index = nil)
+      env.load_template(name, index:, call_context: @call_context, output_buffer: @output_buffer)
     end
 
     # Overloaded by children

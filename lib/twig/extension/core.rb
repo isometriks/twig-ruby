@@ -170,6 +170,7 @@ module Twig
           TokenParser::Apply.new,
           TokenParser::Block.new,
           TokenParser::Do.new,
+          TokenParser::Embed.new,
           TokenParser::Extends.new,
           TokenParser::For.new,
           TokenParser::From.new,
