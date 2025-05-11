@@ -168,7 +168,7 @@ module Twig
           attribute = Node::Expression::Constant.new(token.value, token.lineno)
         else
           raise Error::Syntax.new(
-            "Expected name or number, got #{token.value} of type #{token.type}",
+            "Expected name or number, got value \"#{token.value}\" of type #{token.type}",
             token.lineno,
             stream.source
           )
