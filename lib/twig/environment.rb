@@ -71,16 +71,16 @@ module Twig
     end
 
     def extension(name)
-      @extension_set.extensions[name]
+      extension_set.extensions[name]
     end
 
     def extension?(name)
-      @extension_set.has?(name)
+      extension_set.has?(name)
     end
 
     # @param [Extension::Base] extension
     def add_extension(extension)
-      @extension_set.add(extension)
+      extension_set.add(extension)
     end
 
     def runtime(klass)
@@ -101,32 +101,32 @@ module Twig
 
     # @return [Array]
     def operators
-      @extension_set.operators
+      extension_set.operators
     end
 
     # @return [TwigFilter, nil]
     def filter(name)
-      @extension_set.filter(name)
+      extension_set.filter(name)
     end
 
     # @return [TwigFunction, nil]
     def function(name)
-      @extension_set.function(name)
+      extension_set.function(name)
     end
 
     # @return [TwigTest, nil]
     def test(name)
-      @extension_set.test(name)
+      extension_set.test(name)
     end
 
     # @return [TokenParser::Base, nil]
     def token_parser(name)
-      @extension_set.token_parser(name)
+      extension_set.token_parser(name)
     end
 
     # @return [Array<NodeVisitor::Base>]
     def node_visitors
-      @extension_set.node_visitors
+      extension_set.node_visitors
     end
 
     def globals
@@ -193,12 +193,16 @@ module Twig
 
     private
 
+    # @return [ExtensionSet]
+    attr_reader :extension_set
+
     # @return [RuntimeLoader::Base]
     attr_reader :default_runtime_loader
 
     # @return [Array<RuntimeLoader::Base>]
     attr_reader :runtime_loaders
 
+    # @return [Hash{String => Object}]
     attr_reader :runtimes
 
     def render_ruby(name)
