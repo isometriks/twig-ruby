@@ -92,7 +92,7 @@ module Twig
 
           # array helpers
           TwigFilter.new('join', static(:join)),
-          # new TwigFilter('split', self::split(...), ['needs_charset' => true]),
+          TwigFilter.new('split', static(:split), needs_charset: true),
           TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
           TwigFilter.new('batch', static(:batch)),
@@ -364,6 +364,28 @@ module Twig
         return value[0] if value.length == 1
 
         value[..-2].join(glue) + and_glue.to_s + value[-1].to_s
+      end
+
+      def self.split(value, delimiter, limit = nil, charset:)
+        value ||= ''
+
+        unless delimiter == ''
+          return limit.nil? ? value.split(delimiter) : value.split(delimiter, limit)
+        end
+
+        if limit <= 1
+          return value.chars
+        end
+
+        length = value.length
+
+        if limit.nil? || length < limit
+          return [value]
+        end
+
+        [*0...length].map do |i|
+          value[i, limit]
+        end
       end
 
       # @param [Hash, Array, Enumerable] object

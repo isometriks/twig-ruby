@@ -75,6 +75,8 @@ RSpec.describe Twig::Extension::Core do
           {{ { ...{ a: "Hello" }, ...{ b: "World!" } }|values|join(" ") }}
           {{ § }}
           {{ [1, 2, 3]|batch(2, :fill)|json_encode|raw }}
+          {{ "Hello,World!"|split(",")|join(" ") }}
+          {{ "one,two,three,four,five"|split(",", 3)|join("|") }}
         INPUTS
       end
 
@@ -147,6 +149,8 @@ RSpec.describe Twig::Extension::Core do
           Hello World!
           Special character
           [{"0":1,"1":2},{"2":3,"1":"fill"}]
+          Hello World!
+          one|two|three,four,five
         OUTPUTS
       end
 
