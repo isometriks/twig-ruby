@@ -8,6 +8,7 @@ require 'active_support/inflector'
 require 'active_support/number_helper'
 require 'digest'
 require 'cgi'
+require 'sanitize'
 
 %w[
   .
