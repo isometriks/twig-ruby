@@ -73,7 +73,7 @@
 - ~~slug~~
 - ~~sort~~
 - spaceless
-- split
+- ~~split~~
 - ~~striptags~~
 - timezone_name
 - ~~title~~
