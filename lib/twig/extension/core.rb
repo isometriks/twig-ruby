@@ -84,6 +84,7 @@ module Twig
           TwigFilter.new('capitalize', static(:capitalize)),
           TwigFilter.new('upper', static(:upper)),
           TwigFilter.new('lower', static(:lower)),
+          TwigFilter.new('striptags', static(:strip_tags)),
           TwigFilter.new('trim', static(:trim)),
           TwigFilter.new('nl2br', static(:nl2br), { pre_escape: :html, is_safe: [:html] }),
           TwigFilter.new('plural', static(:pluralize)),
@@ -331,6 +332,10 @@ module Twig
 
       def self.lower(string)
         string.downcase
+      end
+
+      def self.strip_tags(string, tags = [])
+        Sanitize.fragment(string || '', elements: tags)
       end
 
       def self.trim(string)

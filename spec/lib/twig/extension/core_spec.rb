@@ -81,6 +81,8 @@ RSpec.describe Twig::Extension::Core do
           {{ ([1,1,1] has some n => n % 2 == 0) ? "KO" : "OK" }}
           {{ ([1,2,3] has every n => n % 2 == 0) ? "KO" : "OK" }}
           {{ ([2,4,6] has every n => n % 2 == 0) ? "OK" : "KO" }}
+          {{ html|striptags|trim }}
+          {{ html|striptags(['h1'])|trim|raw }}
         INPUTS
       end
 
@@ -159,6 +161,8 @@ RSpec.describe Twig::Extension::Core do
           OK
           OK
           OK
+          Hello World! How are you?
+          <h1>Hello World!</h1>How are you?
         OUTPUTS
       end
 
@@ -184,6 +188,7 @@ RSpec.describe Twig::Extension::Core do
             end
           end.new,
           §: 'Special character',
+          html: '<h1>Hello World!</h1><small>How are you?</small>',
         }
       end
     end
