@@ -66,18 +66,8 @@ module Twig
         Twig.module_eval(code) unless Twig.const_defined?(class_name)
       end
 
-      Twig.const_get(template_class(name, index)).
+      Twig.const_get(class_name).
         new(self, **)
-    end
-
-    def render(name)
-      loader.get_source_context(name).code
-    end
-
-    def render_ruby(name)
-      compile_source(
-        loader.get_source_context(name)
-      )
     end
 
     def extension(name)
@@ -210,6 +200,12 @@ module Twig
     attr_reader :runtime_loaders
 
     attr_reader :runtimes
+
+    def render_ruby(name)
+      compile_source(
+        loader.get_source_context(name)
+      )
+    end
 
     def lexer
       @lexer ||= Lexer.new(self)
