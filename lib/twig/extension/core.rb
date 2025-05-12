@@ -46,8 +46,8 @@ module Twig
             'starts with': { precedence: 20, class: binary::StartsWith,
                              associativity: ExpressionParser::OPERATOR_LEFT },
             'ends with': { precedence: 20, class: binary::EndsWith, associativity: ExpressionParser::OPERATOR_LEFT },
-            # 'has some': { precedence: 20, class: binary::HasSome, associativity: ExpressionParser::OPERATOR_LEFT },
-            # 'has every': { precedence: 20, class: binary::HasEvery, associativity: ExpressionParser::OPERATOR_LEFT },
+            'has some': { precedence: 20, class: binary::HasSome, associativity: ExpressionParser::OPERATOR_LEFT },
+            'has every': { precedence: 20, class: binary::HasEvery, associativity: ExpressionParser::OPERATOR_LEFT },
             '..': { precedence: 25, class: binary::Range, associativity: ExpressionParser::OPERATOR_LEFT },
             '~': { precedence: 27, class: binary::Concat, associativity: ExpressionParser::OPERATOR_LEFT },
             '+': { precedence: 30, class: binary::Add, associativity: ExpressionParser::OPERATOR_LEFT },
@@ -461,6 +461,22 @@ module Twig
         end
 
         accumulator
+      end
+
+      def self.array_every?(object, proc)
+        unless object.respond_to?(:all?)
+          raise Error::Runtime, "The \"has every\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
+        end
+
+        object.all?(&proc)
+      end
+
+      def self.array_some?(object, proc)
+        unless object.respond_to?(:any?)
+          raise Error::Runtime, "The \"has some\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
+        end
+
+        object.any?(&proc)
       end
 
       def self.find(object, proc)

@@ -77,6 +77,10 @@ RSpec.describe Twig::Extension::Core do
           {{ [1, 2, 3]|batch(2, :fill)|json_encode|raw }}
           {{ "Hello,World!"|split(",")|join(" ") }}
           {{ "one,two,three,four,five"|split(",", 3)|join("|") }}
+          {{ ([1,2,3] has some n => n % 2 == 0) ? "OK" : "KO" }}
+          {{ ([1,1,1] has some n => n % 2 == 0) ? "KO" : "OK" }}
+          {{ ([1,2,3] has every n => n % 2 == 0) ? "KO" : "OK" }}
+          {{ ([2,4,6] has every n => n % 2 == 0) ? "OK" : "KO" }}
         INPUTS
       end
 
@@ -151,6 +155,10 @@ RSpec.describe Twig::Extension::Core do
           [{"0":1,"1":2},{"2":3,"1":"fill"}]
           Hello World!
           one|two|three,four,five
+          OK
+          OK
+          OK
+          OK
         OUTPUTS
       end
 
