@@ -170,6 +170,7 @@ module Twig
         [
           TokenParser::Apply.new,
           TokenParser::Block.new,
+          TokenParser::Deprecated.new,
           TokenParser::Do.new,
           TokenParser::Embed.new,
           TokenParser::Extends.new,
@@ -615,6 +616,14 @@ module Twig
 
           raise NotImplementedError, 'Need to implement other get_attribute calls'
         end
+      end
+
+      # @todo How to post deprecations? Also check if Rails is loaded and deprecate that way
+      def self.deprecation_notice(message, template, line, package: nil, version: nil)
+        package = package ? " (Package: #{package})" : ''
+        version = version ? " (Version: #{version})" : ''
+
+        puts "Deprecation Notice: #{message} in #{template} on line #{line}#{package}#{version}"
       end
 
       def self.test_empty?(object)
