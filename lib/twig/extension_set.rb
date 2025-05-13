@@ -72,17 +72,41 @@ module Twig
 
     # @return [TwigFilter, nil]
     def filter(name)
-      filters[name]
+      return filters[name] if filters.key?(name)
+
+      dynamic_filters.each do |pattern, filter|
+        if (match = Regexp.new(pattern).match(name))
+          return filter.with_dynamic_arguments(name, filter.name, match.captures)
+        end
+      end
+
+      nil
     end
 
     # @return [TwigFunction, nil]
     def function(name)
-      functions[name]
+      return functions[name] if functions.key?(name)
+
+      dynamic_functions.each do |pattern, function|
+        if (match = Regexp.new(pattern).match(name))
+          return function.with_dynamic_arguments(name, function.name, match.captures)
+        end
+      end
+
+      nil
     end
 
     # @return [TwigTest, nil]
     def test(name)
-      tests[name]
+      return tests[name] if tests.key?(name)
+
+      dynamic_tests.each do |pattern, test|
+        if (match = Regexp.new(pattern).match(name))
+          return test.with_dynamic_arguments(name, test.name, match.captures)
+        end
+      end
+
+      nil
     end
 
     # @return [Array<TokenParser::Base>]
@@ -104,6 +128,28 @@ module Twig
     end
 
     private
+
+    def dynamic_filters
+      @dynamic_filters ||= filters.
+        select { |name, _| name.include?('*') }.
+        transform_keys { |name| dynamic_callable_regex(name) }
+    end
+
+    def dynamic_functions
+      @dynamic_functions ||= functions.
+        select { |name, _| name.include?('*') }.
+        transform_keys { |name| dynamic_callable_regex(name) }
+    end
+
+    def dynamic_tests
+      @dynamic_tests ||= tests.
+        select { |name, _| name.include?('*') }.
+        transform_keys { |name| dynamic_callable_regex(name) }
+    end
+
+    def dynamic_callable_regex(name)
+      "^#{Regexp.quote(name).gsub('\\*', '(.*?)')}$"
+    end
 
     def key(object)
       case object
