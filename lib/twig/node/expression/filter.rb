@@ -21,7 +21,7 @@ module Twig
             arguments:,
           }, {
             name:,
-            type: 'filter',
+            type: :filter,
           }, lineno)
 
           if filter.is_a?(TwigFilter)
