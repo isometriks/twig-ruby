@@ -43,40 +43,46 @@ module Twig
       [all_unary, all_binary]
     end
 
+    # @return [Hash{String => TwigFilter}]
     def filters
       @filters ||= extensions.
         values.
         map(&:filters).
         flatten.
-        to_h { |filter| [filter.name.to_sym, filter] }
+        to_h { |filter| [filter.name, filter] }
     end
 
+    # @return [Hash{String => TwigFunction}]
     def functions
       @functions ||= extensions.
         values.
         map(&:functions).
         flatten.
-        to_h { |function| [function.name.to_sym, function] }
+        to_h { |function| [function.name, function] }
     end
 
+    # @return [Hash{String => TwigTest}]
     def tests
       @tests ||= extensions.
         values.
         map(&:tests).
         flatten.
-        to_h { |test| [test.name.to_sym, test] }
+        to_h { |test| [test.name, test] }
     end
 
+    # @return [TwigFilter, nil]
     def filter(name)
-      filters[name.to_sym]
+      filters[name]
     end
 
+    # @return [TwigFunction, nil]
     def function(name)
-      functions[name.to_sym]
+      functions[name]
     end
 
+    # @return [TwigTest, nil]
     def test(name)
-      tests[name.to_sym]
+      tests[name]
     end
 
     # @return [Array<TokenParser::Base>]

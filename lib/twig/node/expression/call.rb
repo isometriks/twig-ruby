@@ -41,7 +41,9 @@ module Twig
 
         # @return [String]
         def callable_method
-          callable = attributes[:twig_callable].callable
+          # @type [Twig::Callable] callable
+          twig_callable = attributes[:twig_callable]
+          callable = twig_callable.callable
 
           case callable
           when ::Array
@@ -67,6 +69,8 @@ module Twig
             else
               "#{callable.receiver.name}.method(:#{callable.name})"
             end
+          when ::Proc
+            "env.#{attributes[:type]}(%q[#{twig_callable.dynamic_name}]).callable"
           else
             raise "Callable not supported: #{callable.inspect}"
           end
