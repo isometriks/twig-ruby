@@ -81,7 +81,17 @@ module Twig
           # @type [Twig::Callable] callable
           callable = attributes.fetch(:twig_callable, nil)
 
+          callable&.arguments&.each do |argument|
+            compiler.raw(', ') unless first
+
+            compiler.string(argument)
+
+            first = false
+          end
+
           if nodes.key?(:node)
+            compiler.raw(', ') unless first
+
             compiler.
               subcompile(nodes[:node])
 

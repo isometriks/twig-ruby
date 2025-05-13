@@ -2,13 +2,15 @@
 
 module Twig
   class Callable
-    attr_reader :name, :dynamic_name, :callable
+    attr_reader :callable
+    attr_accessor :name, :dynamic_name, :arguments
 
     # @param [String] name
     # @param [Proc|Nil] callable
     # @param [Hash] options
     def initialize(name, callable = nil, options = {})
       @name = @dynamic_name = name
+      @arguments = []
       @callable = callable
       @options = {
         needs_environment: false,
@@ -28,6 +30,15 @@ module Twig
 
     def needs_context?
       @options[:needs_context]
+    end
+
+    def with_dynamic_arguments(name, dynamic_name, arguments)
+      new = clone
+      new.name = name
+      new.dynamic_name = dynamic_name
+      new.arguments = arguments
+
+      new
     end
   end
 end

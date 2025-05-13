@@ -201,6 +201,8 @@ class TwigTestExtension < Twig::Extension::Base
         ->(environment:) { environment.extension(TwigTestExtension).magic_call },
         needs_environment: true
       ),
+      ::Twig::TwigFilter.new('*_path', method(:dynamic_path)),
+      ::Twig::TwigFilter.new('*_foo_*_bar', method(:dynamic_foo)),
     ]
   end
 
@@ -211,12 +213,15 @@ class TwigTestExtension < Twig::Extension::Base
       ::Twig::TwigFunction.new('unsafe_br', method(:br)),
       ::Twig::TwigFunction.new('static_call_string', 'TwigTestExtension.static_call'),
       ::Twig::TwigFunction.new('static_call_array', %w[TwigTestExtension static_call]),
+      ::Twig::TwigFunction.new('*_path', method(:dynamic_path)),
+      ::Twig::TwigFunction.new('*_foo_*_bar', method(:dynamic_foo)),
     ]
   end
 
   def tests
     [
       ::Twig::TwigTest.new('multi word', static(:multi_word?)),
+      ::Twig::TwigTest.new('test_*', method(:dynamic_test)),
     ]
   end
 
@@ -238,6 +243,18 @@ class TwigTestExtension < Twig::Extension::Base
 
   def nl2br(value, sep = '<br />')
     value.gsub("\n", "#{sep}\n")
+  end
+
+  def dynamic_path(element, item)
+    "#{element}/#{item}"
+  end
+
+  def dynamic_foo(foo, bar, item)
+    "#{foo}/#{bar}/#{item}"
+  end
+
+  def dynamic_test(element, item)
+    element == item
   end
 
   # @param [String] value

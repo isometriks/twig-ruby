@@ -27,7 +27,7 @@ module Twig
     end
 
     def render(context = {})
-      call(Runtime::Context.new(context))
+      call(Runtime::Context.new(context)).to_s
     rescue Error::Base => e
       e.source_context = source_context unless e.source_context
       raise e
