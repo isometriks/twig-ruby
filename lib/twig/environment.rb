@@ -71,7 +71,7 @@ module Twig
     end
 
     def extension(name)
-      extension_set.extensions[name]
+      extension_set.get(name)
     end
 
     def extension?(name)

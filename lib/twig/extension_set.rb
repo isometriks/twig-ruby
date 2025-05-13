@@ -15,16 +15,20 @@ module Twig
 
     # @param [Extension::Base] extension
     def add(extension)
-      raise "Extension #{extension.class.name} already added" if has?(extension)
+      raise "Extension #{extension.class} already added" if has?(extension)
 
-      @extensions[extension.class.name] = extension
+      @extensions[key(extension)] = extension
     end
 
     # @param [Object, String] extension
     # @return [Boolean]
     def has?(extension)
-      extension = extension.class.name unless extension.is_a?(String)
-      extensions.key?(extension.to_s)
+      extensions.key?(key(extension))
+    end
+
+    # @return [Extension::Base]
+    def get(extension)
+      extensions[key(extension)]
     end
 
     def operators
@@ -91,6 +95,19 @@ module Twig
     def node_visitors
       @node_visitors ||= extensions.
         values.map(&:node_visitors).reduce([], :concat)
+    end
+
+    private
+
+    def key(object)
+      case object
+      when String
+        object
+      when Class
+        object.to_s
+      else
+        object.class.to_s
+      end
     end
   end
 end

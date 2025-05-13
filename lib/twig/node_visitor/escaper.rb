@@ -18,8 +18,8 @@ module Twig
       def enter_node(node, env)
         case node
         when Node::Module
-          if env.extension?(Extension::Escaper.name)
-            default_strategy = env.extension(Extension::Escaper.name).default_strategy(node.template_name)
+          if env.extension?(Extension::Escaper)
+            default_strategy = env.extension(Extension::Escaper).default_strategy(node.template_name)
             @default_strategy = default_strategy if default_strategy
           end
 
