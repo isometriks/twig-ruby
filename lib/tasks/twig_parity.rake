@@ -203,6 +203,7 @@ class TwigTestExtension < Twig::Extension::Base
       ),
       ::Twig::TwigFilter.new('*_path', method(:dynamic_path)),
       ::Twig::TwigFilter.new('*_foo_*_bar', method(:dynamic_foo)),
+      ::Twig::TwigFilter.new('anon_foo', ->(name) { "*#{name}*" }),
     ]
   end
 
@@ -215,6 +216,7 @@ class TwigTestExtension < Twig::Extension::Base
       ::Twig::TwigFunction.new('static_call_array', %w[TwigTestExtension static_call]),
       ::Twig::TwigFunction.new('*_path', method(:dynamic_path)),
       ::Twig::TwigFunction.new('*_foo_*_bar', method(:dynamic_foo)),
+      ::Twig::TwigFunction.new('anon_foo', ->(name) { "*#{name}*" }),
     ]
   end
 
