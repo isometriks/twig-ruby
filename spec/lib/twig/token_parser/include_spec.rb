@@ -8,6 +8,7 @@ RSpec.describe Twig::TokenParser::Include do
     let(:inputs) do
       <<~INPUTS
         Hello {% include "include" %}
+        Hello {% include "include" only %}
         Hello {% include template %}
         Hello {% include "deep" %}
         Hello-{% include "missing" ignore missing %}-World!
@@ -18,6 +19,7 @@ RSpec.describe Twig::TokenParser::Include do
 
     let(:outputs) do
       <<~OUTPUTS
+        Hello World!
         Hello World!
         Hello World!
         Hello World!

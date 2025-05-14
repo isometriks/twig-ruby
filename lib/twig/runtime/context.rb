@@ -17,6 +17,8 @@ module Twig
         other.each do |k, v|
           self[k] = v
         end
+
+        self
       end
 
       def merge(other)
