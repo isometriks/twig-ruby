@@ -10,7 +10,7 @@ RSpec.describe Twig::TokenParser::Deprecated do
     environment = Twig::Environment.new(loader)
 
     expect do
-      environment.load_template('index.twig').render
+      environment.load('index.twig').render
     end.to(
       output("Deprecation Notice: Use base.twig instead in index.twig on line 1 (Package: twig) (Version: 1.0)\n").
         to_stdout

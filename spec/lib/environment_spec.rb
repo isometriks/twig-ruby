@@ -40,7 +40,7 @@ RSpec.describe Twig::Environment do
       let(:template) { '{{ "world"|dynamic_hello_filter }}' }
 
       it 'renders the dynamic filter with proper arguments' do
-        expect(environment.load_template('index.twig').render).to eq('hello-world-hello')
+        expect(environment.load('index.twig').render).to eq('hello-world-hello')
       end
     end
 
@@ -48,7 +48,7 @@ RSpec.describe Twig::Environment do
       let(:template) { '{{ dynamic_hello_function("world") }}' }
 
       it 'renders the dynamic function with proper arguments' do
-        expect(environment.load_template('index.twig').render).to eq('hello-world-hello')
+        expect(environment.load('index.twig').render).to eq('hello-world-hello')
       end
     end
 
@@ -56,7 +56,7 @@ RSpec.describe Twig::Environment do
       let(:template) { '{{ "world" is dynamic_world_test }}' }
 
       it 'renders the dynamic test with proper arguments' do
-        expect(environment.load_template('index.twig').render).to eq('true')
+        expect(environment.load('index.twig').render).to eq('true')
       end
     end
   end
@@ -66,7 +66,7 @@ RSpec.describe Twig::Environment do
     let(:template) { '{{ include(template_from_string("{{ \'Hello World!\' }}")) }}' }
 
     it 'renders the template from a string' do
-      expect(environment.load_template('index.twig').render).to eq('Hello World!')
+      expect(environment.load('index.twig').render).to eq('Hello World!')
     end
   end
 end

@@ -107,7 +107,7 @@ class TwigFixture
     environment.add_extension(::Twig::Extension::StringLoader.new)
 
     begin
-      environment.load_template('index.twig')
+      environment.load('index.twig')
 
       {
         message:,
