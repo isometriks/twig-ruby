@@ -48,6 +48,11 @@ module Twig
         compiler.
           write("def call(context = {}, blocks = {})\n").
           indent.
+          write("unless context.is_a?(::Twig::Runtime::Context)\n").
+          indent.
+          write("context = ::Twig::Runtime::Context.new(context)\n").
+          outdent.
+          write("end\n").
           write("macros = @macros.dup\n")
 
         if nodes.key?(:parent)
