@@ -637,7 +637,7 @@ module Twig
 
         # @todo: Missing some sandbox, ignore_missing / exception catching
 
-        environment.load_template(template).render(variables)
+        environment.load(template).render(variables)
       end
 
       # @param [String] name
