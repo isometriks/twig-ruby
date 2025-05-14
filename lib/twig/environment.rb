@@ -42,6 +42,16 @@ module Twig
       "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{index ? "__#{index}" : ''}"
     end
 
+    # @param [String, Twig::Template] name
+    # @return [Twig::Template]
+    def load(name)
+      if name.is_a?(Twig::Template)
+        return name
+      end
+
+      load_template(name)
+    end
+
     # @return [Twig::Template]
     def load_template(name, index: nil, **)
       class_name = template_class(name, index)
@@ -68,6 +78,27 @@ module Twig
 
       Twig.const_get(class_name).
         new(self, **)
+    end
+
+    # @return [Twig::Template]
+    def create_template(template, name = nil)
+      hash = ::Digest::SHA256.hexdigest(template)
+      name = if name.nil?
+               "__string_template__#{name}"
+             else
+               "#{name} (string template #{hash})"
+             end
+
+      chain_loader = Loader::Chain.new([
+        Loader::Array.new({ name => template }),
+        current = loader,
+      ])
+
+      @loader = chain_loader
+
+      load_template(name)
+    ensure
+      @loader = current
     end
 
     def extension(name)

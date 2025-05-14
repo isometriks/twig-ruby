@@ -104,6 +104,7 @@ class TwigFixture
     })
     environment.add_extension(::TwigTestExtension.new)
     environment.add_extension(::Twig::Extension::Debug.new)
+    environment.add_extension(::Twig::Extension::StringLoader.new)
 
     begin
       environment.load_template('index.twig')
