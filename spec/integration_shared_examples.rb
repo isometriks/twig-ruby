@@ -30,7 +30,7 @@ RSpec.shared_examples 'render_and_assert' do
     end
 
     environment.
-      load_template('template', call_context:).
+      load('template', call_context:).
       render(context).
       to_s
   end
@@ -45,7 +45,7 @@ RSpec.shared_examples 'render_and_raise' do
 
   it 'raises expected error' do
     expect do
-      environment.load_template('template.twig').render
+      environment.load('template.twig').render
     end.to raise_error(error, message)
   end
 end

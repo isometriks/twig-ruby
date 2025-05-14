@@ -44,12 +44,12 @@ module Twig
 
     # @param [String, Twig::Template] name
     # @return [Twig::Template]
-    def load(name)
+    def load(name, **)
       if name.is_a?(Twig::Template)
         return name
       end
 
-      load_template(name)
+      load_template(name, **)
     end
 
     # @return [Twig::Template]
