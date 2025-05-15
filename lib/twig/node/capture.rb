@@ -13,10 +13,10 @@ module Twig
       def compile(compiler)
         # Swap output buffer with a temp one and then add it
         compiler.
-          raw("(tmp = @output_buffer.class.new\n").
-          write("@output_buffer, tmp = tmp, @output_buffer\n").
+          raw("(tmp = context.output_buffer.class.new\n").
+          write("context.output_buffer, tmp = tmp, context.output_buffer\n").
           subcompile(nodes[:body]).
-          write("@output_buffer, tmp = tmp, @output_buffer\n").
+          write("context.output_buffer, tmp = tmp, context.output_buffer\n").
           write("tmp.to_s.html_safe)\n")
       end
     end

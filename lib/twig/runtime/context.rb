@@ -3,8 +3,14 @@
 module Twig
   module Runtime
     class Context < Hash
-      def initialize(initial_context = {})
+      attr_accessor :output_buffer
+      attr_reader :call_context
+
+      def initialize(initial_context = {}, output_buffer: OutputBuffer.new, call_context: nil)
         super()
+
+        @output_buffer = output_buffer
+        @call_context = call_context
 
         merge!(initial_context)
       end
@@ -22,7 +28,11 @@ module Twig
       end
 
       def merge(other)
-        self.class.new(self).merge!(other)
+        self.class.new(self, call_context:, output_buffer:).merge!(other)
+      end
+
+      def only(other)
+        self.class.new(other, call_context:, output_buffer:)
       end
 
       def push_stack

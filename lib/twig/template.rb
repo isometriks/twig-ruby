@@ -18,22 +18,20 @@ module Twig
       @traits = {}
       @macros = {}
       @trait_aliases = {}
-      @call_context = call_context
-      @output_buffer = output_buffer || OutputBuffer.new
     end
 
     def call(context = {}, blocks = {})
       raise 'call is not implemented'
     end
 
-    def render(context = {})
-      call(Runtime::Context.new(context)).to_s
+    def render(context = {}, call_context: nil, output_buffer: OutputBuffer.new)
+      call(Runtime::Context.new(context, call_context:, output_buffer:)).to_s
     rescue Error::Base => e
       e.source_context = source_context unless e.source_context
       raise e
     end
 
-    def yield_block(name, context = {}, blocks = {}, use_blocks: true, template_context: self)
+    def yield_block(name, context = Runtime::Context.new, blocks = {}, use_blocks: true, template_context: self)
       name = name.to_sym
 
       template = if use_blocks && blocks.key?(name)
@@ -218,7 +216,7 @@ module Twig
     # @param [String] name
     # @return ]Template]
     def load_template(name, line, index = nil)
-      env.load_template(name, index:, call_context: @call_context, output_buffer: @output_buffer)
+      env.load_template(name, index:)
     end
 
     # Overloaded by children

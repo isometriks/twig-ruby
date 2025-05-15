@@ -98,11 +98,13 @@ module Twig
             {{ @greeting }}
             {{ @greeting_array[0] }} {{ @greeting_array[1] }}
             {{ @greeting_array.join(" ") }}
+            {% extends "parent.twig" %}
           INPUTS
         end
 
         let(:outputs) do
           <<~OUTPUTS
+            Hello World!
             Hello World!
             Hello World!
             Hello World!
@@ -116,6 +118,12 @@ module Twig
               @greeting_array = %w[Hello World!]
             end
           end.new
+        end
+
+        let(:templates) do
+          {
+            'parent.twig': '{% block content %}{{ @greeting }}{% endblock %}',
+          }
         end
       end
     end

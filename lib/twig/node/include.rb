@@ -79,7 +79,7 @@ module Twig
       # @param [Compiler] compiler
       def add_template_arguments(compiler)
         if !nodes.key?(:variables)
-          compiler.raw(attributes[:only] == false ? 'context' : '{}')
+          compiler.raw(attributes[:only] == false ? 'context' : 'context.only({})')
         elsif attributes[:only] == false
           compiler.
             raw('context.merge(').
@@ -87,7 +87,9 @@ module Twig
             raw(')')
         else
           compiler.
-            subcompile(nodes[:variables])
+            raw('context.only(').
+            subcompile(nodes[:variables]).
+            raw(')')
         end
       end
     end
