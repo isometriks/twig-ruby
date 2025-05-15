@@ -76,8 +76,7 @@ module Twig
         Twig.module_eval(code) unless Twig.const_defined?(class_name)
       end
 
-      Twig.const_get(class_name).
-        new(self, **)
+      Twig.const_get(class_name).new(self)
     end
 
     # @return [Twig::Template]

@@ -29,8 +29,8 @@ module Twig
           name = attributes[:name]
 
           if attributes[:name][0] == '@'
-            check = "@call_context.instance_variable_defined?('#{name}')"
-            get = "@call_context.instance_variable_get('#{name}')"
+            check = "context.call_context.instance_variable_defined?('#{name}')"
+            get = "context.call_context.instance_variable_get('#{name}')"
           else
             check = "context.key?(:#{name})"
             get = "context[:#{name}]"

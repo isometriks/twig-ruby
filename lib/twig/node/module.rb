@@ -68,7 +68,7 @@ module Twig
         end
 
         compiler.
-          write("@output_buffer\n").
+          write("context.output_buffer\n").
           outdent.
           write("end\n\n")
 

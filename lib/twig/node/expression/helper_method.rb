@@ -11,7 +11,7 @@ module Twig
         private
 
         def callable_method
-          "@call_context.method(:#{attributes[:name]})"
+          "context.call_context.method(:#{attributes[:name]})"
         end
       end
     end

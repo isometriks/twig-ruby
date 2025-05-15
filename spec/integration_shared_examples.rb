@@ -30,8 +30,8 @@ RSpec.shared_examples 'render_and_assert' do
     end
 
     environment.
-      load('template', call_context:).
-      render(context).
+      load('template').
+      render(context, call_context:).
       to_s
   end
 end
