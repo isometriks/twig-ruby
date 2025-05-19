@@ -3,13 +3,12 @@
 module Twig
   module Runtime
     class Context < Hash
-      attr_accessor :output_buffer
       attr_reader :call_context
 
       def initialize(initial_context = {}, output_buffer: OutputBuffer.new, call_context: nil)
         super()
 
-        @output_buffer = output_buffer
+        @output_buffer_stack = [output_buffer]
         @call_context = call_context
 
         merge!(initial_context)
@@ -50,6 +49,24 @@ module Twig
         frame[:replace].each { |k, v| self[k] = v }
       end
 
+      def output_buffer
+        output_buffer_stack.last
+      end
+
+      def push_output_buffer
+        output_buffer_stack.push(OutputBuffer.new)
+      end
+
+      def pop_output_buffer
+        output_buffer_stack.pop
+      end
+
+      def buffer_and_return(&)
+        push_output_buffer
+        yield
+        pop_output_buffer
+      end
+
       def clear
         # Copy everything to the replace stack
         merge!(self)
@@ -82,6 +99,10 @@ module Twig
 
       def stack
         @stack ||= []
+      end
+
+      def output_buffer_stack
+        @output_buffer_stack ||= []
       end
     end
   end

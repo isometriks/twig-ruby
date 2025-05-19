@@ -18,14 +18,9 @@ module Twig
         end
 
         def compile(compiler)
-          # @todo figure out this hack of returning empty string to the output buffer
-          #   should we be using the attributes[:output]?
           if define_test_enabled?
             compile_template_call(compiler, 'block?')
           else
-            compiler.
-              write('""; ')
-
             compile_template_call(compiler, 'yield_block')
           end
         end

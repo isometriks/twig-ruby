@@ -11,13 +11,12 @@ module Twig
 
       # @todo raw is missing, but I think only used by cache node?
       def compile(compiler)
-        # Swap output buffer with a temp one and then add it
         compiler.
-          raw("(tmp = context.output_buffer.class.new\n").
-          write("context.output_buffer, tmp = tmp, context.output_buffer\n").
+          raw("context.buffer_and_return do\n").
+          indent.
           subcompile(nodes[:body]).
-          write("context.output_buffer, tmp = tmp, context.output_buffer\n").
-          write("tmp.to_s.html_safe)\n")
+          outdent.
+          write("end.to_s.html_safe\n")
       end
     end
   end
