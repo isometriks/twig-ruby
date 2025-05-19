@@ -47,7 +47,9 @@ module Twig
 
       if !template.nil?
         begin
-          template[0].public_send(template[1], context, blocks)
+          context.buffer_and_return do
+            template[0].public_send(template[1], context, blocks)
+          end.to_s
         rescue Error::Base => e
           unless e.source_context
             e.source_context = template[0].source_context
@@ -119,9 +121,6 @@ module Twig
           source_context
         )
       end
-
-      # Return an empty string since the return would get appended twice
-      ''
     end
 
     # @return [Template, false]

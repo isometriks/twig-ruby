@@ -9,7 +9,8 @@ module Twig
 
       def compile(compiler)
         compiler.
-          write("yield_block(:#{attributes[:name]}, context, self.blocks.merge(blocks));").
+          write('context.output_buffer.safe_append = ').
+          raw("yield_block(:#{attributes[:name]}, context, self.blocks.merge(blocks))").
           raw("\n")
       end
     end
