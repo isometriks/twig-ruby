@@ -188,7 +188,7 @@ module Twig
         ]
       end
 
-      def format_date(date, format = nil, timezone = nil)
+      def format_date(date, format: nil, timezone: nil)
         format = @date_format if format.nil?
 
         convert_date(date, timezone).strftime(format)
@@ -220,7 +220,7 @@ module Twig
         string.gsub(regex, from.transform_keys(&:to_s))
       end
 
-      def self.number_format(number, decimal = nil, decimal_point = nil, thousands_separator = nil)
+      def self.number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
         options = {
           precision: decimal,
           delimiter: thousands_separator,
@@ -237,7 +237,7 @@ module Twig
         number.abs
       end
 
-      def self.round(value, precision = 0, method = :common)
+      def self.round(value, precision: 0, method: :common)
         value = value.to_f
         method = method.to_sym
 
@@ -258,7 +258,7 @@ module Twig
         args.min
       end
 
-      def self.range(start, finish, step = 1)
+      def self.range(start, finish, step: 1)
         Range.new(start, finish).step(step)
       end
 
@@ -335,7 +335,7 @@ module Twig
         string.downcase
       end
 
-      def self.strip_tags(string, tags = [])
+      def self.strip_tags(string, tags: [])
         Sanitize.fragment(string || '', elements: tags)
       end
 
@@ -356,11 +356,11 @@ module Twig
         string.pluralize(count)
       end
 
-      def self.slug(string, separator = '-', locale = 'en')
+      def self.slug(string, separator: '-', locale: 'en')
         string.parameterize(separator:, locale:)
       end
 
-      def self.join(value, glue = '', and_glue = nil)
+      def self.join(value, glue: '', and_glue: nil)
         return value unless value.respond_to?(:to_a)
 
         value = value.values if value.is_a?(Hash)
@@ -372,7 +372,7 @@ module Twig
         value[..-2].join(glue) + and_glue.to_s + value[-1].to_s
       end
 
-      def self.split(value, delimiter, limit = nil, charset:)
+      def self.split(value, charset, delimiter, limit = nil)
         value ||= ''
 
         unless delimiter == ''
@@ -405,11 +405,11 @@ module Twig
         end
       end
 
-      def self.merge(*enumerables)
-        if enumerables.first.is_a?(Hash)
-          enumerables.reduce(&:merge)
+      def self.merge(first, *rest)
+        if first.is_a?(Hash)
+          [first, *rest].reduce(&:merge)
         else
-          enumerables.reduce(&:concat)
+          [first, *rest].reduce(&:concat)
         end
       end
 
@@ -417,7 +417,7 @@ module Twig
       # @param [Integer, Float] count
       # @param [Object] fill
       # @param [Boolean] preserve_keys
-      def self.batch(object, count, fill = nil, preserve_keys = true)
+      def self.batch(object, count, fill: nil, preserve_keys: true)
         hash = object.is_a?(Array) ? object.each_with_index.to_h.invert : object
         size = count.ceil
 
@@ -632,7 +632,7 @@ module Twig
 
       # @param [Environment] environment
       # @param [Context] context
-      def self.include(template, variables = {}, environment:, context:, with_context: true)
+      def self.include(environment, context, template, variables = {}, with_context: true)
         variables = context.merge(variables) if with_context
 
         # @todo: Missing some sandbox, ignore_missing / exception catching
@@ -640,10 +640,10 @@ module Twig
         environment.load(template).render(variables)
       end
 
+      # @param [Environment] environment
       # @param [String] name
       # @param [Boolean] ignore_missing
-      # @param [Environment] environment
-      def self.source(name, environment:, ignore_missing: false)
+      def self.source(environment, name, ignore_missing: false)
         environment.loader.get_source_context(name).code
       rescue Error::Loader => e
         raise e unless ignore_missing

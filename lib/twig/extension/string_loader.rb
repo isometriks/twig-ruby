@@ -9,9 +9,9 @@ module Twig
         ]
       end
 
-      # @param [String] string
       # @param [Environment] environment
-      def self.template_from_string(string, name = nil, environment:)
+      # @param [String] string
+      def self.template_from_string(environment, string, name = nil)
         environment.create_template(string, name)
       end
     end
