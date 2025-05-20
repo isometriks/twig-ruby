@@ -18,6 +18,7 @@ require 'sanitize'
   loader
   runtime
   runtime_loader
+  util
   node
   node/expression
   node/expression/binary

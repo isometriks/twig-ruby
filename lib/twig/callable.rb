@@ -20,6 +20,10 @@ module Twig
       }.merge(options)
     end
 
+    def type
+      raise NotImplementedError
+    end
+
     def needs_charset?
       @options[:needs_charset]
     end

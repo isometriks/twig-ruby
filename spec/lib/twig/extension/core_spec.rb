@@ -83,6 +83,8 @@ RSpec.describe Twig::Extension::Core do
           {{ ([2,4,6] has every n => n % 2 == 0) ? "OK" : "KO" }}
           {{ html|striptags|trim }}
           {{ html|striptags(['h1'])|trim|raw }}
+          {{ ["a", "b"]|join(and_glue=" or ") }}
+          {{ ["a", "b"]|join(...{glue: " - "}) }}
         INPUTS
       end
 
@@ -163,6 +165,8 @@ RSpec.describe Twig::Extension::Core do
           OK
           Hello World! How are you?
           <h1>Hello World!</h1>How are you?
+          a or b
+          a - b
         OUTPUTS
       end
 

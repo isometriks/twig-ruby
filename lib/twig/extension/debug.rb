@@ -9,7 +9,7 @@ module Twig
         ]
       end
 
-      def dump(*vars, environment:, context:)
+      def dump(environment, context, *vars)
         return '' unless environment.debug?
 
         begin

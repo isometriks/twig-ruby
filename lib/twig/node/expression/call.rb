@@ -98,11 +98,39 @@ module Twig
             first = false
           end
 
-          positional, kwargs = nodes[:arguments].nodes.partition do |key, node|
-            key.is_a?(Integer) || node.is_a?(Unary::Spread)
-          end.map(&:to_h)
+          if callable&.needs_charset?
+            compiler.raw(', ') unless first
+            compiler.raw('env.charset')
+            first = false
+          end
 
-          positional.each_value do |node|
+          if callable&.needs_environment?
+            compiler.raw(', ') unless first
+            compiler.raw('env')
+            first = false
+          end
+
+          if callable&.needs_context?
+            compiler.raw(', ') unless first
+            compiler.raw('context')
+            first = false
+          end
+
+          # Only callables that come through without are helper methods, which still
+          # can't be determined at compile time for Rails
+          if callable
+            positional, kwargs = Util::CallableArgumentsExtractor.
+              new(self, callable, compiler.environment).
+              extract_arguments(nodes[:arguments])
+          else
+            positional, kwargs = nodes[:arguments].nodes.partition do |key, node|
+              key.is_a?(Integer) || node.is_a?(Unary::Spread)
+            end.map(&:to_h)
+
+            positional = positional.values
+          end
+
+          positional.each do |node|
             compiler.raw(', ') unless first
             compiler.subcompile(node)
 
@@ -115,24 +143,6 @@ module Twig
               raw("'#{key}': ").
               subcompile(node)
 
-            first = false
-          end
-
-          if callable&.needs_charset?
-            compiler.raw(', ') unless first
-            compiler.raw('charset: env.charset')
-            first = false
-          end
-
-          if callable&.needs_environment?
-            compiler.raw(', ') unless first
-            compiler.raw('environment: env')
-            first = false
-          end
-
-          if callable&.needs_context?
-            compiler.raw(', ') unless first
-            compiler.raw('context:')
             first = false
           end
         end
