@@ -53,7 +53,20 @@ module Twig
               rest = true
               next
             when :keyrest
-              keyrest = true
+              arg = positional.shift
+
+              if arg.is_a?(Node::Expression::Unary::HashSpread)
+                keyrest = true
+                resolved_positional << arg
+              else
+                raise Error::Syntax.new(
+                  "Expected a hash spread for argument \"#{name}\" " \
+                  "for #{@twig_callable.type} \"#{@twig_callable.name}\"",
+                  @node.lineno,
+                  @node.source_context
+                )
+              end
+
               next
             else
               raise "Unknown argument type: #{name} #{type}"
