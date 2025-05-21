@@ -39,7 +39,14 @@ module Twig
             when :req, :opt
               resolved_positional << positional.shift
             when :keyreq, :key
-              resolved_kwargs[name] = positional.shift
+              arg = positional.shift
+
+              if arg.is_a?(Node::Expression::Unary::HashSpread)
+                keyrest = true
+                resolved_positional << arg
+              else
+                resolved_kwargs[name] = arg
+              end
             when :rest
               resolved_positional += positional
               positional = []
@@ -65,7 +72,7 @@ module Twig
             else
               # If we have spreads, we just can't know until runtime since we don't know if it's a
               # positional spread or kwarg spread because both use ...
-              unless spreads.any?
+              unless spreads.any? || keyrest
                 raise Error::Syntax.new(
                   "Missing argument \"#{name}\" for #{@twig_callable.type} \"#{@twig_callable.name}\"",
                   @node.lineno,

@@ -188,6 +188,12 @@ module Twig
         ]
       end
 
+      def node_visitors
+        [
+          NodeVisitor::Spreader.new,
+        ]
+      end
+
       def format_date(date, format: nil, timezone: nil)
         format = @date_format if format.nil?
 
