@@ -21,6 +21,8 @@ module Twig
 
         compiler.
           raw("\n").
+          indent.
+          write("context.buffer_and_return do\n").
           indent
 
         if attributes.key?(:arguments)
@@ -46,6 +48,8 @@ module Twig
         end
 
         compiler.
+          outdent.
+          write("end.to_s.html_safe\n").
           outdent.
           write("end);\n")
       end

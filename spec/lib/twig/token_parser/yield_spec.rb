@@ -29,14 +29,10 @@ RSpec.describe Twig::TokenParser::Yield do
       Class.new do
         def basic
           yield
-
-          nil
         end
 
         def pair
           yield %w[Hello World!]
-
-          nil
         end
       end.new
     end
