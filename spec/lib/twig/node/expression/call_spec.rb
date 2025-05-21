@@ -41,6 +41,8 @@ RSpec.describe Twig::Node::Expression::Call do
           Twig::TwigFilter.new('foo', ->(_value, bar:) { bar }),
           # Required positional
           Twig::TwigFilter.new('bar', ->(_value, bar) { bar }),
+          # Multiple required kwarg
+          Twig::TwigFilter.new('baz', ->(_value, bar:, baz:) { [bar, baz].join('-') }),
         ]
       end
     end.new
@@ -95,6 +97,14 @@ RSpec.describe Twig::Node::Expression::Call do
       let(:extensions) { [test_extension] }
       let(:inputs) { ['{{ "foo"|foo(...{bar: "hello"}) }}'] }
       let(:outputs) { ['hello'] }
+    end
+  end
+
+  context 'when there are multiple required kwarg but passed a spread' do
+    it_behaves_like 'render_and_assert' do
+      let(:extensions) { [test_extension] }
+      let(:inputs) { ['{{ "foo"|baz(...{bar: "hello", baz: "world"}) }}'] }
+      let(:outputs) { ['hello-world'] }
     end
   end
 end
