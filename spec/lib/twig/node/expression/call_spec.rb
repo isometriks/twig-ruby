@@ -37,12 +37,14 @@ RSpec.describe Twig::Node::Expression::Call do
     Class.new(Twig::Extension::Base) do
       def filters
         [
-          # Required kwarg
-          Twig::TwigFilter.new('foo', ->(_value, bar:) { bar }),
           # Required positional
           Twig::TwigFilter.new('bar', ->(_value, bar) { bar }),
+          # Required kwarg
+          Twig::TwigFilter.new('foo', ->(_value, bar:) { bar }),
           # Multiple required kwarg
           Twig::TwigFilter.new('baz', ->(_value, bar:, baz:) { [bar, baz].join('-') }),
+          # kwargs spread
+          Twig::TwigFilter.new('hash_spread', ->(_value, **bar) { bar.values.join('-') }),
         ]
       end
     end.new
@@ -105,6 +107,26 @@ RSpec.describe Twig::Node::Expression::Call do
       let(:extensions) { [test_extension] }
       let(:inputs) { ['{{ "foo"|baz(...{bar: "hello", baz: "world"}) }}'] }
       let(:outputs) { ['hello-world'] }
+    end
+  end
+
+  context 'when there is a hash spread' do
+    it_behaves_like 'render_and_assert' do
+      let(:extensions) { [test_extension] }
+      let(:inputs) { ['{{ "foo"|hash_spread(...{bar: "hello", baz: "world"}) }}'] }
+      let(:outputs) { ['hello-world'] }
+    end
+  end
+
+  context 'when there is a hash spread but given a positional arg' do
+    it_behaves_like 'render_and_raise' do
+      before do
+        environment.add_extension(test_extension)
+      end
+
+      let(:template) { '{{ "foo"|hash_spread({bar: "hello", baz: "world"}) }}' }
+      let(:error) { Twig::Error::Syntax }
+      let(:message) { /expected a hash spread for argument "bar" for filter "hash_spread"/i }
     end
   end
 end
