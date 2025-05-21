@@ -28,7 +28,7 @@ module Twig
       # @param [Compiler] compiler
       def compile(compiler)
         compiler.
-          write("def macro_#{attributes[:name]}(")
+          write("def macro_#{attributes[:name]}(call_context, ")
 
         arguments = nodes[:arguments]
         arguments.key_value_pairs.each do |key, value|
@@ -66,7 +66,7 @@ module Twig
           string(VARARGS_NAME).
           raw(' => ').
           raw("varargs,\n").
-          write("  }.merge(env.globals))\n\n").
+          write("  }.merge(env.globals), call_context:)\n\n").
           write("  blocks = {}\n\n").
           write('  ').
           subcompile(capture_node).

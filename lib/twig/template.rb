@@ -179,7 +179,7 @@ module Twig
         mapped_arguments[mapped_key] = value
       end
 
-      macro_method.call(**mapped_arguments)
+      macro_method.call(context.call_context, **mapped_arguments)
     end
 
     # @return [Method]
