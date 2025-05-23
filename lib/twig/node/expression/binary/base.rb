@@ -46,7 +46,6 @@ module Twig
           GreaterEqual: '>=',
 
           Range: '..',
-          Concat: '+',
           Add: '+',
           Sub: '-',
           Mul: '*',
