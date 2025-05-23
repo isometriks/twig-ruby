@@ -31,7 +31,7 @@ module Twig
       raise e
     end
 
-    def yield_block(name, context = Runtime::Context.new, blocks = {}, use_blocks: true, template_context: self)
+    def yield_block(name, context, blocks = {}, use_blocks: true, template_context: self)
       name = name.to_sym
 
       template = if use_blocks && blocks.key?(name)
