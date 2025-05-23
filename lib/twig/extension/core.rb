@@ -656,12 +656,24 @@ module Twig
 
       # @param [Environment] environment
       # @param [Context] context
-      def self.include(environment, context, template, variables = {}, with_context: true)
+      def self.include(
+        environment, context, template, variables = {}, with_context: true, ignore_missing: false, sandboxed: false
+      )
         variables = context.merge(variables) if with_context
 
-        # @todo: Missing some sandbox, ignore_missing / exception catching
+        # @todo: Missing sandbox
 
-        environment.load(template).render(variables)
+        begin
+          loaded = environment.load(template)
+        rescue Error::LoadError => e
+          unless ignore_missing
+            raise e
+          end
+
+          return ''
+        end
+
+        loaded.render(variables)
       end
 
       # @param [Environment] environment
