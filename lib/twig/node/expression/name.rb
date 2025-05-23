@@ -52,9 +52,9 @@ module Twig
             compiler.
               raw("(#{check}").
               raw(" ? #{get}").
-              raw(' : raise(::Twig::Error::Runtime.new("#{').
+              raw(' : raise(::Twig::Error::Runtime.new("Variable \"#{').
               string(name).
-              raw('} does not exist", ').
+              raw('}\" does not exist", ').
               repr(lineno).
               raw(', source_context)))')
           end
