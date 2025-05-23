@@ -202,8 +202,8 @@ module Twig
         convert_date(date, timezone:).strftime(format)
       end
 
-      def convert_date(date, timezone: nil)
-        if date == 'now'
+      def convert_date(date = nil, timezone: nil)
+        if date == 'now' || date.nil?
           date = DateTime.now
         elsif date.is_a?(Integer)
           date = Time.at(date).to_datetime
