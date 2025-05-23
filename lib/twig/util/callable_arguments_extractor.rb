@@ -87,7 +87,7 @@ module Twig
               # positional spread or kwarg spread because both use ...
               unless spreads.any? || keyrest
                 raise Error::Syntax.new(
-                  "Missing argument \"#{name}\" for #{@twig_callable.type} \"#{@twig_callable.name}\"",
+                  "Value for argument \"#{name}\" is required for #{@twig_callable.type} \"#{@twig_callable.name}\"",
                   @node.lineno,
                   @node.source_context
                 )
