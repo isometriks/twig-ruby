@@ -185,10 +185,6 @@ module Twig
 
             environment.extension(extension.delete_prefix('::')).method(method.to_sym)
           end
-        when ::String
-          class_name, method = callable.split('.', 2)
-
-          environment.extension(class_name.delete_prefix('::')).method(method.to_sym)
         when ::Method, ::Proc
           callable
         else

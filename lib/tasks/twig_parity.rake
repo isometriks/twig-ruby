@@ -186,17 +186,18 @@ end
 class TwigTestExtension < Twig::Extension::Base
   def filters
     [
+      ::Twig::TwigFilter.new('nl2br', method('nl2br'), pre_escape: [:html], is_safe: [:html]),
       ::Twig::TwigFilter.new('escape_and_nl2br', method(:escape_and_nl2br), {
         needs_environment: true, is_safe: [:html]
       }),
       ::Twig::TwigFilter.new('not', static(:not_filter)),
       ::Twig::TwigFilter.new('escape_something', method(:escape_something), is_safe: [:something]),
       ::Twig::TwigFilter.new('preserves_safety', method(:preserves_safety), is_safe: [:html]),
-      ::Twig::TwigFilter.new('static_call_string', 'TwigTestExtension.static_call'),
-      ::Twig::TwigFilter.new('static_call_array', %w[TwigTestExtension static_call]),
+      ::Twig::TwigFilter.new('static_call_string', static(:static_call)),
+      ::Twig::TwigFilter.new('static_call_array', static(:static_call)),
       ::Twig::TwigFilter.new('magic_call', [self, :magic_call]),
-      ::Twig::TwigFilter.new('magic_call_string', 'TwigTestExtension.magic_static_call'),
-      ::Twig::TwigFilter.new('magic_call_array', %w[TwigTestExtension magic_static_call]),
+      ::Twig::TwigFilter.new('magic_call_string', static(:magic_static_call)),
+      ::Twig::TwigFilter.new('magic_call_array', static(:magic_static_call)),
       ::Twig::TwigFilter.new(
         'magic_call_closure',
         ->(environment:) { environment.extension(TwigTestExtension).magic_call },
@@ -213,8 +214,8 @@ class TwigTestExtension < Twig::Extension::Base
       ::Twig::TwigFunction.new('§', method(:non_ascii_function)),
       ::Twig::TwigFunction.new('safe_br', method(:br), is_safe: [:html]),
       ::Twig::TwigFunction.new('unsafe_br', method(:br)),
-      ::Twig::TwigFunction.new('static_call_string', 'TwigTestExtension.static_call'),
-      ::Twig::TwigFunction.new('static_call_array', %w[TwigTestExtension static_call]),
+      ::Twig::TwigFunction.new('static_call_string', static(:static_call)),
+      ::Twig::TwigFunction.new('static_call_array', static(:static_call)),
       ::Twig::TwigFunction.new('*_path', method(:dynamic_path)),
       ::Twig::TwigFunction.new('*_foo_*_bar', method(:dynamic_foo)),
       ::Twig::TwigFunction.new('anon_foo', ->(name) { "*#{name}*" }),
@@ -270,8 +271,16 @@ class TwigTestExtension < Twig::Extension::Base
     value.upcase
   end
 
+  def magic_call
+    'foo'
+  end
+
   def self.static_call(value)
     "*#{value}*"
+  end
+
+  def self.magic_static_call(value)
+    'foo'
   end
 
   def self.not_filter(value)
@@ -282,8 +291,12 @@ class TwigTestExtension < Twig::Extension::Base
     raise method.inspect
   end
 
-  def self.respond_to_missing?(_method)
-    true
+  def self.respond_to_missing?(method, include_private = false)
+    [:magic_static_call].include?(method.to_sym)
+  end
+
+  def respond_to_missing?(method, include_private = false)
+    [:magic_call].include?(method.to_sym)
   end
 
   def self.multi_word?(string)
