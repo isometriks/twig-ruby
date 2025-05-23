@@ -197,12 +197,14 @@ module Twig
       def format_date(date, format: nil, timezone: nil)
         format = @date_format if format.nil?
 
-        convert_date(date, timezone).strftime(format)
+        convert_date(date, timezone:).strftime(format)
       end
 
-      def convert_date(date, timezone = nil)
+      def convert_date(date, timezone: nil)
         if date == 'now'
           date = DateTime.now
+        elsif date.is_a?(Integer)
+          date = Time.at(date).to_datetime
         end
 
         timezone.nil? ? date : date.in_time_zone(timezone)
