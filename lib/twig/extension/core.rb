@@ -3,6 +3,8 @@
 module Twig
   module Extension
     class Core < Base
+      DEFAULT_TRIM_CHARS = " \t\n\r\0\x0B"
+
       class << self
         include ActiveSupport::NumberHelper
       end
@@ -347,9 +349,23 @@ module Twig
         Sanitize.fragment(string || '', elements: tags)
       end
 
-      def self.trim(string)
-        # @todo doesn't match php implementation
-        string.strip
+      def self.trim(string, character_mask: DEFAULT_TRIM_CHARS, side: :both)
+        side = side.to_sym
+        safe = string.html_safe?
+
+        unless %i[left right both].include?(side)
+          raise Error::Runtime, 'Trimming side must be "left", "right" or "both".'
+        end
+
+        if %i[left both].include?(side)
+          string = string.gsub(/\A[#{Regexp.escape(DEFAULT_TRIM_CHARS)}]*/, '')
+        end
+
+        if %i[right both].include?(side)
+          string = string.gsub(/[#{Regexp.escape(DEFAULT_TRIM_CHARS)}]*\z/, '')
+        end
+
+        safe && character_mask == DEFAULT_TRIM_CHARS ? string.html_safe : string
       end
 
       def self.nl2br(string)
