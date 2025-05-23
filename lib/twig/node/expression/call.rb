@@ -57,10 +57,6 @@ module Twig
 
               "env.extension(%q[#{extension.delete_prefix('::')}]).method(:#{method})"
             end
-          when ::String
-            class_name, method = callable.split('.', 2)
-
-            "env.extension(%q[#{class_name.delete_prefix('::')}]).method(:#{method})"
           when ::Method
             # Instance method
             if callable.receiver.is_a?(Extension::Base)
