@@ -20,9 +20,9 @@ module Twig
 
           def compile(compiler)
             compiler.
-              raw('(').
+              raw('((tmp = ').
               subcompile(nodes[:node]).
-              raw(')')
+              raw(').respond_to?(:html_safe) ? tmp.html_safe : tmp)')
           end
         end
       end
