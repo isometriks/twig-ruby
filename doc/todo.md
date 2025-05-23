@@ -77,7 +77,7 @@
 - ~~striptags~~
 - timezone_name
 - ~~title~~
-- trim* (Doesn't except arbitrary trim chars)
+- ~~trim~~
 - u
 - ~~upper~~
 - url_encode
