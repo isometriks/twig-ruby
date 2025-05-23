@@ -268,8 +268,8 @@ module Twig
         args.min
       end
 
-      def self.range(start, finish, step: 1)
-        Range.new(start, finish).step(step)
+      def self.range(low, high, step: 1)
+        Range.new(low, high).step(step)
       end
 
       # @param [String] constant
