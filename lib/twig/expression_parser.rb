@@ -104,7 +104,24 @@ module Twig
             parser.stream.source
           )
         end
-      else
+      when Token::OPERATOR_TYPE
+        if (match = token.value.match(Lexer::REGEX_NAME)) && match.to_s == token.value
+          # in this context, string operators are variable names
+          parser.stream.next
+          node = Node::Expression::Variable::Context.new(token.value, token.lineno)
+        end
+
+        if token.value == '=' && %w[== !=].include?(parser.stream.look(-1).value)
+          raise Error::Syntax.new(
+            "Unexpected operator of value \"#{token.value}\". Did you try to use \"===\" or \"!==\" for " \
+            'strict comparison? Use "is same as(value)" instead.',
+            token.lineno,
+            parser.stream.source
+          )
+        end
+      end
+
+      if node.nil?
         raise Error::Syntax.new(
           "Unexpected token \"#{token.type}\" of value \"#{token.value}\".",
           token.lineno,
