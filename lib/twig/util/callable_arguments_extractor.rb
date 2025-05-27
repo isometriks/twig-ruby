@@ -14,6 +14,23 @@ module Twig
 
       # @param [Node::Nodes] arguments
       def extract_arguments(arguments)
+        # Check argument order first
+        found_named = false
+        arguments.nodes.each_key do |key|
+          if key.is_a?(Integer)
+            if found_named
+              raise Error::Syntax.new(
+                "Positional arguments cannot be used after named arguments for #{@twig_callable.type} " \
+                "\"#{@twig_callable.name}\".",
+                @node.lineno,
+                @node.source_context
+              )
+            end
+          else
+            found_named = true
+          end
+        end
+
         called_arguments = destination_arguments.keys.to_h { |k| [k, false] }
 
         spreads, arguments = arguments.nodes.partition do |_, node|
