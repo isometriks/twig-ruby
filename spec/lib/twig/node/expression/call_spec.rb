@@ -54,7 +54,7 @@ RSpec.describe Twig::Node::Expression::Call do
     it_behaves_like 'render_and_raise' do
       let(:template) { '{{ ["a", "b"]|join(",", whatever="something") }}' }
       let(:error) { Twig::Error::Syntax }
-      let(:message) { /unexpected argument "whatever" for filter "join"/i }
+      let(:message) { /unknown argument "whatever" for filter "join\(glue, and_glue\)"/i }
     end
   end
 
@@ -62,7 +62,7 @@ RSpec.describe Twig::Node::Expression::Call do
     it_behaves_like 'render_and_raise' do
       let(:template) { '{{ ["a", "b"]|join(",", " and ", 2, 3, 4) }}' }
       let(:error) { Twig::Error::Syntax }
-      let(:message) { /unexpected argument "2, 3, 4" for filter "join"/i }
+      let(:message) { /unknown argument "2, 3, 4" for filter "join\(glue, and_glue\)"/i }
     end
   end
 
