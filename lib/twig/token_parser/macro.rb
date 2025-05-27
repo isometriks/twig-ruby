@@ -98,7 +98,7 @@ module Twig
                             node.is_a?(Node::Expression::Unary::Neg) ||
                             node.is_a?(Node::Expression::Unary::Pos)
 
-        node.nodes.each do |n|
+        node.nodes.each_value do |n|
           return false unless check_constant_expression(n)
         end
 
