@@ -3,7 +3,26 @@
 module Twig
   module Node
     module Expression
-      class Hash < Array
+      class Hash < Expression::Base
+        include Expression::SupportDefinedTest
+
+        def initialize(elements, lineno)
+          super(elements, {}, lineno)
+
+          @index = -1
+        end
+
+        # @param [Expression::Base] value
+        # @param [Expression::Base|nil] key
+        def add_element(value, key = nil)
+          if key.nil?
+            @index += 1
+            key = Constant.new(@index, value.lineno)
+          end
+
+          nodes.add(key, value)
+        end
+
         def compile(compiler)
           if define_test_enabled?
             return compiler.repr(true)
@@ -45,6 +64,10 @@ module Twig
           compiler.
             outdent.
             raw('}')
+        end
+
+        def key_value_pairs
+          nodes.each_value.each_slice(2)
         end
       end
     end

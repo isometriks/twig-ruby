@@ -8,21 +8,15 @@ module Twig
       class Array < Expression::Base
         include Expression::SupportDefinedTest
 
+        # @param [AutoHash] elements
+        # @param [Integer] lineno
         def initialize(elements, lineno)
           super(elements, {}, lineno)
-
-          @index = -1
         end
 
         # @param [Expression::Base] value
-        # @param [Expression::Base|nil] key
-        def add_element(value, key = nil)
-          if key.nil?
-            @index += 1
-            key = Constant.new(@index, value.lineno)
-          end
-
-          nodes.add(key, value)
+        def add_element(value)
+          nodes.add(value)
         end
 
         def compile(compiler)
@@ -36,7 +30,7 @@ module Twig
 
           first = true
 
-          key_value_pairs.each do |pair|
+          values.each do |value|
             unless first
               compiler.raw(', ')
             end
@@ -44,7 +38,7 @@ module Twig
             first = false
 
             compiler.
-              subcompile(pair[1])
+              subcompile(value)
           end
 
           compiler.
@@ -52,8 +46,8 @@ module Twig
             raw(']')
         end
 
-        def key_value_pairs
-          nodes.each_value.each_slice(2)
+        def values
+          nodes.values
         end
       end
     end

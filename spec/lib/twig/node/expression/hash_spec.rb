@@ -6,19 +6,20 @@ require 'integration_shared_examples'
 module Twig
   module Node
     module Expression
-      RSpec.describe Array do
+      RSpec.describe Hash do
         let(:node) { described_class.new({}, 0) }
 
-        it 'adds elements to the node' do
-          node.add_element(Constant.new('value1', 0))
-          node.add_element(Constant.new('value2', 0))
+        it 'adds elements to the node with keys' do
+          node.add_element(
+            Constant.new('value', 0),
+            Constant.new('key', 1)
+          )
 
           expect(node.nodes.length).to eq(2)
-          expect(node.values.length).to eq(2)
 
-          values = node.values.map { |node| node.attributes[:value] }
+          values = node.nodes.values.map { |node| node.attributes[:value] }
 
-          expect(values).to eq(%w[value1 value2])
+          expect(values).to eq(%w[key value])
         end
 
         it 'adds elements to the node without keys' do
@@ -26,11 +27,11 @@ module Twig
             Constant.new('value', 0)
           )
 
-          expect(node.nodes.length).to eq(1)
+          expect(node.nodes.length).to eq(2)
 
           values = node.nodes.values.map { |node| node.attributes[:value] }
 
-          expect(values).to eq(['value'])
+          expect(values).to eq([0, 'value'])
         end
       end
     end
