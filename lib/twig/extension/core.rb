@@ -525,8 +525,12 @@ module Twig
         object.length
       end
 
-      def self.slice(object, start, length)
-        object[start, length]
+      def self.slice(object, start, length = nil, preserve_keys: false)
+        if length.nil?
+          object[start...]
+        else
+          object[start, length]
+        end
       end
 
       def self.first(object)

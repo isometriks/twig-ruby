@@ -86,6 +86,9 @@ RSpec.describe Twig::Extension::Core do
           {{ ["a", "b"]|join(and_glue=" or ") }}
           {{ ["a", "b"]|join(...{glue: " - "}) }}
           {% for matches in [1,2,3] %}{{ matches }}{% endfor %}
+          {{ numbers[1:3]|join }}
+          {{ numbers[slice_start:3]|join }}
+          {{ numbers[slice_start:slice_end]|join }}
         INPUTS
       end
 
@@ -169,6 +172,9 @@ RSpec.describe Twig::Extension::Core do
           a or b
           a - b
           123
+          234
+          234
+          234
         OUTPUTS
       end
 
@@ -180,6 +186,9 @@ RSpec.describe Twig::Extension::Core do
           array_of_hashes: [{ fruit: 'Apple' }, { fruit: 'Orange' }],
           empty: nil,
           key: :key,
+          numbers: [1, 2, 3, 4, 5],
+          slice_start: 1,
+          slice_end: 3,
           hash: { key: 'value' },
           args: %w[Hello World!],
           args2: ['Hello'],
