@@ -130,10 +130,12 @@ module Twig
         end
 
         unexpected_arguments = []
+        unknown_argument = nil
 
         # If there's no keyrest and any kwargs left, they are extraneous
         if !keyrest && kwargs.any?
           unexpected_arguments += kwargs.keys
+          unknown_argument = kwargs.values.first
         end
 
         # If there's a rest and any positional left, they are extraneous
@@ -141,14 +143,17 @@ module Twig
           unexpected_arguments += [
             *((positional_count - positional.length)...positional_count),
           ]
+          unknown_argument = positional.first
         end
 
         if unexpected_arguments.any?
+          unknown_argument ||= @node
+
           raise Error::Syntax.new(
-            "Unexpected argument \"#{unexpected_arguments.join(', ')}\" " \
-            "for #{@twig_callable.type} \"#{@twig_callable.name}\".",
-            @node.lineno,
-            @node.source_context
+            "Unknown argument \"#{unexpected_arguments.join(', ')}\" " \
+            "for #{@twig_callable.type} \"#{@twig_callable.name}(#{destination_arguments.keys.join(', ')})\".",
+            unknown_argument.lineno,
+            unknown_argument.source_context
           )
         end
 
