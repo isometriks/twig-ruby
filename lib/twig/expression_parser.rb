@@ -593,9 +593,12 @@ module Twig
         slice = true
       end
 
-      if slice
+      if slice || stream.test(Token::SYMBOL_TYPE)
         length = if stream.test(Token::PUNCTUATION_TYPE, ']')
                    Node::Expression::Constant.new(nil, token.lineno)
+                 elsif stream.test(Token::SYMBOL_TYPE)
+                   token = stream.next
+                   Node::Expression::Variable::Context.new(token.value, token.lineno)
                  else
                    parse_expression
                  end
