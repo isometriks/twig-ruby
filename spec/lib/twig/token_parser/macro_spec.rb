@@ -38,6 +38,9 @@ RSpec.describe Twig::TokenParser::Macro do
 
         '{% macro §(message) %}{{ message }}{% endmacro %}
          {{- _self.§("Hello World!") }}',
+
+        '{% macro negative_number(nb = -1) %}{{ nb }}{% endmacro %}{{ _self.negative_number() }}',
+        '{% macro negative_number2(nb = --1) %}{{ nb }}{% endmacro %}{{ _self.negative_number2() }}',
       ]
     end
 
@@ -54,6 +57,8 @@ RSpec.describe Twig::TokenParser::Macro do
         Hello World!
         Hello World!
         Hello World!
+        -1
+        1
       OUTPUTS
     end
 
