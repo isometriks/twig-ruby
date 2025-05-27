@@ -690,7 +690,7 @@ module Twig
       def self.parse_parent_function(parser, fake_node, args, line)
         unless (block_name = parser.peek_block_stack)
           raise Error::Syntax.new(
-            'Calling the "parent" function outside of a block is forbidden',
+            'Calling the "parent" function outside of a block is forbidden.',
             line,
             parser.stream.source
           )
@@ -698,7 +698,7 @@ module Twig
 
         unless parser.inheritance?
           raise Error::Syntax.new(
-            'Calling the "parent" function on a template that does not call "extends" or "use" is forbidden',
+            'Calling the "parent" function on a template that does not call "extends" or "use" is forbidden.',
             line,
             parser.stream.source
           )

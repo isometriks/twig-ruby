@@ -11,7 +11,7 @@ module Twig
           # @param [Integer] lineno
           def initialize(name, lineno)
             if name && %w[true false none null nil].include?(name.to_s.downcase)
-              raise Error::Syntax.new("You cannot assign a value to \"#{name}\"", lineno)
+              raise Error::Syntax.new("You cannot assign a value to \"#{name}\".", lineno)
             end
 
             # Convert to integer if name is an integer or consists of digits only

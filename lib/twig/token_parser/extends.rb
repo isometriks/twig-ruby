@@ -7,7 +7,7 @@ module Twig
         stream = parser.stream
 
         if parser.peek_block_stack
-          raise Error::Syntax.new('Cannot use "extend" in a block', token.lineno, stream.source)
+          raise Error::Syntax.new('Cannot use "extend" in a block.', token.lineno, stream.source)
           # elsif parser.main_scope? @todo
         end
 

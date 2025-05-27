@@ -140,7 +140,7 @@ module Twig
                 string(key).
                 raw('}\" is not defined in trait \"#{').
                 subcompile(node).
-                raw('}\"", ').
+                raw('}\".", ').
                 repr(node.lineno).
                 raw(", @source)\n").
                 outdent.

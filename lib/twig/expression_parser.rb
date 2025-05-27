@@ -99,14 +99,14 @@ module Twig
           node = parse_mapping_expression
         else
           raise Error::Syntax.new(
-            "Unexpected token \"#{token.type}\" of value \"#{token.value}\"",
+            "Unexpected token \"#{token.type}\" of value \"#{token.value}\".",
             token.lineno,
             parser.stream.source
           )
         end
       else
         raise Error::Syntax.new(
-          "Unexpected token \"#{token.type}\" of value \"#{token.value}\"",
+          "Unexpected token \"#{token.type}\" of value \"#{token.value}\".",
           token.lineno,
           parser.stream.source
         )
@@ -168,7 +168,7 @@ module Twig
           attribute = Node::Expression::Constant.new(token.value, token.lineno)
         else
           raise Error::Syntax.new(
-            "Expected name or number, got value \"#{token.value}\" of type #{token.type}",
+            "Expected name or number, got value \"#{token.value}\" of type #{token.type}.",
             token.lineno,
             stream.source
           )
@@ -326,7 +326,7 @@ module Twig
       elsif environment.allow_helper_methods?
         Node::Expression::HelperMethod.new(name, args, line)
       else
-        raise Error::Syntax.new("Unknown \"#{name}\" function", line, parser.stream.source)
+        raise Error::Syntax.new("Unknown \"#{name}\" function.", line, parser.stream.source)
       end
     end
 
@@ -621,7 +621,7 @@ module Twig
     def get_filter(name, lineno)
       unless (filter = environment.filter(name))
         unless parser.ignore_unknown_twig_callables?
-          raise Error::Syntax.new("Unknown '#{name}' filter", lineno, parser.stream.source)
+          raise Error::Syntax.new("Unknown '#{name}' filter.", lineno, parser.stream.source)
         end
 
         filter = TwigFilter.new(name, -> {})
