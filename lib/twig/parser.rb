@@ -219,7 +219,7 @@ module Twig
     def set_block(name, value)
       if @blocks.key?(name)
         raise Error::Syntax.new(
-          "The block '#{name}' has already been defined line #{@blocks[name].lineno}",
+          "The block '#{name}' has already been defined line #{@blocks[name].lineno}.",
           current_token.lineno,
           @blocks[name].source_context
         )

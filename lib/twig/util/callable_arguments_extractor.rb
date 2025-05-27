@@ -61,7 +61,7 @@ module Twig
               else
                 raise Error::Syntax.new(
                   "Expected a hash spread for argument \"#{name}\" " \
-                  "for #{@twig_callable.type} \"#{@twig_callable.name}\"",
+                  "for #{@twig_callable.type} \"#{@twig_callable.name}\".",
                   @node.lineno,
                   @node.source_context
                 )
@@ -87,7 +87,7 @@ module Twig
               # positional spread or kwarg spread because both use ...
               unless spreads.any? || keyrest
                 raise Error::Syntax.new(
-                  "Value for argument \"#{name}\" is required for #{@twig_callable.type} \"#{@twig_callable.name}\"",
+                  "Value for argument \"#{name}\" is required for #{@twig_callable.type} \"#{@twig_callable.name}\".",
                   @node.lineno,
                   @node.source_context
                 )
@@ -100,10 +100,13 @@ module Twig
 
         # If any of our remaining kwargs intersect with called_arguments then we have a duplicate key
         duplicated = called_arguments.select { |_k, v| v }.keys & kwargs.keys
+        duplicated = duplicated.map(&:to_s)
+        duplicated = duplicated[0] if duplicated.one?
 
-        if duplicated.any?
+        unless duplicated.empty?
           raise Error::Syntax.new(
-            "Duplicated keys: #{duplicated.inspect}",
+            "Argument #{duplicated.inspect} is defined twice for #{@twig_callable.type} " \
+            "\"#{@twig_callable.name}\".",
             @node.lineno,
             @node.source_context
           )
@@ -126,7 +129,7 @@ module Twig
         if unexpected_arguments.any?
           raise Error::Syntax.new(
             "Unexpected argument \"#{unexpected_arguments.join(', ')}\" " \
-            "for #{@twig_callable.type} \"#{@twig_callable.name}\"",
+            "for #{@twig_callable.type} \"#{@twig_callable.name}\".",
             @node.lineno,
             @node.source_context
           )

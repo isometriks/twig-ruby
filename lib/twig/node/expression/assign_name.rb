@@ -10,7 +10,7 @@ module Twig
         # @param [Integer] lineno
         def initialize(name, lineno)
           if %w[true false none null nil].include?(name.downcase)
-            raise Error::Syntax.new("You cannot assign a value to \"#{name}\"", lineno, source_context)
+            raise Error::Syntax.new("You cannot assign a value to \"#{name}\".", lineno, source_context)
           end
 
           super

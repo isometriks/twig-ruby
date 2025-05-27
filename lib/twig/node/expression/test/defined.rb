@@ -14,7 +14,7 @@ module Twig
           # @param [Integer] lineno
           def initialize(node, name, arguments, lineno)
             unless node.is_a?(SupportDefinedTest)
-              raise Error::Syntax.new('The "defined" test only works with simple variables', lineno)
+              raise Error::Syntax.new('The "defined" test only works with simple variables.', lineno)
             end
 
             node.enable_defined_test

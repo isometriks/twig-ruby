@@ -46,7 +46,7 @@ module Twig
         message = "#{message} " if message
 
         raise Error::Syntax.new(
-          "#{message}Unexpected token \"#{unexpected}\"#{token_value} (\"#{expected}\" expected#{value})",
+          "#{message}Unexpected token \"#{unexpected}\"#{token_value} (\"#{expected}\" expected#{value}).",
           token.lineno,
           source
         )
