@@ -184,6 +184,12 @@ class TwigFixture
 end
 
 class TwigTestExtension < Twig::Extension::Base
+  def token_parsers
+    [
+      TwigTestTokenParser§.new, # rubocop:disable Naming/AsciiIdentifiers
+    ]
+  end
+
   def filters
     [
       ::Twig::TwigFilter.new('nl2br', method('nl2br'), pre_escape: [:html], is_safe: [:html]),
@@ -301,5 +307,18 @@ class TwigTestExtension < Twig::Extension::Base
 
   def self.multi_word?(string)
     string.include?(' ')
+  end
+end
+
+# Rubo
+class TwigTestTokenParser§ < Twig::TokenParser::Base # rubocop:disable Naming/AsciiIdentifiers
+  def parse(token)
+    parser.stream.expect(Twig::Token::BLOCK_END_TYPE)
+
+    Twig::Node::Print.new(Twig::Node::Expression::Constant.new('§', -1), -1)
+  end
+
+  def tag
+    '§'
   end
 end
