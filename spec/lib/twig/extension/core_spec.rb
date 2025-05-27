@@ -85,6 +85,7 @@ RSpec.describe Twig::Extension::Core do
           {{ html|striptags(['h1'])|trim|raw }}
           {{ ["a", "b"]|join(and_glue=" or ") }}
           {{ ["a", "b"]|join(...{glue: " - "}) }}
+          {% for matches in [1,2,3] %}{{ matches }}{% endfor %}
         INPUTS
       end
 
@@ -167,6 +168,7 @@ RSpec.describe Twig::Extension::Core do
           <h1>Hello World!</h1>How are you?
           a or b
           a - b
+          123
         OUTPUTS
       end
 
