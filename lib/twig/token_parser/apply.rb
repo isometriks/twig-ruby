@@ -14,7 +14,7 @@ module Twig
         filter = parser.expression_parser.parse_filter_expression_raw(ref)
 
         parser.stream.expect(Token::BLOCK_END_TYPE)
-        body = parser.subparse(decide_apply_end, drop_needle: true)
+        body = parser.subparse(method(:decide_apply_end), drop_needle: true)
         parser.stream.expect(Token::BLOCK_END_TYPE)
 
         Node::Nodes.new({
@@ -29,8 +29,8 @@ module Twig
 
       private
 
-      def decide_apply_end
-        ->(token) { token.test('endapply') }
+      def decide_apply_end(token)
+        token.test('endapply')
       end
     end
   end

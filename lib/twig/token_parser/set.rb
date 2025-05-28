@@ -41,7 +41,7 @@ module Twig
           end
 
           stream.expect(Token::BLOCK_END_TYPE)
-          values = parser.subparse(decide_block_end, drop_needle: true)
+          values = parser.subparse(method(:decide_block_end), drop_needle: true)
           stream.expect(Token::BLOCK_END_TYPE)
         end
 
@@ -54,8 +54,8 @@ module Twig
 
       private
 
-      def decide_block_end
-        ->(token) { token.test('endset') }
+      def decide_block_end(token)
+        token.test('endset')
       end
     end
   end

@@ -27,7 +27,7 @@ module Twig
           Token.new(Token::BLOCK_END_TYPE, '', token.lineno),
         ])
 
-        node = parser.parse(stream, decide_block_end, drop_needle: true)
+        node = parser.parse(stream, method(:decide_block_end), drop_needle: true)
 
         # override the parent with the correct one
         if fake_parent_token == parent_token
@@ -54,8 +54,8 @@ module Twig
 
       private
 
-      def decide_block_end
-        ->(token) { token.test('endembed') }
+      def decide_block_end(token)
+        token.test('endembed')
       end
     end
   end

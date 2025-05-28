@@ -29,17 +29,17 @@ module Twig
         stream.expect(Token::BLOCK_END_TYPE)
 
         if exists
-          body = parser.subparse(decide_guard_fork)
+          body = parser.subparse(method(:decide_guard_fork))
         else
           body = Node::Empty.new
-          parser.subparse_ignore_unknown_twig_callables(decide_guard_fork)
+          parser.subparse_ignore_unknown_twig_callables(method(:decide_guard_fork))
         end
 
         else_node = Node::Empty.new
 
         if stream.next.value == 'else'
           stream.expect(Token::BLOCK_END_TYPE)
-          else_node = parser.subparse(decide_guard_end, drop_needle: true)
+          else_node = parser.subparse(method(:decide_guard_end), drop_needle: true)
         end
 
         stream.expect(Token::BLOCK_END_TYPE)
@@ -53,12 +53,12 @@ module Twig
 
       private
 
-      def decide_guard_fork
-        ->(token) { token.test(%w[else endguard]) }
+      def decide_guard_fork(token)
+        token.test(%w[else endguard])
       end
 
-      def decide_guard_end
-        ->(token) { token.test(['endguard']) }
+      def decide_guard_end(token)
+        token.test(['endguard'])
       end
     end
   end

@@ -24,7 +24,7 @@ module Twig
         end
 
         stream.expect(Token::BLOCK_END_TYPE)
-        body = parser.subparse(decide_yield_end, drop_needle: true)
+        body = parser.subparse(method(:decide_yield_end), drop_needle: true)
         stream.expect(Token::BLOCK_END_TYPE)
 
         Node::Yield.new(expr, body, arguments, lineno)
@@ -36,8 +36,8 @@ module Twig
 
       private
 
-      def decide_yield_end
-        ->(token) { token.test('endyield') }
+      def decide_yield_end(token)
+        token.test('endyield')
       end
     end
   end

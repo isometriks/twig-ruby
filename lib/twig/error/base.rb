@@ -34,6 +34,11 @@ module Twig
         @message
       end
 
+      def append_message(raw_message)
+        @raw_message += raw_message
+        update_repr
+      end
+
       private
 
       # @return [Source, nil]

@@ -16,7 +16,7 @@ module Twig
         end
 
         stream.expect(Token::BLOCK_END_TYPE)
-        body = parser.subparse(decide_with_end, drop_needle: true)
+        body = parser.subparse(method(:decide_with_end), drop_needle: true)
         stream.expect(Token::BLOCK_END_TYPE)
 
         Node::With.new(body, variables, only, token.lineno)
@@ -28,8 +28,8 @@ module Twig
 
       private
 
-      def decide_with_end
-        ->(token) { token.test('endwith') }
+      def decide_with_end(token)
+        token.test('endwith')
       end
     end
   end
