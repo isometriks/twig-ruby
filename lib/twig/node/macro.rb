@@ -28,6 +28,7 @@ module Twig
       # @param [Compiler] compiler
       def compile(compiler)
         compiler.
+          add_debug_info(self).
           write("def macro_#{attributes[:name]}(call_context, ")
 
         arguments = nodes[:arguments]

@@ -9,6 +9,7 @@ module Twig
 
       def compile(compiler)
         compiler.
+          add_debug_info(self).
           write("def block_#{attributes[:name]}(context, blocks)\n").
           indent.
           write("macros = @macros.dup\n").

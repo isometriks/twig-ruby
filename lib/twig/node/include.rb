@@ -19,6 +19,8 @@ module Twig
       end
 
       def compile(compiler)
+        compiler.add_debug_info(self)
+
         if attributes[:ignore_missing]
           template = compiler.var_name
 

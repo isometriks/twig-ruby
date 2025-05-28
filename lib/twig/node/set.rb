@@ -30,6 +30,8 @@ module Twig
       end
 
       def compile(compiler)
+        compiler.add_debug_info(self)
+
         if nodes[:names].length > 1
           compiler.write('')
 

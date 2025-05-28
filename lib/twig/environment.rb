@@ -57,6 +57,7 @@ module Twig
       class_name = template_class(name, index)
       cache_key = cache.generate_key(name, class_name)
 
+      # @todo this isn't right
       attempt_cache = !@auto_reload && template_fresh?(name, cache.timestamp(cache_key))
 
       if attempt_cache

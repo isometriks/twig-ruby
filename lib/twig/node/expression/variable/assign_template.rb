@@ -16,6 +16,7 @@ module Twig
             var = nodes[:var]
 
             compiler.
+              add_debug_info(self).
               write('macros[').
               string(var.name(compiler)).
               raw('] = ')

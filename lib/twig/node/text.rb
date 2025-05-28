@@ -11,6 +11,7 @@ module Twig
 
       def compile(compiler)
         compiler.
+          add_debug_info(self).
           write('context.output_buffer.safe_append = ').
           string(attributes[:data]).
           raw(";\n")

@@ -13,6 +13,7 @@ module Twig
 
         def compile(compiler)
           compiler.
+            add_debug_info(self).
             raw('-> (')
 
           nodes[:names].nodes.each do |i, name|

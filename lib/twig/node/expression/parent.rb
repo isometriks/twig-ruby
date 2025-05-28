@@ -13,6 +13,7 @@ module Twig
 
         def compile(compiler)
           if attributes[:output]
+            compiler.add_debug_info(self)
             raise NotImplementedError
           else
             compiler.

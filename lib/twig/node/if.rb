@@ -11,6 +11,8 @@ module Twig
       end
 
       def compile(compiler)
+        compiler.add_debug_info(self)
+
         (0...nodes[:tests].nodes.length).step(2).each do |i|
           if i.zero?
             compiler.
