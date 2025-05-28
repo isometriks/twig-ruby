@@ -6,6 +6,9 @@ module Twig
   class Compiler
     attr_reader :source, :environment
 
+    # @return [Hash<Integer, Integer>]
+    attr_reader :debug_info
+
     # @param [Environment] environment
     def initialize(environment)
       @environment = environment
@@ -91,6 +94,22 @@ module Twig
       end
     end
 
+    # @param [Node::Base] node
+    # @return [Compiler]
+    def add_debug_info(node)
+      if node.lineno != @last_line
+        write("# line #{node.lineno}\n")
+
+        @source_line += @source[@source_offset..].count("\n")
+        @source_offset = @source.length
+        @debug_info[@source_line] = node.lineno
+
+        @last_line = node.lineno
+      end
+
+      self
+    end
+
     # @param [Integer] step
     # @return [Compiler]
     def indent(step = 1)
@@ -123,7 +142,7 @@ module Twig
     def reset(indentation = 0)
       @last_line = nil
       @source = +''
-      @debug_info = []
+      @debug_info = {}
       @source_offset = 0
       # source code starts at 1 (as we then increment it when we encounter new lines)
       @source_line = 1

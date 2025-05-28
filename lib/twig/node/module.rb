@@ -56,11 +56,15 @@ module Twig
           write("macros = @macros.dup\n")
 
         if nodes.key?(:parent)
+          parent = nodes[:parent]
+          compiler.add_debug_info(parent)
+
+          # @todo This should check if parnet is constant expr
           compiler.
             write('@parent = load_template(').
-            subcompile(nodes[:parent]).
+            subcompile(parent).
             raw(', ').
-            repr(nodes[:parent].lineno).
+            repr(parent.lineno).
             raw(").call(context, self.blocks.merge(blocks));\n")
         else
           compiler.
@@ -82,6 +86,7 @@ module Twig
 
         compile_get_template_name(compiler)
         compile_traitable(compiler)
+        compile_debug_info(compiler)
         compile_get_source_context(compiler)
 
         compiler.
@@ -114,6 +119,7 @@ module Twig
             node = trait.nodes[:template]
 
             compiler.
+              add_debug_info(node).
               write("_trait_#{i} = load_template(").
               subcompile(node).
               raw(', ').
@@ -212,6 +218,7 @@ module Twig
         compiler.
           write("private def do_get_parent(context)\n").
           indent.
+          add_debug_info(parent).
           write('')
 
         if parent.is_a?(Node::Expression::Constant)
@@ -275,6 +282,17 @@ module Twig
           write("def traitable?\n").
           indent.
           write("false\n").
+          outdent.
+          write("end\n\n")
+      end
+
+      def compile_debug_info(compiler)
+        compiler.
+          write("def debug_info\n").
+          indent.
+          write('').
+          repr(compiler.debug_info).
+          raw("\n").
           outdent.
           write("end\n\n")
       end

@@ -16,6 +16,7 @@ module Twig
 
       def compile(compiler)
         compiler.
+          add_debug_info(self).
           write("context.push_stack\n")
 
         if nodes.key?(:variables)

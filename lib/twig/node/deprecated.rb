@@ -8,6 +8,8 @@ module Twig
       end
 
       def compile(compiler)
+        compiler.add_debug_info(self)
+
         expr = nodes[:expr]
 
         unless expr.is_a?(Expression::Constant)

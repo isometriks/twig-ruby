@@ -28,6 +28,8 @@ module Twig
         def compile(compiler)
           name = attributes[:name]
 
+          compiler.add_debug_info(self)
+
           if attributes[:name][0] == '@'
             check = "context.call_context.instance_variable_defined?('#{name}')"
             get = "context.call_context.instance_variable_get('#{name}')"

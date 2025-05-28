@@ -10,6 +10,7 @@ module Twig
 
       def compile(compiler)
         compiler.
+          add_debug_info(self).
           write('context.output_buffer.append = (').
           subcompile(nodes[:expr]).
           raw(' do')

@@ -23,6 +23,7 @@ module Twig
 
       def compile(compiler)
         compiler.
+          add_debug_info(self).
           write("context.push_stack\n").
           write('context[:_seq] = ::Twig::Extension::Core.ensure_hash(').
           subcompile(nodes[:seq]).
