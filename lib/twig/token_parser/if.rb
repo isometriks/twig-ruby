@@ -15,7 +15,7 @@ module Twig
         expr = parser.expression_parser.parse_expression
         stream = parser.stream
         stream.expect(Token::BLOCK_END_TYPE)
-        body = parser.subparse(decide_if_fork)
+        body = parser.subparse(method(:decide_if_fork))
         tests = [expr, body]
         else_node = nil
 
@@ -24,11 +24,11 @@ module Twig
           case stream.next.value
           when 'else'
             stream.expect(Token::BLOCK_END_TYPE)
-            else_node = parser.subparse(decide_if_end)
+            else_node = parser.subparse(method(:decide_if_end))
           when 'elsif', 'elseif'
             expr = parser.expression_parser.parse_expression
             stream.expect(Token::BLOCK_END_TYPE)
-            body = parser.subparse(decide_if_fork)
+            body = parser.subparse(method(:decide_if_fork))
             tests.push(expr, body)
           when 'endif'
             if_ended = true
@@ -52,12 +52,12 @@ module Twig
 
       private
 
-      def decide_if_end
-        ->(token) { token.test(%w[endif]) }
+      def decide_if_end(token)
+        token.test(%w[endif])
       end
 
-      def decide_if_fork
-        ->(token) { token.test(%w[elseif elsif else endif]) }
+      def decide_if_fork(token)
+        token.test(%w[elseif elsif else endif])
       end
     end
   end

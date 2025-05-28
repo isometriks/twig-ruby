@@ -74,7 +74,7 @@ module Twig
       node
     end
 
-    # @param [Proc, nil] test
+    # @param [Method, nil] test
     # @return [Node::Base]
     def subparse(test, drop_needle: false)
       lineno = current_token.lineno
@@ -110,7 +110,19 @@ module Twig
           subparser = @environment.token_parser(token.value)
 
           unless subparser
-            raise Error::Syntax.new("Unexpected '#{token.value}' tag.", token.lineno, stream.source)
+            if test.nil?
+              raise Error::Syntax.new("Unknown \"#{token.value}\" tag.", token.lineno, stream.source)
+            else
+              e = Error::Syntax.new("Unexpected \"#{token.value}\" tag", token.lineno, stream.source)
+
+              if test.respond_to?(:receiver) && (receiver = test.receiver) && receiver.is_a?(Twig::TokenParser::Base)
+                e.append_message(
+                  " (expecting closing tag for the \"#{receiver.tag}\" tag defined near line #{lineno})."
+                )
+              end
+
+              raise e
+            end
           end
 
           stream.next

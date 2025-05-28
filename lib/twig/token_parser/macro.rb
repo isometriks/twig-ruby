@@ -17,7 +17,7 @@ module Twig
 
         stream.expect(Token::BLOCK_END_TYPE)
         parser.push_local_scope
-        body = parser.subparse(decide_block_end, drop_needle: true)
+        body = parser.subparse(method(:decide_block_end), drop_needle: true)
 
         if (token = stream.next_if(Token::NAME_TYPE))
           value = token.value
@@ -39,8 +39,8 @@ module Twig
         Node::Empty.new(lineno)
       end
 
-      def decide_block_end
-        ->(token) { token.test('endmacro') }
+      def decide_block_end(token)
+        token.test('endmacro')
       end
 
       def tag

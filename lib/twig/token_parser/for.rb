@@ -15,11 +15,11 @@ module Twig
         seq = parser.expression_parser.parse_expression
 
         stream.expect(Token::BLOCK_END_TYPE)
-        body = parser.subparse(decide_for_fork)
+        body = parser.subparse(method(:decide_for_fork))
 
         if stream.next.value == 'else'
           stream.expect(Token::BLOCK_END_TYPE)
-          else_expr = parser.subparse(decide_for_end, drop_needle: true)
+          else_expr = parser.subparse(method(:decide_for_end), drop_needle: true)
         else
           else_expr = nil
         end
@@ -52,12 +52,12 @@ module Twig
 
       private
 
-      def decide_for_fork
-        ->(token) { token.test(%w[else endfor]) }
+      def decide_for_fork(token)
+        token.test(%w[else endfor])
       end
 
-      def decide_for_end
-        ->(token) { token.test(%w[endfor]) }
+      def decide_for_end(token)
+        token.test(%w[endfor])
       end
     end
   end

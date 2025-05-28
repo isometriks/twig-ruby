@@ -20,7 +20,7 @@ module Twig
         parser.push_block_stack(name)
 
         if stream.next_if(Token::BLOCK_END_TYPE)
-          body = parser.subparse(decide_block_end, drop_needle: true)
+          body = parser.subparse(method(:decide_block_end), drop_needle: true)
 
           if (token = stream.next_if(Token::NAME_TYPE)) && token.value != name
             raise "Expected end block for #{name}, given #{token.value}"
@@ -46,8 +46,8 @@ module Twig
 
       private
 
-      def decide_block_end
-        ->(token) { token.test('endblock') }
+      def decide_block_end(token)
+        token.test('endblock')
       end
     end
   end

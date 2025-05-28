@@ -25,7 +25,7 @@ module Twig
         end
 
         stream.expect(Token::BLOCK_END_TYPE)
-        body = parser.subparse(decide_block_end, drop_needle: true)
+        body = parser.subparse(method(:decide_block_end), drop_needle: true)
         stream.expect(Token::BLOCK_END_TYPE)
 
         Node::AutoEscape.new(value, body, lineno)
@@ -37,8 +37,8 @@ module Twig
 
       private
 
-      def decide_block_end
-        ->(token) { token.test(%w[endautoescape]) }
+      def decide_block_end(token)
+        token.test('endautoescape')
       end
     end
   end
