@@ -12,4 +12,6 @@ Gem::Specification.new do |s|
   s.license     = 'MIT'
   s.metadata['rubygems_mfa_required'] = 'true'
   s.required_ruby_version = '>= 3.4'
+
+  s.add_runtime_dependency 'sanitize', '~> 7.0'
 end
