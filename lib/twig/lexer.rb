@@ -139,7 +139,7 @@ module Twig
 
     def lex_raw_data
       unless (match = @code.match(lex_raw_data_regex, @cursor))
-        raise Error::Syntax.new("Uexpected end of file. Unclosed 'verbatim' block", @lineno, @source)
+        raise Error::Syntax.new("Uexpected end of file. Unclosed 'verbatim' block.", @lineno, @source)
       end
 
       text = @code[@cursor, match.begin(0) - @cursor]
@@ -184,7 +184,7 @@ module Twig
         move_cursor(match.to_s)
 
         if @cursor >= @end
-          raise "Unclosed #{@state == STATE_BLOCK ? 'block' : 'variable'}"
+          raise "Unclosed #{@state == STATE_BLOCK ? 'block' : 'variable'}."
         end
       end
 
@@ -219,13 +219,13 @@ module Twig
           @brackets << [code_at, @lineno]
         elsif code_at?(0, CLOSING_BRACKET)
           if @brackets.empty?
-            raise Error::Syntax.new("Unexpected closing bracket: #{code_at}", @lineno, @source)
+            raise Error::Syntax.new("Unexpected closing bracket: #{code_at}.", @lineno, @source)
           end
 
           expect, lineno = @brackets.pop
 
           unless code_at?(0, expect.tr(OPENING_BRACKET.join, CLOSING_BRACKET.join))
-            raise Error::Syntax.new("Unclosed bracket: #{code_at}", lineno, @source)
+            raise Error::Syntax.new("Unclosed bracket: #{expect}.", lineno, @source)
           end
         end
 
@@ -247,7 +247,7 @@ module Twig
 
     def lex_comment
       unless (match = @code.match(lex_comment_regex, @cursor))
-        raise Error::Syntax.new('Unclosed comment', @lineno, @source)
+        raise Error::Syntax.new('Unclosed comment.', @lineno, @source)
       end
 
       move_cursor(@code[@cursor...match.offset(0)[1]])
@@ -266,13 +266,13 @@ module Twig
         expect, lineno = @brackets.pop
 
         unless code_at?(0, '"')
-          raise Error::Syntax.new("Unclosed '#{expect}'", lineno, @source)
+          raise Error::Syntax.new("Unclosed '#{expect}'.", lineno, @source)
         end
 
         pop_state
         @cursor += 1
       else
-        Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
+        Error::Syntax.new("Unexpected character '#{code_at}'.", @lineno, @source)
       end
     end
 

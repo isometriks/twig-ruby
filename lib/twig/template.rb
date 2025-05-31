@@ -32,6 +32,10 @@ module Twig
     end
 
     def yield_block(name, context, blocks = {}, use_blocks: true, template_context: self)
+      unless context.is_a?(Runtime::Context)
+        context = Runtime::Context.new(context)
+      end
+
       name = name.to_sym
 
       template = if use_blocks && blocks.key?(name)
@@ -49,7 +53,7 @@ module Twig
         begin
           context.buffer_and_return do
             template[0].public_send(template[1], context, blocks)
-          end.to_s
+          end.to_s.html_safe
         rescue Error::Base => e
           unless e.source_context
             e.source_context = template[0].source_context
