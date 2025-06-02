@@ -119,6 +119,7 @@ module Twig
           TwigFilter.new('default', static(:default), {
             node_class: Node::Expression::Filter::Default,
           }),
+          TwigFilter.new('invoke', static(:invoke)),
         ]
       end
 
@@ -567,6 +568,10 @@ module Twig
         present = object.respond_to?(:empty?) ? !object.empty? : !!object
 
         present ? object : default
+      end
+
+      def self.invoke(callable, *, **)
+        callable.call(*, **)
       end
 
       def self.ensure_hash(value)
