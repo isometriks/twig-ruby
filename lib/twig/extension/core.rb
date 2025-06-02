@@ -79,7 +79,7 @@ module Twig
           # Encoding
           TwigFilter.new('url_encode', static(:url_encode)),
           TwigFilter.new('json_encode', static(:json_encode)),
-          # new TwigFilter('convert_encoding', self::convertEncoding(...)),
+          TwigFilter.new('convert_encoding', static(:convert_encoding)),
 
           # Strings
           TwigFilter.new('title', static(:title_case)),
@@ -338,6 +338,10 @@ module Twig
 
       def self.json_encode(object)
         object.respond_to?(:to_json) ? object.to_json : '{}'
+      end
+
+      def self.convert_encoding(string, to, from)
+        (string || '').to_s.encode(to, from)
       end
 
       def self.title_case(string)
