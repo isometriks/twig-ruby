@@ -228,6 +228,7 @@ class TwigTestExtension < Twig::Extension::Base
       ::Twig::TwigFunction.new('*_path', method(:dynamic_path)),
       ::Twig::TwigFunction.new('*_foo_*_bar', method(:dynamic_foo)),
       ::Twig::TwigFunction.new('anon_foo', ->(name) { "*#{name}*" }),
+      ::Twig::TwigFunction.new('deprecated_function', -> { 'foo' }), # @todo - Needs deprecation info
     ]
   end
 
