@@ -194,6 +194,7 @@ class TwigTestExtension < Twig::Extension::Base
 
   def filters
     [
+      ::Twig::TwigFilter.new('§', method(:non_ascii_function)),
       ::Twig::TwigFilter.new('nl2br', method('nl2br'), pre_escape: [:html], is_safe: [:html]),
       ::Twig::TwigFilter.new('escape_and_nl2br', method(:escape_and_nl2br), {
         needs_environment: true, is_safe: [:html]
