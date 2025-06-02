@@ -88,10 +88,14 @@ module Twig
             else
               raise "Unknown argument type: #{name} #{type}"
             end
-          elsif kwargs.key?(name)
-            resolved_kwargs[name] = kwargs.delete(name)
-          elsif (camel_cased = kwargs.keys.detect { |key| key.to_s.underscore.to_sym == name })
-            resolved_kwargs[name] = kwargs.delete(camel_cased)
+          elsif kwargs.key?(name) || (found = kwargs.keys.detect { |key| key.to_s.underscore.to_sym == name })
+            found = name if found.nil?
+
+            if %i[opt req].include?(type)
+              resolved_positional << kwargs.delete(found)
+            else
+              resolved_kwargs[name] = kwargs.delete(found)
+            end
           else
             case type
             when :opt, :key, :rest

@@ -735,9 +735,12 @@ module Twig
       # @param [Parser] parser
       # @param [Node::Base] fake_node
       def self.parse_block_function(parser, fake_node, args, line)
-        # @todo Not really extracted, could have named args out of order
-        extracted = args.nodes.values[0..1]
-        Node::Expression::BlockReference.new(extracted[0], extracted[1], line)
+        fake_function = TwigFunction.new('block', ->(name, template = nil) {})
+        positional, = Util::CallableArgumentsExtractor.
+          new(fake_node, fake_function, parser.environment).
+          extract_arguments(args)
+
+        Node::Expression::BlockReference.new(positional[0], positional[1], line)
       end
 
       def self.enumerable_function(object, function, proc)
