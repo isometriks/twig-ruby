@@ -24,14 +24,19 @@ module Twig
       raise 'call is not implemented'
     end
 
-    def render(context = {}, call_context: nil, output_buffer: OutputBuffer.new)
-      call(Runtime::Context.new(context, call_context:, output_buffer:)).to_s
+    # @param [Runtime::Context] context
+    def render(context)
+      unless context.is_a?(Runtime::Context)
+        raise Error::Runtime, 'Render must implement Twig::Runtime::Context'
+      end
+
+      call(context)
     rescue Error::Base => e
       e.source_context = source_context unless e.source_context
       raise e
     end
 
-    def yield_block(name, context, blocks = {}, use_blocks: true, template_context: self)
+    def render_block(name, context, blocks = {}, use_blocks: true, template_context: self)
       unless context.is_a?(Runtime::Context)
         context = Runtime::Context.new(context)
       end
@@ -79,7 +84,7 @@ module Twig
           )
         end
       elsif (parent = get_parent(context))
-        parent.yield_block(name, context, self.blocks.merge(blocks), use_blocks: false, template_context:)
+        parent.render_block(name, context, self.blocks.merge(blocks), use_blocks: false, template_context:)
       elsif blocks.key?(name)
         raise Error::Runtime.new(
           "Block '#{name}' should not call parent() in #{blocks[name].template_name}",
@@ -117,7 +122,7 @@ module Twig
         # @todo traits
         raise NotImplementedError
       elsif (parent = get_parent(context))
-        parent.yield_block(name, context, blocks, use_blocks: false)
+        parent.render_block(name, context, blocks, use_blocks: false)
       else
         raise Error::Runtime.new(
           "The template has no parent and no traits defining the #{name} block.",
@@ -142,7 +147,7 @@ module Twig
       end
 
       unless @parents.key?(parent)
-        @parents[parent] = load_template(parent, -1)
+        @parents[parent] = load(parent, -1)
       end
 
       @parents[parent]
@@ -214,12 +219,20 @@ module Twig
       true
     end
 
+    def unwrap
+      self
+    end
+
     private
 
-    # @param [String] name
-    # @return ]Template]
-    def load_template(name, line, index = nil)
-      env.load_template(name, index:)
+    # @param [String, TemplateWrapper] template
+    # @return [Template]
+    def load(template, line, index = nil)
+      if template.is_a?(TemplateWrapper)
+        return template.unwrap
+      end
+
+      env.load_template(template, index:)
     end
 
     # Overloaded by children

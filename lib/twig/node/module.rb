@@ -61,11 +61,11 @@ module Twig
 
           # @todo This should check if parnet is constant expr
           compiler.
-            write('@parent = load_template(').
+            write('@parent = load(').
             subcompile(parent).
             raw(', ').
             repr(parent.lineno).
-            raw(").call(context, self.blocks.merge(blocks));\n")
+            raw(").unwrap.call(context, self.blocks.merge(blocks));\n")
         else
           compiler.
             subcompile(nodes[:body])
@@ -120,12 +120,12 @@ module Twig
 
             compiler.
               add_debug_info(node).
-              write("_trait_#{i} = load_template(").
+              write("_trait_#{i} = load(").
               subcompile(node).
               raw(', ').
               repr(node.lineno).
               raw(")\n").
-              write("unless _trait_#{i}.traitable?\n").
+              write("unless _trait_#{i}.unwrap.traitable?\n").
               indent.
               write(%q[raise ::Twig::Error::Runtime.new('Template "' + ]).
               subcompile(node).
@@ -134,7 +134,7 @@ module Twig
               raw(", @source)\n").
               outdent.
               write("end\n").
-              write("_trait_#{i}_blocks = _trait_#{i}.blocks.dup\n\n")
+              write("_trait_#{i}_blocks = _trait_#{i}.unwrap.blocks.dup\n\n")
 
             trait.nodes[:targets].nodes.each do |key, value|
               compiler.
@@ -225,7 +225,7 @@ module Twig
           compiler.subcompile(parent)
         else
           compiler.
-            raw('load_template(').
+            raw('load(').
             subcompile(parent).
             raw(', ').
             repr(parent.lineno).

@@ -669,7 +669,7 @@ module Twig
 
         begin
           loaded = environment.load(template)
-        rescue Error::LoadError => e
+        rescue Error::Loader => e
           unless ignore_missing
             raise e
           end
@@ -677,7 +677,9 @@ module Twig
           return ''
         end
 
-        loaded.render(variables)
+        variables.buffer_and_return do
+          loaded.render(variables)
+        end
       end
 
       # @param [Environment] environment

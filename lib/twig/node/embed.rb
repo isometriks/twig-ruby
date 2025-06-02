@@ -24,7 +24,7 @@ module Twig
 
       def add_get_template(compiler, template = '')
         compiler.
-          raw('load_template(').
+          raw('load(').
           string(attributes[:name]).
           raw(', ').
           repr(lineno).
