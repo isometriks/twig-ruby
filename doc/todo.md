@@ -37,7 +37,7 @@
 - currency_symbol
 - data_uri
 - ~~date~~
-- date_modify
+- date_modify - Won't implement, PHP specific
 - default
 - ~~escape~~
 - ~~filter~~
