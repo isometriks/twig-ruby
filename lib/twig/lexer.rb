@@ -199,7 +199,7 @@ module Twig
       elsif (match = @code.match(operator_regex, @cursor))
         push_token(Token::OPERATOR_TYPE, match.to_s.gsub(/[[:space:]]+/, ' '))
         move_cursor(match.to_s)
-      elsif (match = @code.match(/\G#{REGEX_NAME}\??/, @cursor))
+      elsif (match = @code.match(/\G#{REGEX_NAME}(?:\?(?!\?))?/, @cursor)) # Optional ? but not ??
         push_token(Token::NAME_TYPE, match.to_s)
         move_cursor(match.to_s)
       elsif (match = @code.match(/\G#{REGEX_SYMBOL}/, @cursor))
