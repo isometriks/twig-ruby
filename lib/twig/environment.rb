@@ -42,14 +42,17 @@ module Twig
       "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{index ? "__#{index}" : ''}"
     end
 
-    # @param [String, Twig::Template] name
-    # @return [Twig::Template]
+    # @param [String, Twig::TemplateWrapper] name
+    # @return [Twig::TemplateWrapper]
     def load(name, **)
-      if name.is_a?(Twig::Template)
+      if name.is_a?(Twig::TemplateWrapper)
         return name
       end
 
-      load_template(name, **)
+      TemplateWrapper.new(
+        self,
+        load_template(name, **)
+      )
     end
 
     # @return [Twig::Template]
@@ -96,7 +99,7 @@ module Twig
 
       @loader = chain_loader
 
-      load_template(name)
+      TemplateWrapper.new(self, load_template(name))
     ensure
       @loader = current
     end

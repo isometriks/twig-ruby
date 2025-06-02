@@ -8,7 +8,7 @@ module Twig
       <<~TEMPLATE
         ::#{self.class.name}.
           environment.
-          load_template("#{template.short_identifier}").
+          load("#{template.short_identifier}").
           render(
             local_assigns,
             call_context: self,

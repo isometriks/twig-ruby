@@ -71,7 +71,7 @@ module Twig
       # @param [Compiler] compiler
       def add_get_template(compiler, template = '')
         compiler.
-          raw('load_template(').
+          raw('load(').
           subcompile(nodes[:expr]).
           raw(', ').
           repr(lineno).

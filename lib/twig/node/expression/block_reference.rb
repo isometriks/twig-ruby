@@ -21,7 +21,7 @@ module Twig
           if define_test_enabled?
             compile_template_call(compiler, 'block?')
           else
-            compile_template_call(compiler, 'yield_block')
+            compile_template_call(compiler, 'render_block')
           end
         end
 
@@ -30,11 +30,11 @@ module Twig
         def compile_template_call(compiler, method)
           if nodes.key?(:template)
             compiler.
-              write('load_template(').
+              write('load(').
               subcompile(nodes[:template]).
               raw(', ').
               repr(lineno).
-              raw(')')
+              raw(').unwrap')
           else
             compiler.write('self')
           end

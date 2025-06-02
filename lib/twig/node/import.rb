@@ -18,11 +18,11 @@ module Twig
           compiler.raw('self')
         else
           compiler.
-            raw('load_template(').
+            raw('load(').
             subcompile(nodes[:expr]).
             raw(', ').
             repr(lineno).
-            raw(')')
+            raw(').unwrap')
         end
 
         compiler.raw("\n")
