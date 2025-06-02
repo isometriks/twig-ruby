@@ -524,7 +524,7 @@ module Twig
         enumerable_function(object, :find, proc)
       end
 
-      def self.reverse(object)
+      def self.reverse(object, preserve_keys: false)
         object.is_a?(Hash) ? object.to_a.reverse.to_h : object.reverse
       end
 
