@@ -9,12 +9,12 @@ module Twig
           # @param [TwigFilter|nil] filter
           # @param [Node::Base|nil] arguments
           # @param [Integer] lineno
-          def initialize(node, filter, arguments, lineno)
+          def initialize(node, filter = nil, arguments = nil, lineno = nil)
             super(
               node,
               filter || TwigFilter.new('raw', nil, { is_safe: [:all] }),
               arguments || Node::Empty.new,
-              lineno
+              lineno || node.lineno
             )
           end
 
