@@ -243,6 +243,7 @@ RSpec.describe Twig::Extension::Core do
           {{ constant("A::ASDF") is defined ? "KO" : "OK" }}
           {{ 5 is constant("A::INT") ? "OK" : "KO" }}
           {{ 5 is constant("INT", instance) ? "OK" : "KO" }}
+          {{ not false?'OK':'KO' }}
         INPUTS
       end
 
@@ -266,6 +267,7 @@ RSpec.describe Twig::Extension::Core do
           Hello World!
           Hello World!
           Goodbye World!
+          OK
           OK
           OK
           OK
