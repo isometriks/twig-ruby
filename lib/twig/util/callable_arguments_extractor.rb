@@ -90,6 +90,8 @@ module Twig
             end
           elsif kwargs.key?(name)
             resolved_kwargs[name] = kwargs.delete(name)
+          elsif (camel_cased = kwargs.keys.detect { |key| key.to_s.underscore.to_sym == name })
+            resolved_kwargs[name] = kwargs.delete(camel_cased)
           else
             case type
             when :opt, :key, :rest
