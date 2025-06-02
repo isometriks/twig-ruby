@@ -77,7 +77,7 @@ module Twig
           TwigFilter.new('round', static(:round)),
 
           # Encoding
-          # new TwigFilter('url_encode', self::urlencode(...)),
+          TwigFilter.new('url_encode', static(:url_encode)),
           TwigFilter.new('json_encode', static(:json_encode)),
           # new TwigFilter('convert_encoding', self::convertEncoding(...)),
 
@@ -323,6 +323,16 @@ module Twig
         end
 
         values[position % values.length]
+      end
+
+      def self.url_encode(url)
+        if url.respond_to?(:map)
+          require 'uri'
+          URI.encode_www_form(url || {}).gsub('+', '%20')
+        else
+          require 'cgi'
+          CGI.escape(url || '').gsub('+', '%20')
+        end
       end
 
       def self.json_encode(object)
