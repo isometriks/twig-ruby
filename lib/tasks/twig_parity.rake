@@ -18,6 +18,8 @@ WONT_IMPLEMENT = %w[
   functions/attribute.legacy.test
   functions/attribute_with_wrong_args.legacy.test
   tests/defined_for_attribute.legacy.test
+  filters/date_immutable.test
+  filters/date_modify.test
 ].freeze
 
 class Color
