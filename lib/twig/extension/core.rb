@@ -131,6 +131,9 @@ module Twig
           TwigFunction.new('block', nil, {
             parser_callable: static(:parse_block_function),
           }),
+          TwigFunction.new('loop', nil, {
+            parser_callable: static(:parse_loop_function),
+          }),
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
@@ -741,6 +744,32 @@ module Twig
           extract_arguments(args)
 
         Node::Expression::BlockReference.new(positional[0], positional[1], line)
+      end
+
+      # @param [Parser] parser
+      # @param [Node::Base] fake_node
+      def self.parse_loop_function(parser, fake_node, args, line)
+        fake_function = TwigFunction.new('loop', ->(iterator) {})
+        positional, = Util::CallableArgumentsExtractor.
+          new(fake_node, fake_function, parser.environment).
+          extract_arguments(args)
+
+        recurse_args = Node::Expression::Array.new(AutoHash.new.add(
+          Node::Expression::Constant.new(0, line),
+          positional[0]
+        ), line)
+        expr = Node::Expression::GetAttribute.new(
+          Node::Expression::Variable::Context.new('loop', line),
+          Node::Expression::Constant.new('call', line),
+          recurse_args,
+          Template::METHOD_CALL,
+          line
+        )
+        expr.attributes[:is_generator] = true
+        expr = Node::Expression::Filter::Raw.new(expr)
+        expr.attributes[:is_generator] = true
+
+        expr
       end
 
       def self.enumerable_function(object, function, proc)
