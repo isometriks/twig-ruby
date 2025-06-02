@@ -71,7 +71,15 @@ module Twig
       when Token::NAME_TYPE
         parser.stream.next
 
-        node = case token.value
+        # We can adjust for a ternary with no space here like a? b : c, we should however ignore function
+        # nodes because a?() is fine
+        token_value = token.value
+        if token.value.end_with?('?') && parser.current_token.value != '('
+          parser.stream.inject([Token.new(Token::PUNCTUATION_TYPE, '?', token.lineno)])
+          token_value = token.value.chomp('?')
+        end
+
+        node = case token_value
                when 'true', 'TRUE'
                  Node::Expression::Constant.new(true, token.lineno)
                when 'false', 'FALSE'
@@ -82,7 +90,7 @@ module Twig
                  if parser.current_token.value == '('
                    get_function_node(token.value, token.lineno)
                  else
-                   Node::Expression::Variable::Context.new(token.value, token.lineno)
+                   Node::Expression::Variable::Context.new(token_value, token.lineno)
                  end
                end
       when Token::NUMBER_TYPE
