@@ -5,9 +5,10 @@ module Twig
     class Context < Hash
       attr_reader :call_context
 
-      def initialize(initial_context = {}, output_buffer: OutputBuffer.new, call_context: nil)
+      def initialize(initial_context = {}, output_buffer: nil, call_context: nil)
         super()
 
+        output_buffer ||= OutputBuffer.new
         @output_buffer_stack = [output_buffer]
         @call_context = call_context
 
@@ -93,6 +94,15 @@ module Twig
         end
 
         super
+      end
+
+      # @return [Context]
+      def self.from(context = {}, output_buffer: nil, call_context: nil)
+        if context.is_a?(Context)
+          context
+        else
+          new(context, output_buffer:, call_context:)
+        end
       end
 
       private
