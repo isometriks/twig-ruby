@@ -4,6 +4,10 @@ module Twig
   module Node
     class For < Node::Base
       def initialize(key_target, value_target, seq, if_expr, body, else_expr, lineno)
+        unless if_expr.nil?
+          body = If.new(Nodes.new(AutoHash.new.add(if_expr, body)), nil, lineno)
+        end
+
         loop = ForLoop.new(lineno)
         body = Nodes.new(AutoHash.new.add(body, loop))
 

@@ -14,6 +14,11 @@ module Twig
         stream.expect(Token::OPERATOR_TYPE, 'in')
         seq = parser.expression_parser.parse_expression
 
+        if_expr = nil
+        if stream.next_if(Token::NAME_TYPE, 'if')
+          if_expr = parser.expression_parser.parse_expression
+        end
+
         stream.expect(Token::BLOCK_END_TYPE)
         body = parser.subparse(method(:decide_for_fork))
 
@@ -43,7 +48,7 @@ module Twig
           value_target.lineno
         )
 
-        Node::For.new(key_target, value_target, seq, nil, body, else_expr, lineno)
+        Node::For.new(key_target, value_target, seq, if_expr, body, else_expr, lineno)
       end
 
       def tag
