@@ -10,7 +10,7 @@ module Twig
         if stream.test(Token::BLOCK_END_TYPE)
           value = :html
         else
-          expr = parser.expression_parser.parse_expression
+          expr = parser.parse_expression
 
           unless expr.is_a?(Node::Expression::Constant)
             raise Error::Syntax.new(

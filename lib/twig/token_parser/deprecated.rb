@@ -5,7 +5,7 @@ module Twig
     class Deprecated < Base
       def parse(token)
         stream = parser.stream
-        expr = parser.expression_parser.parse_expression
+        expr = parser.parse_expression
         node = Node::Deprecated.new(expr, token.lineno)
 
         while stream.test(Token::NAME_TYPE)
@@ -15,9 +15,9 @@ module Twig
 
           case k
           when 'package'
-            node.nodes[:package] = parser.expression_parser.parse_expression
+            node.nodes[:package] = parser.parse_expression
           when 'version'
-            node.nodes[:version] = parser.expression_parser.parse_expression
+            node.nodes[:version] = parser.parse_expression
           else
             raise Error::Syntax.new(
               "Unknown \"#{k}\" option.",

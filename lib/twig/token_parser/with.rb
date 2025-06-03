@@ -11,7 +11,7 @@ module Twig
         only = false
 
         unless stream.test(Token::BLOCK_END_TYPE)
-          variables = parser.expression_parser.parse_expression
+          variables = parser.parse_expression
           only = !stream.next_if(Token::NAME_TYPE, 'only').nil?
         end
 

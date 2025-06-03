@@ -10,7 +10,7 @@ module Twig
     # {% block title %}{% endblock %}
     class Use < Base
       def parse(token)
-        template = parser.expression_parser.parse_expression
+        template = parser.parse_expression
         stream = parser.stream
 
         unless template.is_a?(Node::Expression::Constant)

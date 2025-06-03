@@ -4,7 +4,7 @@ module Twig
   module TokenParser
     class Do < TokenParser::Base
       def parse(token)
-        expr = parser.expression_parser.parse_expression
+        expr = parser.parse_expression
 
         parser.stream.expect(Token::BLOCK_END_TYPE)
 

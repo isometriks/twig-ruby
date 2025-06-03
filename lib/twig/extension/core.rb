@@ -15,6 +15,80 @@ module Twig
         @date_format = '%B %-e, %Y %H:%M'
       end
 
+      def expression_parsers
+        unary = ExpressionParser::Prefix::Unary
+        binary = ExpressionParser::Infix::Binary
+
+        [
+          # Unary operators
+          unary.new(Node::Expression::Unary::Not, 'not', 70),
+          unary.new(Node::Expression::Unary::Spread, '...', 512, description: 'Spread Operator'),
+          unary.new(Node::Expression::Unary::Neg, '-', 500),
+          unary.new(Node::Expression::Unary::Pos, '+', 500),
+
+          # Binary operators
+          binary.new(
+            Node::Expression::Binary::Elvis, '?:', 5, binary::RIGHT,
+            description: 'Elvis operator (a ?: b)', aliases: ['? :']
+          ),
+          binary.new(
+            Node::Expression::Binary::NullCoalesce, '??', 5, binary::RIGHT,
+            description: 'Null coalescing operator (a ?? b)'
+          ),
+          binary.new(Node::Expression::Binary::Or, 'or', 10),
+          binary.new(Node::Expression::Binary::Xor, 'xor', 12),
+          binary.new(Node::Expression::Binary::And, 'and', 15),
+          binary.new(Node::Expression::Binary::BitwiseOr, 'b-or', 16),
+          binary.new(Node::Expression::Binary::BitwiseXor, 'b-xor', 17),
+          binary.new(Node::Expression::Binary::BitwiseAnd, 'b-and', 16),
+          binary.new(Node::Expression::Binary::Equal, '==', 20),
+          binary.new(Node::Expression::Binary::NotEqual, '!=', 20),
+          binary.new(Node::Expression::Binary::Spaceship, '<=>', 20),
+          binary.new(Node::Expression::Binary::Less, '<', 20),
+          binary.new(Node::Expression::Binary::Greater, '>', 20),
+          binary.new(Node::Expression::Binary::LessEqual, '<=', 20),
+          binary.new(Node::Expression::Binary::GreaterEqual, '>=', 20),
+          binary.new(Node::Expression::Binary::NotIn, 'not in', 20),
+          binary.new(Node::Expression::Binary::In, 'in', 20),
+          binary.new(Node::Expression::Binary::Matches, 'matches', 20),
+          binary.new(Node::Expression::Binary::StartsWith, 'starts with', 20),
+          binary.new(Node::Expression::Binary::EndsWith, 'ends with', 20),
+          binary.new(Node::Expression::Binary::HasSome, 'has some', 20),
+          binary.new(Node::Expression::Binary::HasEvery, 'has every', 20),
+          binary.new(Node::Expression::Binary::Range, '..', 25),
+          binary.new(Node::Expression::Binary::Add, '+', 30),
+          binary.new(Node::Expression::Binary::Sub, '-', 30),
+          binary.new(Node::Expression::Binary::Concat, '~', 27),
+          binary.new(Node::Expression::Binary::Mul, '*', 60),
+          binary.new(Node::Expression::Binary::Div, '/', 60),
+          binary.new(Node::Expression::Binary::FloorDiv, '//', 60, description: 'Floor division'),
+          binary.new(Node::Expression::Binary::Mod, '%', 60),
+          binary.new(Node::Expression::Binary::Power, '**', 200, binary::RIGHT, description: 'Exponentiation operator'),
+
+          # Ternary operator
+          ExpressionParser::Infix::ConditionalTernary.new,
+
+          # Twig callables
+          ExpressionParser::Infix::Is.new,
+          ExpressionParser::Infix::IsNot.new,
+          ExpressionParser::Infix::Filter.new,
+          ExpressionParser::Infix::Function.new,
+
+          # Get attribute operators
+          ExpressionParser::Infix::Dot.new,
+          ExpressionParser::Infix::SquareBracket.new,
+
+          # Group expression
+          ExpressionParser::Prefix::Grouping.new,
+
+          # Arrow function
+          ExpressionParser::Infix::Arrow.new,
+
+          # All literals
+          ExpressionParser::Prefix::Literal.new,
+        ]
+      end
+
       def operators
         unary = Node::Expression::Unary
         binary = Node::Expression::Binary

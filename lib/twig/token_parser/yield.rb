@@ -6,13 +6,13 @@ module Twig
       def parse(token)
         stream = parser.stream
         lineno = token.lineno
-        expr = parser.expression_parser.parse_expression
+        expr = parser.parse_expression
         arguments = []
 
         stream.expect(Token::NAME_TYPE, 'do')
 
-        if stream.next_if(Token::PUNCTUATION_TYPE, '|')
-          until stream.test(Token::PUNCTUATION_TYPE, '|')
+        if stream.next_if(Token::OPERATOR_TYPE, '|')
+          until stream.test(Token::OPERATOR_TYPE, '|')
             unless arguments.empty?
               stream.expect(Token::PUNCTUATION_TYPE, ',', 'Arguments must be separated by a comma')
             end
@@ -20,7 +20,7 @@ module Twig
             arguments.push(stream.expect(Token::NAME_TYPE).value)
           end
 
-          stream.expect(Token::PUNCTUATION_TYPE, '|')
+          stream.expect(Token::OPERATOR_TYPE, '|')
         end
 
         stream.expect(Token::BLOCK_END_TYPE)

@@ -49,6 +49,10 @@ module Twig
         def values
           nodes.values
         end
+
+        def each_value(&)
+          values.each(&)
+        end
       end
     end
   end

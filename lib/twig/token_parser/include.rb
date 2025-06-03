@@ -4,7 +4,7 @@ module Twig
   module TokenParser
     class Include < TokenParser::Base
       def parse(token)
-        expr = parser.expression_parser.parse_expression
+        expr = parser.parse_expression
         variables, only, ignore_missing = parse_arguments
 
         Node::Include.new(
@@ -34,7 +34,7 @@ module Twig
 
         variables = nil
         if stream.next_if(Token::NAME_TYPE, 'with')
-          variables = parser.expression_parser.parse_expression
+          variables = parser.parse_expression
         end
 
         only = false

@@ -24,6 +24,7 @@ module Twig
     # @param [Environment] environment
     def initialize(environment)
       @environment = environment
+      @parsers = environment.expression_parsers
       @stack = []
     end
 
@@ -87,7 +88,7 @@ module Twig
           rv.add(Node::Text.new(token.value, token.lineno))
         when Token::VAR_START_TYPE
           token = stream.next
-          expr = expression_parser.parse_expression
+          expr = parse_expression
           stream.expect(Token::VAR_END_TYPE)
 
           rv.add(Node::Print.new(expr, token.lineno))
@@ -156,6 +157,83 @@ module Twig
     # @return [Token]
     def current_token
       stream.current
+    end
+
+    def parse_expression(precedence = 0)
+      token = current_token
+      if token.test(Token::OPERATOR_TYPE) && (parser = parsers.by_name(:prefix, token.value))
+        stream.next
+        expr = parser.parse(self, token)
+      else
+        expr = parsers.by_class(ExpressionParser::Prefix::Literal.name).parse(self, token)
+      end
+
+      token = current_token
+      while token.test(Token::OPERATOR_TYPE) &&
+            (parser = parsers.by_name(:infix, token.value)) &&
+            parser.precedence >= precedence
+
+        stream.next
+        expr = parser.parse(self, expr, token)
+        token = current_token
+      end
+
+      expr
+    end
+
+    # @return [TwigFilter]
+    def filter(name, lineno)
+      unless (filter = environment.filter(name))
+        unless ignore_unknown_twig_callables?
+          raise Error::Syntax.new("Unknown '#{name}' filter.", lineno, parser.stream.source)
+        end
+
+        filter = TwigFilter.new(name, -> {})
+      end
+
+      filter
+    end
+
+    # @return [TwigFunction, Node::Expression::HelperMethod]
+    def function(name, args, lineno)
+      unless (function = environment.function(name))
+        if ignore_unknown_twig_callables?
+          return TwigFunction.new(name, -> {})
+        elsif environment.allow_helper_methods?
+          return Node::Expression::HelperMethod.new(name, args, lineno)
+        else
+          raise Error::Syntax.new("Unknown \"#{name}\" function.", lineno, stream.source)
+        end
+      end
+
+      function
+    end
+
+    # @param [Integer] line
+    # @return [TwigTest]
+    def test(line)
+      name = stream.expect(Token::NAME_TYPE).value
+
+      if stream.test(Token::NAME_TYPE)
+        # try 2 word tests
+        name = "#{name} #{current_token.value}"
+
+        if (test = environment.test(name))
+          stream.next
+        end
+      else
+        test = environment.test(name)
+      end
+
+      if test.nil? && ignore_unknown_twig_callables?
+        test = TwigTest.new(name, -> {})
+      end
+
+      unless test
+        raise Error::Syntax.new("Unknown #{name} test.", line, stream.source)
+      end
+
+      test
     end
 
     # @return [ExpressionParser]
@@ -252,5 +330,10 @@ module Twig
     def ignore_unknown_twig_callables?
       @ignore_unknown_twig_callables
     end
+
+    private
+
+    # @return [ExpressionParser::ExpressionParsers]
+    attr_reader :parsers
   end
 end
