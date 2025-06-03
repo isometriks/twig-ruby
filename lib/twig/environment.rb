@@ -138,6 +138,11 @@ module Twig
       extension_set.operators
     end
 
+    # @return [ExpressionParser::ExpressionParsers]
+    def expression_parsers
+      extension_set.expression_parsers
+    end
+
     # @return [TwigFilter, nil]
     def filter(name)
       extension_set.filter(name)

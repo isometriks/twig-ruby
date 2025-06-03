@@ -43,6 +43,14 @@ module Twig
       [all_unary, all_binary]
     end
 
+    def expression_parsers
+      @expression_parsers ||= ExpressionParser::ExpressionParsers.new.tap do |parsers|
+        extensions.each_value do |extension|
+          parsers.add(extension.expression_parsers)
+        end
+      end
+    end
+
     # @return [Hash{String => TwigFilter}]
     def filters
       @filters ||= extensions.

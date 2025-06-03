@@ -11,7 +11,18 @@ module Twig
       def parse(token)
         lineno = token.lineno
         ref = Node::Expression::Variable::Local.new(nil, lineno)
-        filter = parser.expression_parser.parse_filter_expression_raw(ref)
+        filter = ref
+        ep = parser.environment.expression_parsers.by_class(ExpressionParser::Infix::Filter.name)
+
+        loop do
+          filter = ep.parse(parser, filter, parser.current_token)
+
+          unless parser.stream.test(Token::OPERATOR_TYPE, '|')
+            break
+          end
+
+          parser.stream.next
+        end
 
         parser.stream.expect(Token::BLOCK_END_TYPE)
         body = parser.subparse(method(:decide_apply_end), drop_needle: true)

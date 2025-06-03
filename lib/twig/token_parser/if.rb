@@ -12,7 +12,7 @@ module Twig
     class If < Base
       def parse(token)
         lineno = token.lineno
-        expr = parser.expression_parser.parse_expression
+        expr = parser.parse_expression
         stream = parser.stream
         stream.expect(Token::BLOCK_END_TYPE)
         body = parser.subparse(method(:decide_if_fork))
@@ -26,7 +26,7 @@ module Twig
             stream.expect(Token::BLOCK_END_TYPE)
             else_node = parser.subparse(method(:decide_if_end))
           when 'elsif', 'elseif'
-            expr = parser.expression_parser.parse_expression
+            expr = parser.parse_expression
             stream.expect(Token::BLOCK_END_TYPE)
             body = parser.subparse(method(:decide_if_fork))
             tests.push(expr, body)

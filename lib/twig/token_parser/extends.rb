@@ -11,7 +11,7 @@ module Twig
           # elsif parser.main_scope? @todo
         end
 
-        parser.parent = parser.expression_parser.parse_expression
+        parser.parent = parser.parse_expression
         stream.expect(Token::BLOCK_END_TYPE)
 
         Node::Empty.new(token.lineno)

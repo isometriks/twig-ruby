@@ -8,7 +8,7 @@ module Twig
     #
     class Import < Base
       def parse(token)
-        macro = parser.expression_parser.parse_expression
+        macro = parser.parse_expression
         parser.stream.expect(Token::NAME_TYPE, 'as')
         name = parser.stream.expect(Token::NAME_TYPE).value
         var = Node::Expression::Variable::AssignTemplate.new(

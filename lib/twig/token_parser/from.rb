@@ -9,7 +9,7 @@ module Twig
     class From < Base
       # @param [Token] token
       def parse(token)
-        macro = parser.expression_parser.parse_expression
+        macro = parser.parse_expression
         stream = parser.stream
         stream.expect(Token::NAME_TYPE, 'import')
 

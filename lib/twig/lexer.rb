@@ -188,16 +188,14 @@ module Twig
         end
       end
 
-      # Spread operator
-      if code_at?(0, '.') && (@cursor + 2 < @end) && code_at?(1, '.') && code_at?(2, '.')
-        push_token(Token::SPREAD_TYPE)
-        move_cursor('...')
-      # Arrow function
-      elsif code_at?(0, '=') && (@cursor + 1 < @end) && code_at?(1, '>')
-        push_token(Token::ARROW_TYPE)
-        move_cursor('=>')
-      elsif (match = @code.match(operator_regex, @cursor))
-        push_token(Token::OPERATOR_TYPE, match.to_s.gsub(/[[:space:]]+/, ' '))
+      if (match = @code.match(operator_regex, @cursor))
+        operator = match.to_s.gsub(/[[:space:]]+/, ' ')
+
+        if OPENING_BRACKET.include?(operator)
+          check_brackets(operator)
+        end
+
+        push_token(Token::OPERATOR_TYPE, operator)
         move_cursor(match.to_s)
       elsif (match = @code.match(/\G#{REGEX_NAME}(?:\?(?!\?))?/, @cursor)) # Optional ? but not ??
         push_token(Token::NAME_TYPE, match.to_s)
@@ -214,21 +212,7 @@ module Twig
         push_token(Token::NUMBER_TYPE, value)
         move_cursor(match.to_s)
       elsif code_at?(0, PUNCTUATION)
-        # opening bracket
-        if code_at?(0, OPENING_BRACKET)
-          @brackets << [code_at, @lineno]
-        elsif code_at?(0, CLOSING_BRACKET)
-          if @brackets.empty?
-            raise Error::Syntax.new("Unexpected closing bracket: #{code_at}.", @lineno, @source)
-          end
-
-          expect, lineno = @brackets.pop
-
-          unless code_at?(0, expect.tr(OPENING_BRACKET.join, CLOSING_BRACKET.join))
-            raise Error::Syntax.new("Unclosed bracket: #{expect}.", lineno, @source)
-          end
-        end
-
+        check_brackets(code_at)
         push_token(Token::PUNCTUATION_TYPE, code_at)
         @cursor += 1
       elsif (match = @code.match(REGEX_STRING, @cursor))
@@ -405,8 +389,13 @@ module Twig
     def operator_regex
       return @operator_regex if defined?(@operator_regex)
 
-      unary, binary = @environment.operators
-      operators = ([:'='] + unary.keys + binary.keys).
+      expression_parsers = ['=']
+
+      environment.expression_parsers.each do |expression_parser|
+        expression_parsers.concat([expression_parser.name], expression_parser.aliases)
+      end
+
+      operators = expression_parsers.
         to_h { |op| [op, op.length] }.
         sort_by { |_, length| -length }.
         to_h
@@ -435,5 +424,25 @@ module Twig
 
       @operator_regex = Regexp.new("\\G(?:#{chain.join('|')})")
     end
+
+    # @param [String]
+    def check_brackets(code)
+      if OPENING_BRACKET.include?(code)
+        @brackets << [code, @lineno]
+      elsif CLOSING_BRACKET.include?(code)
+        if @brackets.empty?
+          raise Error::Syntax.new("Unexpected \"#{code}\".", @lineno, @source)
+        end
+
+        expect, lineno = @brackets.pop
+
+        unless code_at?(0, expect.tr(OPENING_BRACKET.join, CLOSING_BRACKET.join))
+          raise Error::Syntax.new("Unclosed \"#{expect}\".", lineno, @source)
+        end
+      end
+    end
+
+    # @return [Environment]
+    attr_reader :environment
   end
 end

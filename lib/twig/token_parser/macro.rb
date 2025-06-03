@@ -52,7 +52,7 @@ module Twig
       def parse_definition
         arguments = Node::Expression::Hash.new({}, parser.current_token.lineno)
         stream = parser.stream
-        stream.expect(Token::PUNCTUATION_TYPE, '(', 'A list of arguments must begin with an opening parenthesis')
+        stream.expect(Token::OPERATOR_TYPE, '(', 'A list of arguments must begin with an opening parenthesis')
 
         until stream.test(Token::PUNCTUATION_TYPE, ')')
           unless arguments.empty?
@@ -67,7 +67,7 @@ module Twig
 
           if (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
              (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
-            default = parser.expression_parser.parse_expression
+            default = parser.parse_expression
           else
             default = Node::Expression::Constant.new(nil, parser.current_token.lineno)
             default.attributes[:is_implicit] = true

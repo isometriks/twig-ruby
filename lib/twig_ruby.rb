@@ -26,6 +26,9 @@ require 'sanitize'
   node/expression/unary
   node/expression/variable
   node/expression/test
+  expression_parser
+  expression_parser/prefix
+  expression_parser/infix
   node_visitor
   token_parser
 ].each do |directory|

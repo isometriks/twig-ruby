@@ -7,6 +7,10 @@ module Twig
         [{}, {}]
       end
 
+      def expression_parsers
+        []
+      end
+
       def filters
         []
       end

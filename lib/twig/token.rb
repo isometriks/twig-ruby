@@ -17,8 +17,6 @@ module Twig
     PUNCTUATION_TYPE = :punctuation
     INTERPOLATION_START_TYPE = :interpolation_start
     INTERPOLATION_END_TYPE = :interpolation_end
-    ARROW_TYPE = :arrow
-    SPREAD_TYPE = :spread
 
     TOKEN_TO_ENGLISH = {
       EOF_TYPE => 'end of template',
@@ -61,6 +59,10 @@ module Twig
 
     def debug
       [type, value]
+    end
+
+    def to_english
+      self.class.type_to_english(@type)
     end
 
     def self.type_to_english(type)

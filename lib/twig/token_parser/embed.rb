@@ -7,7 +7,7 @@ module Twig
     class Embed < Include
       def parse(token)
         stream = parser.stream
-        parent = parser.expression_parser.parse_expression
+        parent = parser.parse_expression
 
         variables, only, ignore_missing = parse_arguments
 

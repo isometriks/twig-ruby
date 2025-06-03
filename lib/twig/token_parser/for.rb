@@ -10,13 +10,13 @@ module Twig
         lineno = token.lineno
         stream = parser.stream
 
-        targets = parser.expression_parser.parse_assignment_expression
+        targets = parse_assignment_expression
         stream.expect(Token::OPERATOR_TYPE, 'in')
-        seq = parser.expression_parser.parse_expression
+        seq = parser.parse_expression
 
         if_expr = nil
         if stream.next_if(Token::NAME_TYPE, 'if')
-          if_expr = parser.expression_parser.parse_expression
+          if_expr = parser.parse_expression
         end
 
         stream.expect(Token::BLOCK_END_TYPE)

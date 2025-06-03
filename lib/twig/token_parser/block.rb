@@ -27,7 +27,7 @@ module Twig
           end
         else
           body = Node::Nodes.new({
-            0 => Node::Print.new(parser.expression_parser.parse_expression, lineno),
+            0 => Node::Print.new(parser.parse_expression, lineno),
           })
         end
 

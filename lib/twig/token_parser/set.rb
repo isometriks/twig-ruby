@@ -14,11 +14,11 @@ module Twig
       def parse(token)
         lineno = token.lineno
         stream = parser.stream
-        names = parser.expression_parser.parse_assignment_expression
+        names = parse_assignment_expression
         capture = false
 
         if stream.next_if(Token::OPERATOR_TYPE, '=')
-          values = parser.expression_parser.parse_multi_target_expression
+          values = parse_multi_target_expression
 
           stream.expect(Token::BLOCK_END_TYPE)
 
@@ -56,6 +56,20 @@ module Twig
 
       def decide_block_end(token)
         token.test('endset')
+      end
+
+      def parse_multi_target_expression
+        targets = AutoHash.new
+
+        loop do
+          targets << parser.parse_expression
+
+          unless parser.stream.next_if(Token::PUNCTUATION_TYPE, ',')
+            break
+          end
+        end
+
+        Node::Nodes.new(targets)
       end
     end
   end
