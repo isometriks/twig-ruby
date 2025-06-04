@@ -55,6 +55,9 @@ module Twig
           write("end\n").
           write("macros = @macros.dup\n")
 
+        compiler.
+          subcompile(nodes[:body])
+
         if nodes.key?(:parent)
           parent = nodes[:parent]
           compiler.add_debug_info(parent)
@@ -66,9 +69,6 @@ module Twig
             raw(', ').
             repr(parent.lineno).
             raw(").unwrap.call(context, self.blocks.merge(blocks));\n")
-        else
-          compiler.
-            subcompile(nodes[:body])
         end
 
         compiler.

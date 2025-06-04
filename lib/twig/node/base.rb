@@ -99,7 +99,7 @@ module Twig
           repr << "\n  nodes:"
 
           nodes.each do |name, node|
-            len = name.length + 6
+            len = name.to_s.length + 6
             node_repr = []
 
             node.to_s.each_line do |line|
