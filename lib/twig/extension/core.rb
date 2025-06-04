@@ -89,56 +89,6 @@ module Twig
         ]
       end
 
-      def operators
-        unary = Node::Expression::Unary
-        binary = Node::Expression::Binary
-
-        [
-          {
-            not: { precedence: 70, class: unary::Not },
-            '-': { precedence: 500, class: unary::Neg },
-            '+': { precedence: 500, class: unary::Pos },
-          },
-          {
-            '? :': { precedence: 5, class: binary::Elvis, associativity: ExpressionParser::OPERATOR_RIGHT },
-            '?:': { precedence: 5, class: binary::Elvis, associativity: ExpressionParser::OPERATOR_RIGHT },
-            '??': { precedence: 5, class: binary::NullCoalesce, associativity: ExpressionParser::OPERATOR_RIGHT },
-            or: { precedence: 10, class: binary::Or, associativity: ExpressionParser::OPERATOR_LEFT },
-            xor: { precedence: 12, class: binary::Xor, associativity: ExpressionParser::OPERATOR_LEFT },
-            and: { precedence: 15, class: binary::And, associativity: ExpressionParser::OPERATOR_LEFT },
-            'b-or': { precedence: 16, class: binary::BitwiseOr, associativity: ExpressionParser::OPERATOR_LEFT },
-            'b-xor': { precedence: 17, class: binary::BitwiseXor, associativity: ExpressionParser::OPERATOR_LEFT },
-            'b-and': { precedence: 18, class: binary::BitwiseAnd, associativity: ExpressionParser::OPERATOR_LEFT },
-            '==': { precedence: 20, class: binary::Equal, associativity: ExpressionParser::OPERATOR_LEFT },
-            '!=': { precedence: 20, class: binary::NotEqual, associativity: ExpressionParser::OPERATOR_LEFT },
-            '<=>': { precedence: 20, class: binary::Spaceship, associativity: ExpressionParser::OPERATOR_LEFT },
-            '<': { precedence: 20, class: binary::Less, associativity: ExpressionParser::OPERATOR_LEFT },
-            '>': { precedence: 20, class: binary::Greater, associativity: ExpressionParser::OPERATOR_LEFT },
-            '>=': { precedence: 20, class: binary::GreaterEqual, associativity: ExpressionParser::OPERATOR_LEFT },
-            '<=': { precedence: 20, class: binary::LessEqual, associativity: ExpressionParser::OPERATOR_LEFT },
-            'not in': { precedence: 20, class: binary::NotIn, associativity: ExpressionParser::OPERATOR_LEFT },
-            in: { precedence: 20, class: binary::In, associativity: ExpressionParser::OPERATOR_LEFT },
-            matches: { precedence: 20, class: binary::Matches, associativity: ExpressionParser::OPERATOR_LEFT },
-            'starts with': { precedence: 20, class: binary::StartsWith,
-                             associativity: ExpressionParser::OPERATOR_LEFT },
-            'ends with': { precedence: 20, class: binary::EndsWith, associativity: ExpressionParser::OPERATOR_LEFT },
-            'has some': { precedence: 20, class: binary::HasSome, associativity: ExpressionParser::OPERATOR_LEFT },
-            'has every': { precedence: 20, class: binary::HasEvery, associativity: ExpressionParser::OPERATOR_LEFT },
-            '..': { precedence: 25, class: binary::Range, associativity: ExpressionParser::OPERATOR_LEFT },
-            '~': { precedence: 27, class: binary::Concat, associativity: ExpressionParser::OPERATOR_LEFT },
-            '+': { precedence: 30, class: binary::Add, associativity: ExpressionParser::OPERATOR_LEFT },
-            '-': { precedence: 30, class: binary::Sub, associativity: ExpressionParser::OPERATOR_LEFT },
-            '*': { precedence: 60, class: binary::Mul, associativity: ExpressionParser::OPERATOR_LEFT },
-            '/': { precedence: 60, class: binary::Div, associativity: ExpressionParser::OPERATOR_LEFT },
-            '//': { precedence: 60, class: binary::FloorDiv, associativity: ExpressionParser::OPERATOR_LEFT },
-            '%': { precedence: 60, class: binary::Mod, associativity: ExpressionParser::OPERATOR_LEFT },
-            is: { precedence: 100, associativity: ExpressionParser::OPERATOR_LEFT },
-            'is not': { precedence: 100, associativity: ExpressionParser::OPERATOR_LEFT },
-            '**': { precedence: 200, class: binary::Power, associativity: ExpressionParser::OPERATOR_RIGHT },
-          },
-        ]
-      end
-
       def filters
         [
           # Formatting filters

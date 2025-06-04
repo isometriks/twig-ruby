@@ -31,18 +31,6 @@ module Twig
       extensions[key(extension)]
     end
 
-    def operators
-      all_unary = {}
-      all_binary = {}
-
-      extensions.values.map(&:operators).each do |unary, binary|
-        all_unary.merge!(unary)
-        all_binary.merge!(binary)
-      end
-
-      [all_unary, all_binary]
-    end
-
     def expression_parsers
       @expression_parsers ||= ExpressionParser::ExpressionParsers.new.tap do |parsers|
         extensions.each_value do |extension|

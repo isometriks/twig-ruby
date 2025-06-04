@@ -3,10 +3,6 @@
 module Twig
   module Extension
     class Base
-      def operators
-        [{}, {}]
-      end
-
       def expression_parsers
         []
       end
