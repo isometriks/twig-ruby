@@ -3,6 +3,8 @@
 module Twig
   module Node
     class Print < Node::Base
+      include Output
+
       def initialize(expr, lineno)
         super({ expr: }, {}, lineno)
       end

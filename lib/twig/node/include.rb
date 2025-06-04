@@ -3,6 +3,8 @@
 module Twig
   module Node
     class Include < Node::Base
+      include Output
+
       # @param [Expression::Base] expr
       # @param [Expression::Base, nil] variables
       # @param [Boolean] only
