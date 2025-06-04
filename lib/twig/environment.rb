@@ -133,11 +133,6 @@ module Twig
       raise Error::Runtime, "Unable to load the \"#{klass}\" runtime."
     end
 
-    # @return [Array]
-    def operators
-      extension_set.operators
-    end
-
     # @return [ExpressionParser::ExpressionParsers]
     def expression_parsers
       extension_set.expression_parsers
