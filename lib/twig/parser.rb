@@ -51,7 +51,7 @@ module Twig
       begin
         body = subparse(test, drop_needle:)
 
-        if !@parent.nil? && !(body = filter_body_nodes(body)).nil?
+        if !@parent.nil? && (body = filter_body_nodes(body)).nil?
           body = Node::Empty.new
         end
       rescue Error::Syntax => e
