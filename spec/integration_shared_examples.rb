@@ -2,8 +2,10 @@
 
 RSpec.shared_examples 'render_and_assert' do
   let(:options) { {} }
-  let(:inputs) { raise NotImplementedError }
-  let(:outputs) { raise NotImplementedError }
+  let(:input) { raise NotImplementedError }
+  let(:inputs) { [input] }
+  let(:output) { raise NotImplementedError }
+  let(:outputs) { [output] }
   let(:locals) { {} }
   let(:templates) { {} }
   let(:extensions) { [] }
