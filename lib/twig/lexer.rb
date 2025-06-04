@@ -148,9 +148,9 @@ module Twig
       # trim
       if match[1]
         text = if match[1] == WHITESPACE_TRIM
-                 text.gsub(/[ \t\0\x0B]*\z/, '') # space trim
-               else
                  text.rstrip # line trim
+               else
+                 text.gsub(/[ \t\0\x0B]*\z/, '') # space trim
                end
       end
 

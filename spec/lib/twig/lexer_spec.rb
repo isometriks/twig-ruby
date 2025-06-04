@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'integration_shared_examples'
 
 RSpec.describe Twig::Lexer do
   let(:template) { '' }
@@ -129,7 +130,7 @@ RSpec.describe Twig::Lexer do
       <<~TEMPLATE.rstrip
         {%- verbatim -%}
         {{ 'bla' }}
-        {%~ endverbatim %}
+        {%- endverbatim %}
       TEMPLATE
     end
 
@@ -138,6 +139,44 @@ RSpec.describe Twig::Lexer do
         "text({{ 'bla' }})",
         'eof()',
       ])
+    end
+  end
+
+  it_behaves_like 'render_and_assert' do
+    let(:input) do
+      <<~INPUT.chomp
+        **{% if true %}
+        foo
+        #{'    '}
+            	    {%- endif %}**
+
+        **
+
+        	    {{- 'foo' }}**
+
+        **
+        #{'    '}
+        #{'	'}
+        {#- comment #}**
+
+        **{% verbatim %}
+        foo
+        #{'    '}
+            	    {%- endverbatim %}**
+      INPUT
+    end
+
+    let(:output) do
+      <<~OUTPUT.chomp
+        **foo**
+
+        **foo**
+
+        ****
+
+        **
+        foo**
+      OUTPUT
     end
   end
 end
