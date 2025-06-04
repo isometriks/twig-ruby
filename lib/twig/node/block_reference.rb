@@ -3,6 +3,8 @@
 module Twig
   module Node
     class BlockReference < Node::Base
+      include Output
+
       def initialize(name, lineno)
         super({}, { name: }, lineno)
       end

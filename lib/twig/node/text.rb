@@ -3,6 +3,8 @@
 module Twig
   module Node
     class Text < Node::Base
+      include Output
+
       # @param [String] data
       # @param [Integer] lineno
       def initialize(data, lineno = 0)

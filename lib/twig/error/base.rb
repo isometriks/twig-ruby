@@ -4,7 +4,7 @@ module Twig
   module Error
     class Base < StandardError
       # @return [Integer]
-      attr_reader :lineno
+      attr_accessor :lineno
 
       # @param [String] message
       # @param [Integer] lineno

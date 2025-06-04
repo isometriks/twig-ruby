@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative 'output'
+
 module Twig
   module Node
     class Base
@@ -67,6 +69,48 @@ module Twig
 
       def empty?
         nodes.empty?
+      end
+
+      def to_s
+        repr = +''
+        repr << self.class.name
+
+        if @tag
+          repr << "\n tag: #{@tag}"
+        end
+
+        attr = attributes.map do |name, value|
+          v = if value.is_a?(Proc) || value.is_a?(Method)
+                '\Closure'
+              elsif value.is_a?(String)
+                value
+              else
+                value.inspect
+              end
+
+          "#{name}: #{v}"
+        end
+
+        unless attr.empty?
+          repr << "\n  attributes:\n    #{attr.join("\n    ")}"
+        end
+
+        unless empty?
+          repr << "\n  nodes:"
+
+          nodes.each do |name, node|
+            len = name.length + 6
+            node_repr = []
+
+            node.to_s.each_line do |line|
+              node_repr << ((' ' * len) + line.rstrip)
+            end
+
+            repr << "\n    #{name}: #{node_repr.join("\n").lstrip}"
+          end
+        end
+
+        repr
       end
     end
   end
