@@ -44,6 +44,11 @@ module Twig
             else
               compiler.raw(check)
             end
+          elsif attributes[:always_defined]
+            compiler.
+              raw('context[').
+              string(name).
+              raw(']')
           # @todo always defined, special vars
           elsif attributes[:ignore_strict_check]
             compiler.
