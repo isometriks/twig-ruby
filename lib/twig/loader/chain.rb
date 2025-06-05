@@ -27,7 +27,7 @@ module Twig
 
         exceptions = exceptions.any? ? "(#{exceptions.join(', ')})" : ''
 
-        raise Twig::Error::Loader, "Template #{name} is not defined#{exceptions}."
+        raise Twig::Error::Loader, "Template \"#{name}\" is not defined#{exceptions}."
       end
 
       def exists?(name)
@@ -61,7 +61,7 @@ module Twig
 
         exceptions = exceptions.any? ? "(#{exceptions.join(', ')})" : ''
 
-        raise Twig::Error::Loader, "Template #{name} is not defined#{exceptions}."
+        raise Twig::Error::Loader, "Template \"#{name}\" is not defined#{exceptions}."
       end
 
       def fresh?(name, time)
@@ -81,7 +81,7 @@ module Twig
 
         exceptions = exceptions.any? ? "(#{exceptions.join(', ')})" : ''
 
-        raise Twig::Error::Loader, "Template #{name} is not defined#{exceptions}."
+        raise Twig::Error::Loader, "Template \"#{name}\" is not defined#{exceptions}."
       end
 
       private
