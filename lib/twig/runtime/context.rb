@@ -11,6 +11,7 @@ module Twig
         output_buffer ||= OutputBuffer.new
         @output_buffer_stack = [output_buffer]
         @call_context = call_context
+        @popping = false
 
         merge!(initial_context)
       end
@@ -42,12 +43,16 @@ module Twig
       def pop_stack
         return unless stack.last
 
-        frame = stack.pop
+        @popping = true
 
+        frame = stack.pop
         frame[:remove].each do |k|
           delete(k)
         end
+
         frame[:replace].each { |k, v| self[k] = v }
+
+        @popping = false
       end
 
       def output_buffer
@@ -81,6 +86,8 @@ module Twig
       end
 
       def []=(key, value)
+        super if popping
+
         key = key.to_sym
 
         if (frame = stack.last)
@@ -106,6 +113,8 @@ module Twig
       end
 
       private
+
+      attr_reader :popping
 
       def stack
         @stack ||= []
