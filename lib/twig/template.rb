@@ -233,6 +233,14 @@ module Twig
       end
 
       env.load_template(template, index:)
+    rescue Error::Base => e
+      unless e.source_context
+        e.source_context = source_context
+      end
+
+      # @todo guess template line if possible
+
+      raise e
     end
 
     # Overloaded by children
