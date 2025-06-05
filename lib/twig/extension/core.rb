@@ -692,6 +692,15 @@ module Twig
         end
       end
 
+      # Zeroes are false in Twig
+      def self.bool(value)
+        if !value || (value.respond_to?(:zero?) && value.zero?)
+          false
+        else
+          true
+        end
+      end
+
       # @todo How to post deprecations? Also check if Rails is loaded and deprecate that way
       def self.deprecation_notice(message, template, line, package: nil, version: nil)
         package = package ? " (Package: #{package})" : ''
