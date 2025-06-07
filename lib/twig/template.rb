@@ -118,9 +118,8 @@ module Twig
     end
 
     def render_parent_block(name, context, blocks = {})
-      if @traits.key?(name)
-        # @todo traits
-        raise NotImplementedError
+      if @traits.key?(name.to_sym)
+        @traits[name.to_sym][0].render_block(@trait_aliases[name.to_sym] || name, context, blocks, use_blocks: false)
       elsif (parent = get_parent(context))
         parent.render_block(name, context, blocks, use_blocks: false)
       else
