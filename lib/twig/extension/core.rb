@@ -702,7 +702,7 @@ module Twig
         raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
 
-      def self.get_attribute(object, attribute, type, arguments: {}, defined_test: false, &)
+      def self.get_attribute(object, attribute, type, arguments: {}, defined_test: false, ignore_strict_check: false, &)
         if type == Template::ARRAY_CALL || object.respond_to?(:[])
           if object.respond_to?(:[]) && (
             (object.is_a?(Array) && attribute.is_a?(Integer) && attribute < object.length) ||
@@ -766,6 +766,8 @@ module Twig
           if object.respond_to?(:[])
             return object[attribute]
           end
+
+          return if ignore_strict_check
 
           if defined_test
             return false
