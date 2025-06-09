@@ -703,10 +703,15 @@ module Twig
       end
 
       def self.get_attribute(object, attribute, type, arguments: {}, defined_test: false, &)
-        if type == Template::ARRAY_CALL
+        if type == Template::ARRAY_CALL || object.respond_to?(:[])
           if object.respond_to?(:[]) && (
             (object.is_a?(Array) && attribute.is_a?(Integer) && attribute < object.length) ||
-            (object.is_a?(Hash) && (object.key?(attribute) || object.key?(attribute.to_sym)))
+            (
+              object.is_a?(Hash) && (
+                object.key?(attribute) ||
+                (attribute.respond_to?(:to_sym) && object.key?(attribute.to_sym))
+              )
+            )
           )
             return true if defined_test
 
@@ -717,8 +722,12 @@ module Twig
             return false
           end
 
-          raise Error::Runtime, "Can't find key #{attribute} in #{object.inspect}"
-        elsif object.respond_to?(attribute)
+          if type == Template::ARRAY_CALL
+            raise Error::Runtime, "Can't find key #{attribute} in #{object.inspect}"
+          end
+        end
+
+        if object.respond_to?(attribute)
           positional = []
           arguments.each do |k, v|
             if !v.is_a?(Runtime::Spread) && k.is_a?(Integer)
