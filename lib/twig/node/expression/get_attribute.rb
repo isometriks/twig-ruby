@@ -44,6 +44,11 @@ module Twig
               raw(', defined_test: true')
           end
 
+          if attributes[:ignore_strict_check]
+            compiler.
+              raw(', ignore_strict_check: true')
+          end
+
           compiler.
             raw(')')
         end
