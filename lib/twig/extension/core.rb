@@ -728,6 +728,10 @@ module Twig
         end
 
         if object.respond_to?(attribute)
+          if defined_test
+            return true
+          end
+
           positional = []
           arguments.each do |k, v|
             if !v.is_a?(Runtime::Spread) && k.is_a?(Integer)
