@@ -10,7 +10,7 @@ module Twig
       end
 
       def array?
-        value.is_a?(Array)
+        value.is_a?(Array) || value.is_a?(Range)
       end
 
       def hash?
