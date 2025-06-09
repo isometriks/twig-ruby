@@ -102,7 +102,7 @@ module Twig
 
     def block?(name, context, blocks = {})
       name = name.to_sym
-      if blocks.key?(name) && blocks[name][0].is_a?(self.class)
+      if blocks.key?(name) && blocks[name][0].is_a?(Template)
         return true
       end
 
