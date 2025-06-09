@@ -33,7 +33,6 @@ module Twig
         end
 
         OPERATORS = {
-          Not: '!',
           Neg: '-',
           Pos: '+',
           Spread: '(not rendered)',

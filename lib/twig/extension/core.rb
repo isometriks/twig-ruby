@@ -783,7 +783,9 @@ module Twig
 
       # Zeroes are false in Twig
       def self.bool(value)
-        if !value || (value.respond_to?(:zero?) && value.zero?)
+        if !value ||
+           (value.respond_to?(:zero?) && value.zero?) ||
+           value == ''
           false
         else
           true

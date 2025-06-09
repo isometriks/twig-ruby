@@ -25,8 +25,9 @@ module Twig
           end
 
           compiler.
+            raw('::Twig::Extension::Core.bool(').
             subcompile(nodes[:tests].nodes[i]).
-            raw(")\n").
+            raw("))\n").
             indent
 
           if nodes[:tests].nodes.key?(i + 1)
