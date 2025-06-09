@@ -611,14 +611,88 @@ module Twig
         AutoHash.new.add(*value)
       end
 
+      def self.numeric?(value)
+        Float(value, exception: false)
+      end
+
+      def self.compare(a, b)
+        trim_var = ->(value) { trim(value, character_mask: " \t\n\r\v\f") }
+
+        if a.is_a?(Integer) && b.is_a?(String)
+          b_trim = trim_var.call(b)
+
+          unless numeric?(b_trim)
+            return a.to_s <=> b
+          end
+
+          if b_trim.to_i.to_s == b_trim
+            return a <=> b_trim.to_i
+          else
+            return a.to_f <=> b_trim.to_f
+          end
+        end
+
+        if a.is_a?(String) && b.is_a?(Integer)
+          a_trim = trim_var.call(a)
+
+          unless numeric?(a_trim)
+            return a <=> b.to_s
+          end
+
+          if a_trim.to_i.to_s == a_trim
+            return a_trim.to_i <=> b
+          else
+            return a_trim.to_f <=> b.to_f
+          end
+        end
+
+        if (a.is_a?(Float) || a.is_a?(Complex)) && b.is_a?(String)
+          if a.is_a?(Complex)
+            return 1
+          end
+
+          b_trim = trim_var.call(b)
+          unless numeric?(b_trim)
+            return a.to_s <=> b
+          end
+
+          return a <=> b_trim.to_f
+        end
+
+        if a.is_a?(String) && (b.is_a?(Float) || b.is_a?(Complex))
+          if b.is_a?(Complex)
+            return 1
+          end
+
+          a_trim = trim_var.call(a)
+          unless numeric?(a_trim)
+            return a <=> b.to_s
+          end
+
+          return a_trim.to_f <=> b
+        end
+
+        a <=> b
+      end
+
       # @todo some stuff missing here for Twig's custom compare
-      def self.in_filter(value, compare)
-        if compare.is_a?(String) || compare.is_a?(Integer) || compare.is_a?(Float)
-          compare.to_s.include?(value.to_s)
-        elsif compare.respond_to?(:include?)
-          compare.include?(value)
-        else
-          false
+      def self.in_filter(value, object)
+        return false unless object.respond_to?(:include?)
+
+        if object.is_a?(String)
+          return object.include?(value.to_s)
+        end
+
+        unless object.respond_to?(:any?)
+          return false
+        end
+
+        object.any? do |k, v|
+          (!v.nil? && compare(value, v)&.zero?) ||
+            compare(value, k)&.zero? ||
+            (value == false && in_filter(0, object)) ||
+            (value == [] && in_filter(false, object)) ||
+            (value == true && in_filter(1, object))
         end
       end
 
