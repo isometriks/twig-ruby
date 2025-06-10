@@ -13,7 +13,7 @@ module Twig
         compiler.
           add_debug_info(self).
           write('context.output_buffer.safe_append = ').
-          raw("render_block(:#{attributes[:name]}, context, self.blocks.merge(blocks))").
+          raw("render_block(:#{attributes[:name]}, context, blocks)").
           raw("\n")
       end
     end
