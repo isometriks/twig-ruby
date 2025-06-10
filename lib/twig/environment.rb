@@ -16,6 +16,7 @@ module Twig
         cache: false,
         debug: false,
         charset: 'UTF-8',
+        strict_variables: false,
         autoescape: :html,
         auto_reload: nil,
         allow_helper_methods: false,
@@ -23,6 +24,7 @@ module Twig
 
       @auto_reload = options[:auto_reload].nil? ? options[:debug] : options[:auto_reload]
       @charset = options[:charset]
+      @strict_variables = options[:strict_variables]
 
       self.cache = @options[:cache]
 
@@ -223,6 +225,10 @@ module Twig
 
     def debug?
       @options[:debug]
+    end
+
+    def strict_variables?
+      @strict_variables
     end
 
     private

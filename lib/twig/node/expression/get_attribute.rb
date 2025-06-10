@@ -20,7 +20,7 @@ module Twig
 
         def compile(compiler)
           compiler.
-            raw('::Twig::Extension::Core.get_attribute(')
+            raw('::Twig::Extension::Core.get_attribute(env, ')
 
           if attributes[:ignore_strict_check]
             nodes[:node].attributes[:ignore_strict_check] = true
