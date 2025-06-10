@@ -62,13 +62,20 @@ module Twig
           parent = nodes[:parent]
           compiler.add_debug_info(parent)
 
-          # @todo This should check if parnet is constant expr
+          if parent.is_a?(Expression::Constant)
+            compiler.
+              write('@parent = load(').
+              subcompile(parent).
+              raw(', ').
+              repr(parent.lineno).
+              raw(")\n").
+              write('@parent')
+          else
+            compiler.write('get_parent(context)')
+          end
+
           compiler.
-            write('@parent = load(').
-            subcompile(parent).
-            raw(', ').
-            repr(parent.lineno).
-            raw(").unwrap.call(context, self.blocks.merge(blocks));\n")
+            raw(".unwrap.call(context, self.blocks.merge(blocks));\n")
         end
 
         compiler.
