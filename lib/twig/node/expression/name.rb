@@ -46,15 +46,13 @@ module Twig
             end
           elsif attributes[:always_defined]
             compiler.
-              raw('context[').
-              string(name).
-              raw(']')
+              raw(get)
           # @todo always defined, special vars
-          elsif attributes[:ignore_strict_check]
+          elsif attributes[:ignore_strict_check] || !compiler.environment.strict_variables?
             compiler.
-              raw('(context[').
-              string(name).
-              raw('] || nil)')
+              raw('(').
+              raw(get).
+              raw(' || nil)')
           else
             compiler.
               raw("(#{check}").

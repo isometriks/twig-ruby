@@ -702,7 +702,10 @@ module Twig
         raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
 
-      def self.get_attribute(object, attribute, type, arguments: {}, defined_test: false, ignore_strict_check: false, &)
+      # @param [Environment] environment
+      def self.get_attribute(
+        environment, object, attribute, type, arguments: {}, defined_test: false, ignore_strict_check: false, &
+      )
         if type == Template::ARRAY_CALL || object.respond_to?(:[])
           if object.respond_to?(:[]) && (
             (object.is_a?(Array) && attribute.is_a?(Integer) && attribute < object.length) ||
@@ -723,7 +726,11 @@ module Twig
           end
 
           if type == Template::ARRAY_CALL
-            raise Error::Runtime, "Can't find key #{attribute} in #{object.inspect}"
+            if ignore_strict_check || !environment.strict_variables?
+              return
+            end
+
+            raise Error::Runtime, "Can't find key #{attribute} in #{object.inspect}."
           end
         end
 
@@ -771,7 +778,7 @@ module Twig
             return object[attribute]
           end
 
-          return if ignore_strict_check
+          return if ignore_strict_check || !environment.strict_variables?
 
           if defined_test
             return false
