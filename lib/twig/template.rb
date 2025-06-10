@@ -141,7 +141,7 @@ module Twig
         return false
       end
 
-      if parent.is_a?(self.class)
+      if parent.is_a?(Template)
         return @parents[parent.source_context.name] = parent
       end
 
