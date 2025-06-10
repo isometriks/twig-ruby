@@ -30,7 +30,7 @@ module Twig
         raise Error::Runtime, 'Render must implement Twig::Runtime::Context'
       end
 
-      call(context)
+      call(context, blocks.merge(blocks))
     rescue Error::Base => e
       e.source_context = source_context unless e.source_context
       raise e
@@ -42,7 +42,6 @@ module Twig
       end
 
       name = name.to_sym
-
       template = if use_blocks && blocks.key?(name)
                    blocks[name]
                  elsif self.blocks.key?(name)
