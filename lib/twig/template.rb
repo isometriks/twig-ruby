@@ -203,7 +203,7 @@ module Twig
       end
 
       raise Error::Runtime.new(
-        "Macro \"#{name.delete_prefix('macro_')}\" is not defined in #{template_name}.",
+        "Macro \"#{name.delete_prefix('macro_')}\" is not defined in template \"#{template_name}\".",
         lineno,
         source
       )
