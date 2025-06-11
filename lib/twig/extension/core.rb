@@ -475,7 +475,9 @@ module Twig
         if first.is_a?(Hash)
           [first, *rest].reduce(&:merge)
         else
-          [first, *rest].reduce(&:concat)
+          [first, *rest].reduce do |array, current|
+            array.concat(current.respond_to?(:values) ? current.values : current)
+          end
         end
       end
 
@@ -816,7 +818,11 @@ module Twig
       def self.include(
         environment, context, template, variables = {}, with_context: true, ignore_missing: false, sandboxed: false
       )
-        variables = context.merge(variables) if with_context
+        variables = if with_context
+                      context.merge(variables)
+                    else
+                      context.only(variables)
+                    end
 
         # @todo: Missing sandbox
 
