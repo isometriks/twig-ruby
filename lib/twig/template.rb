@@ -166,21 +166,27 @@ module Twig
     def render_macro(name, context, args, lineno, source)
       macro_method = macro_template_reference(name, context, lineno, source)
       macro_arguments = macro_method.parameters.select { |arg| arg[0] == :key }.map { |_, arg| arg }
-      mapped_arguments = {}
+      mapped_arguments = AutoHash.new
       kwarg = false
 
       args.each do |key, value|
         if !kwarg && key.is_a?(Integer)
-          mapped_key = macro_arguments[key]
+          if key >= 0 && key < macro_arguments.length
+            mapped_key = macro_arguments[key]
+          else
+            mapped_arguments.add(value)
+
+            next
+          end
         elsif kwarg && key.is_a?(Integer)
-          raise Error::Runtime.new('Cannot place a positional argument after a keyword argument', lineno, source)
+          raise Error::Runtime.new('Cannot place a positional argument after a keyword argument.', lineno, source)
         else
           kwarg = true
           mapped_key = key.to_sym
         end
 
         if mapped_arguments.key?(mapped_key)
-          raise Error::Runtime.new("Argument \"#{mapped_key}\" passed twice", lineno, source)
+          raise Error::Runtime.new("Argument \"#{mapped_key.inspect}\" passed twice.", lineno, source)
         end
 
         mapped_arguments[mapped_key] = value
