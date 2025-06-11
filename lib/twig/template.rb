@@ -226,6 +226,10 @@ module Twig
     # @param [String, TemplateWrapper] template
     # @return [Template]
     def load(template, line, index = nil)
+      if template.is_a?(Array)
+        return env.resolve_template(template).unwrap
+      end
+
       if template.is_a?(TemplateWrapper)
         return template.unwrap
       end
