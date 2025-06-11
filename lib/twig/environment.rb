@@ -57,6 +57,29 @@ module Twig
       )
     end
 
+    # @param [String, Twig::TemplateWrapper, Array<String>] name
+    def resolve_template(names)
+      unless names.is_a?(Array)
+        return load(names)
+      end
+
+      count = names.length
+
+      names.each do |name|
+        if name.is_a?(Twig::TemplateWrapper)
+          return name
+        end
+
+        unless count == 1 || loader.exists?(name)
+          next
+        end
+
+        return load(name)
+      end
+
+      raise Error::Loader, "Unable to find one of the following templates: \"#{names.join('", "')}\"."
+    end
+
     # @return [Twig::Template]
     def load_template(name, index: nil, **)
       class_name = template_class(name, index)

@@ -827,7 +827,7 @@ module Twig
         # @todo: Missing sandbox
 
         begin
-          loaded = environment.load(template)
+          loaded = environment.resolve_template(template)
         rescue Error::Loader => e
           unless ignore_missing
             raise e
