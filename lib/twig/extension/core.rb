@@ -225,7 +225,7 @@ module Twig
       end
 
       def format_date(date, format: nil, timezone: nil)
-        format = @date_format if format.nil?
+        format ||= @date_format
 
         convert_date(date, timezone:).strftime(format)
       end
@@ -237,7 +237,7 @@ module Twig
           date = Time.at(date).to_datetime
         end
 
-        timezone.nil? ? date : date.in_time_zone(timezone)
+        timezone ? date.in_time_zone(timezone) : date
       end
 
       def self.date_modify; end
