@@ -8,7 +8,8 @@ module Twig
 
         if parser.peek_block_stack
           raise Error::Syntax.new('Cannot use "extend" in a block.', token.lineno, stream.source)
-          # elsif parser.main_scope? @todo
+        elsif !parser.main_scope?
+          raise Error::Syntax.new('Cannot use "extend" in a macro.', token.lineno, stream.source)
         end
 
         parser.parent = parser.parse_expression
