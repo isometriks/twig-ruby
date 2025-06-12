@@ -550,7 +550,19 @@ module Twig
           raise Error::Runtime, "The \"has some\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
         end
 
-        object.any?(&proc)
+        if object.is_a?(Hash)
+          object.each do |k, v|
+            if proc.arity == 1
+              return true if proc.call(v)
+            elsif proc.call(v, k)
+              return true
+            end
+          end
+
+          false
+        else
+          object.any?(&proc)
+        end
       end
 
       def self.find(object, proc)
