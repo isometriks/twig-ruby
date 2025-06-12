@@ -112,6 +112,10 @@ module Twig
         end
       end
 
+      def each(...)
+        to_h.each(...)
+      end
+
       private
 
       attr_reader :popping
