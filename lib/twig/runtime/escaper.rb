@@ -41,7 +41,7 @@ module Twig
               high = 0xD800 | (u >> 10)
               low = 0xDC00 | (u & 0x3FF)
 
-              format('\u%04X\u%04X', high, low) # rubocop:disable  Style/FormatStringToken
+              format('\u%04X\u%04X', high, low)
             end
           end
         else

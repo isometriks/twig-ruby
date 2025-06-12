@@ -39,8 +39,15 @@ module Twig
         :html
       end
 
-      def self.escape_filter_is_safe(*)
-        [:all]
+      # @param [Node::Base] filter_args
+      def self.escape_filter_is_safe(filter_args)
+        filter_args.nodes.each_value do |arg|
+          if arg.is_a?(Node::Expression::Constant)
+            return [arg.attributes[:value]]
+          end
+        end
+
+        [:html]
       end
     end
   end
