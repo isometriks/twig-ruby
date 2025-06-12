@@ -9,7 +9,7 @@ module Twig
         include Expression::SupportDefinedTest
 
         SPECIAL_VARS = {
-          '_self' => 'get_template_name',
+          '_self' => 'template_name',
           '_context' => 'context',
           '_charset' => 'env.charset',
         }.freeze
@@ -44,10 +44,11 @@ module Twig
             else
               compiler.raw(check)
             end
+          elsif SPECIAL_VARS.key?(name)
+            compiler.raw(SPECIAL_VARS[name])
           elsif attributes[:always_defined]
             compiler.
               raw(get)
-          # @todo always defined, special vars
           elsif attributes[:ignore_strict_check] || !compiler.environment.strict_variables?
             compiler.
               raw('(').
