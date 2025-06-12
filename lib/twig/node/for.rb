@@ -26,10 +26,12 @@ module Twig
       end
 
       def compile(compiler)
+        iteration_var = compiler.var_name
+
         compiler.
           add_debug_info(self).
           write("context.push_stack\n").
-          write('context[:_seq] = ::Twig::Extension::Core.ensure_hash(').
+          write("#{iteration_var} = ::Twig::Extension::Core.ensure_hash(").
           subcompile(nodes[:seq]).
           raw(")\n")
 
@@ -43,7 +45,7 @@ module Twig
         value_var = compiler.var_name
 
         compiler.
-          write("context[:_seq].each do |#{key_var}, #{value_var}|\n").
+          write("#{iteration_var}.each do |#{key_var}, #{value_var}|\n").
           indent.
           write('').
           subcompile(nodes[:key_target]).
