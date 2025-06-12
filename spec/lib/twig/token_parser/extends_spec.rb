@@ -34,4 +34,10 @@ RSpec.describe Twig::TokenParser::Extends do
       }
     end
   end
+
+  it_behaves_like 'render_and_raise' do
+    let(:template) { '{% macro foo() %}{% extends "whatever.twig" %}{% endmacro %}' }
+    let(:error) { Twig::Error::Syntax }
+    let(:message) { /cannot use "extend" in a macro/i }
+  end
 end
