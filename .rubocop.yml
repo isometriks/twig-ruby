@@ -70,3 +70,6 @@ Style/OptionalBooleanParameter:
 
 Style/DoubleNegation:
   Enabled: false
+
+Style/FormatStringToken:
+  Enabled: false
