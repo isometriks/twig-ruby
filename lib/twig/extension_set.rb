@@ -123,6 +123,11 @@ module Twig
         values.map(&:node_visitors).reduce([], :concat)
     end
 
+    def globals
+      @globals ||= extensions.
+        values.map(&:globals).reduce({}, :merge)
+    end
+
     private
 
     def dynamic_filters

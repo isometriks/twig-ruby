@@ -73,3 +73,6 @@ Style/DoubleNegation:
 
 Style/FormatStringToken:
   Enabled: false
+
+Naming/MemoizedInstanceVariableName:
+  Enabled: false

@@ -30,6 +30,7 @@ module Twig
             write("#{var_name} = ").
             subcompile(nodes[:variables]).
             write("\n").
+            write("context.merge!(env.globals)\n").
             write("context.merge!(#{var_name})\n")
         end
 

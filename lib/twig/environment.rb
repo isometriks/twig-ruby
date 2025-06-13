@@ -28,6 +28,7 @@ module Twig
 
       self.cache = @options[:cache]
 
+      @globals = {}
       @runtimes = {}
       @runtime_loaders = []
       @default_runtime_loader = RuntimeLoader::Factory.new({
@@ -188,8 +189,12 @@ module Twig
       extension_set.node_visitors
     end
 
+    def add_global(name, value)
+      @globals[name] = value
+    end
+
     def globals
-      {}
+      @resolved_globals ||= extension_set.globals.merge(@globals)
     end
 
     # @param [Source] source
