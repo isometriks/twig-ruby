@@ -445,7 +445,7 @@ module Twig
         value[..-2].join(glue) + and_glue.to_s + value[-1].to_s
       end
 
-      def self.split(value, charset, delimiter, limit: nil)
+      def self.split(charset, value, delimiter, limit: nil)
         value ||= ''
 
         unless delimiter == ''

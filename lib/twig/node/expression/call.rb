@@ -85,15 +85,6 @@ module Twig
             first = false
           end
 
-          if nodes.key?(:node)
-            compiler.raw(', ') unless first
-
-            compiler.
-              subcompile(nodes[:node])
-
-            first = false
-          end
-
           if callable&.needs_charset?
             compiler.raw(', ') unless first
             compiler.raw('env.charset')
@@ -109,6 +100,15 @@ module Twig
           if callable&.needs_context?
             compiler.raw(', ') unless first
             compiler.raw('context')
+            first = false
+          end
+
+          if nodes.key?(:node)
+            compiler.raw(', ') unless first
+
+            compiler.
+              subcompile(nodes[:node])
+
             first = false
           end
 
