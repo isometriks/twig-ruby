@@ -296,10 +296,14 @@ module Twig
       end
 
       def self.max(*args)
+        args = args[0] if args&.length&.== 1
+        args = args.values if args.is_a?(Hash)
         args.max
       end
 
       def self.min(*args)
+        args = args[0] if args&.length&.== 1
+        args = args.values if args.is_a?(Hash)
         args.min
       end
 
