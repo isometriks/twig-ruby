@@ -13,7 +13,10 @@ module Twig
         super
 
         @date_format = '%B %-e, %Y %H:%M'
+        @number_format = [0, '.', ',']
       end
+
+      attr_writer :number_format
 
       def expression_parsers
         unary = ExpressionParser::Prefix::Unary
@@ -96,7 +99,7 @@ module Twig
           # TwigFilter.new('date_modify', $this->modifyDate(...)),
           TwigFilter.new('format', static(:sprintf)),
           TwigFilter.new('replace', static(:replace)),
-          TwigFilter.new('number_format', static(:number_format)),
+          TwigFilter.new('number_format', method(:number_format)),
           TwigFilter.new('abs', static(:abs)),
           TwigFilter.new('round', static(:round)),
 
@@ -258,15 +261,19 @@ module Twig
         string.gsub(regex, from.transform_keys(&:to_s))
       end
 
-      def self.number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
+      def number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
+        decimal ||= @number_format[0]
+        decimal_point ||= @number_format[1]
+        thousands_separator ||= @number_format[2]
+
         options = {
           precision: decimal,
           delimiter: thousands_separator,
           separator: decimal_point,
         }.compact
 
-        number_to_delimited(
-          number_to_rounded(number, options),
+        self.class.number_to_delimited(
+          self.class.number_to_rounded(number, options),
           options
         )
       end
