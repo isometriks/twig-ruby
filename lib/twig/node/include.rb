@@ -59,7 +59,7 @@ module Twig
           add_get_template(compiler)
 
           compiler.
-            raw('.call(')
+            raw('.render(')
 
           add_template_arguments(compiler)
 

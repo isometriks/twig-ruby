@@ -27,6 +27,10 @@ module Twig
         []
       end
 
+      def globals
+        {}
+      end
+
       private
 
       def static(method)
