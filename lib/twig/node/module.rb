@@ -295,10 +295,10 @@ module Twig
 
       def compile_debug_info(compiler)
         compiler.
-          write("def debug_info\n").
+          write("def self.debug_info\n").
           indent.
           write('').
-          repr(compiler.debug_info).
+          repr(compiler.debug_info.to_a.reverse.to_h).
           raw("\n").
           outdent.
           write("end\n\n")
@@ -307,6 +307,11 @@ module Twig
       def compile_get_source_context(compiler)
         compiler.
           write("def source_context\n").
+          indent.
+          write("self.class.source_context\n").
+          outdent.
+          write("end\n\n").
+          write("def self.source_context\n").
           indent.
           write('::Twig::Source.new(').
           string(compiler.environment.debug? ? source_context.code : '').

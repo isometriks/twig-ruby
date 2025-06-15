@@ -4,17 +4,18 @@ module Twig
   module Error
     class Base < StandardError
       # @return [Integer]
-      attr_accessor :lineno
+      attr_reader :lineno
 
       # @param [String] message
       # @param [Integer] lineno
       # @param [Source] source
-      def initialize(message, lineno = -1, source = nil)
+      def initialize(message, lineno = -1, source = nil, previous = nil)
         super('')
 
         @lineno = lineno
         @source = source
         @raw_message = message
+        @previous = previous
 
         update_repr
       end
@@ -34,9 +35,34 @@ module Twig
         @message
       end
 
+      def lineno=(lineno)
+        @lineno = lineno
+        update_repr
+      end
+
       def append_message(raw_message)
         @raw_message += raw_message
         update_repr
+      end
+
+      def guess
+        locations = [self, @previous].compact.map(&:backtrace_locations).flatten
+        locations.each do |location|
+          next unless location.label&.start_with?('Twig::Compiled::')
+
+          klass, _method = location.label.split('#')
+          klass = Twig::Compiled.const_get(klass)
+
+          next unless source.name == klass.source_context.name
+
+          klass.debug_info.each do |source_line, template_line|
+            next unless source_line <= location.lineno
+
+            self.lineno = template_line
+            update_repr
+            return # rubocop:disable Lint/NonLocalExitFromIterator
+          end
+        end
       end
 
       private

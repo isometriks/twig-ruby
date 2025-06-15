@@ -33,7 +33,15 @@ module Twig
       call(context.merge(env.globals), blocks.merge(blocks))
     rescue Error::Base => e
       e.source_context = source_context unless e.source_context
+      e.guess if e.lineno == -1
       raise e
+    rescue StandardError => e
+      raise Error::Runtime.new(
+        "An exception has been thrown during the rendering of a template (\"#{e}\").",
+        -1,
+        source_context,
+        e
+      )
     end
 
     def render_block(name, context, blocks = {}, use_blocks: true, template_context: self)
@@ -63,7 +71,10 @@ module Twig
             e.source_context = template[0].source_context
           end
 
-          # @todo Guess template line
+          if e.lineno == -1
+            e.guess
+          end
+
           raise e
         rescue StandardError => e
           # Rails wraps exceptions that happened using render
@@ -246,7 +257,15 @@ module Twig
         e.source_context = source_context
       end
 
-      # @todo guess template line if possible
+      if e.lineno.positive?
+        raise e
+      end
+
+      if line == -1
+        e.guess
+      else
+        e.lineno = line
+      end
 
       raise e
     end
