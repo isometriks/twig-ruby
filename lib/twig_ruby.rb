@@ -9,6 +9,7 @@ require 'active_support/number_helper'
 require 'digest'
 require 'cgi'
 require 'sanitize'
+require 'json'
 
 %w[
   .
