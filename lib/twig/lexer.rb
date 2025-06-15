@@ -184,7 +184,11 @@ module Twig
         move_cursor(match.to_s)
 
         if @cursor >= @end
-          raise "Unclosed #{@state == STATE_BLOCK ? 'block' : 'variable'}."
+          raise Error::Syntax.new(
+            "Unclosed \"#{@state == STATE_BLOCK ? 'block' : 'variable'}\".",
+            @lineno,
+            @source
+          )
         end
       end
 

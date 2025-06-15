@@ -8,7 +8,7 @@ RSpec.describe Twig::Template do
     it_behaves_like 'render_and_raise' do
       let(:template) { '{{ block("missing") }}' }
       let(:error) { Twig::Error::Runtime }
-      let(:message) { /Block 'missing' on template/ }
+      let(:message) { /Block "missing" on template/ }
     end
   end
 end
