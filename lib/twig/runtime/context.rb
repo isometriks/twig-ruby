@@ -16,20 +16,32 @@ module Twig
         merge!(initial_context)
       end
 
-      def merge!(other)
-        unless other.class <= Hash
+      def merge!(other, overwrite: true)
+        return if other == []
+
+        unless other.is_a?(Hash)
           raise "Must merge! another Hash, given #{other.class.name}"
         end
 
         other.each do |k, v|
-          self[k] = v
+          if overwrite || !key?(k)
+            self[k] = v
+          end
         end
 
         self
       end
 
-      def merge(other)
-        self.class.new(self, call_context:, output_buffer:).merge!(other)
+      def keep!(keys)
+        (self.keys - keys).each { |k| delete(k) }
+      end
+
+      def remove!(*keys)
+        keys.each { |k| delete(k) }
+      end
+
+      def merge(other, overwrite: true)
+        self.class.new(self, call_context:, output_buffer:).merge!(other, overwrite:)
       end
 
       def only(other)
@@ -40,7 +52,7 @@ module Twig
         stack.push({ remove: [], replace: {} })
       end
 
-      def pop_stack
+      def pop_stack(new_only = false)
         return unless stack.last
 
         @popping = true
@@ -50,7 +62,9 @@ module Twig
           delete(k)
         end
 
-        frame[:replace].each { |k, v| self[k] = v }
+        unless new_only
+          frame[:replace].each { |k, v| self[k] = v }
+        end
 
         @popping = false
       end
@@ -79,6 +93,10 @@ module Twig
 
         # Clear the hash
         super
+      end
+
+      def dup
+        self.class.new(to_h, call_context:, output_buffer:)
       end
 
       def [](key)

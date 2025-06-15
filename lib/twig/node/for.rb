@@ -27,15 +27,22 @@ module Twig
 
       def compile(compiler)
         iteration_var = compiler.var_name
+        function_var = compiler.var_name
 
         compiler.
           add_debug_info(self).
-          write("context.push_stack\n").
-          write("#{iteration_var} = ::Twig::Extension::Core.ensure_hash(").
+          write("#{iteration_var} = ::Twig::Runtime::LoopIterator.new(").
           subcompile(nodes[:seq]).
-          raw(")\n")
+          raw(")\n").
+          write("#{function_var} = lambda do |iterator, context, blocks, recurse, depth|\n").
+          indent.
+          write("parent = context.dup\n")
 
-        # @todo Missing some more loops stuff here
+        if attributes[:with_loop]
+          compiler.
+            write('context[:loop] = ::Twig::Runtime::LoopContext.new(').
+            raw("iterator, parent, blocks, recurse, depth)\n")
+        end
 
         if nodes.key?(:else_expr)
           compiler.write("context[:_iterated] = false\n")
@@ -45,14 +52,14 @@ module Twig
         value_var = compiler.var_name
 
         compiler.
-          write("#{iteration_var}.each do |#{key_var}, #{value_var}|\n").
+          write("iterator.each do |#{key_var}, #{value_var}|\n").
           indent.
           write('').
           subcompile(nodes[:key_target]).
           raw(" = #{key_var}\n").
           write('').
           subcompile(nodes[:value_target]).
-          raw(" = #{value_var}\n\n").
+          raw(" = #{value_var}\n").
           subcompile(nodes[:body]).
           outdent.
           write("end\n")
@@ -67,7 +74,20 @@ module Twig
         end
 
         compiler.
-          write("context.pop_stack\n")
+          write("context.remove!(:#{nodes[:key_target].attributes[:name]}, ").
+          raw(":#{nodes[:value_target].attributes[:name]}")
+
+        if attributes[:with_loop]
+          compiler.raw(', :loop')
+        end
+
+        compiler.
+          raw(")\n").
+          write("context.keep!(parent.keys)\n").
+          write("context.merge!(parent, overwrite: false)\n").
+          outdent.
+          write("end\n").
+          write("#{function_var}.call(#{iteration_var}, context, blocks, #{function_var}, 0)\n")
       end
     end
   end
