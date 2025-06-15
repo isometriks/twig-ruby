@@ -7,14 +7,16 @@ RSpec.describe Twig::Node::Expression::Binary::In do
   it_behaves_like 'render_and_assert' do
     let(:inputs) do
       <<~INPUTS
-        {{ "12345" matches "d+" }}
-        {{ "12345" matches "/d+/" }}
-        {{ a matches "/d+/" }}
+        {{ "12345" matches "\d+" }}
+        {{ "12345" matches "/\\d+/" }}
+        {{ a matches "/\\d+/" }}
+        {{ "HELLO" matches "/[a-z]+/i" }}
       INPUTS
     end
 
     let(:outputs) do
       <<~OUTPUTS
+        true
         true
         true
         true
