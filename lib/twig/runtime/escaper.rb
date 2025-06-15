@@ -19,7 +19,7 @@ module Twig
 
       def escape(string, strategy = :html, charset = nil, autoescape = false)
         # Allow strings marked as html_safe to get through without escaping
-        if string.html_safe? && %i[html html_attr].include?(strategy)
+        if string.html_safe? && autoescape
           return string
         end
 
