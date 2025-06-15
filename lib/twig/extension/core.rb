@@ -861,7 +861,11 @@ module Twig
       end
 
       def self.test_empty?(object)
-        object.nil? || object.empty?
+        object.nil? ||
+          (object == false) ||
+          (object.respond_to?(:empty?) && object.empty?) ||
+          (object.respond_to?(:length) && (object.length&.== 0)) || # rubocop:disable Style/ZeroLengthPredicate
+          (object.respond_to?(:size) && (object.size&.== 0)) # rubocop:disable Style/ZeroLengthPredicate
       end
 
       # @param [Environment] environment
