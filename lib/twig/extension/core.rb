@@ -650,7 +650,7 @@ module Twig
       end
 
       def self.ensure_hash(value)
-        return value if value.is_a?(Hash)
+        return value.to_h if value.is_a?(Hash)
 
         AutoHash.new.add(*value)
       end
@@ -946,7 +946,7 @@ module Twig
           new(fake_node, fake_function, parser.environment).
           extract_arguments(args)
 
-        recurse_args = Node::Expression::Array.new(AutoHash.new.add(
+        recurse_args = Node::Expression::Hash.new(AutoHash.new.add(
           Node::Expression::Constant.new(0, line),
           positional[0]
         ), line)
