@@ -7,7 +7,7 @@ module Twig
         class Matches < Binary::Base
           def compile(compiler)
             compiler.
-              raw('!::Twig::Extension::Core.matches(').
+              raw('::Twig::Extension::Core.matches(').
               subcompile(nodes[:right]).
               raw(', ').
               subcompile(nodes[:left]).

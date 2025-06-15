@@ -741,7 +741,16 @@ module Twig
       end
 
       def self.matches(regexp, string)
-        Regexp.new(regexp).match?(string.to_s)
+        return false if string.nil?
+
+        if (matches = regexp.match(%r{\A/([^/]*)/(.*)\z}))
+          modifiers = matches[2].empty? ? '' : "(?#{matches[2]})"
+          regex = /#{modifiers}#{matches[1]}/
+        else
+          regex = /#{regex}/
+        end
+
+        string.to_s.match?(regex)
       rescue RegexpError => e
         raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
