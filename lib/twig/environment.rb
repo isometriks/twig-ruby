@@ -22,9 +22,9 @@ module Twig
         allow_helper_methods: false,
       }.merge(options)
 
-      @auto_reload = options[:auto_reload].nil? ? options[:debug] : options[:auto_reload]
-      @charset = options[:charset]
-      @strict_variables = options[:strict_variables]
+      @auto_reload = @options[:auto_reload].nil? ? @options[:debug] : @options[:auto_reload]
+      @charset = @options[:charset]
+      @strict_variables = @options[:strict_variables]
 
       self.cache = @options[:cache]
 
