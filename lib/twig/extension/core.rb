@@ -386,19 +386,19 @@ module Twig
       end
 
       def self.title_case(string)
-        string.titleize
+        string&.titleize
       end
 
       def self.capitalize(string)
-        string.capitalize
+        string&.capitalize
       end
 
       def self.upper(string)
-        string.upcase
+        string&.upcase
       end
 
       def self.lower(string)
-        string.downcase
+        string&.downcase
       end
 
       def self.strip_tags(string, tags: [])
@@ -406,6 +406,8 @@ module Twig
       end
 
       def self.trim(string, character_mask: DEFAULT_TRIM_CHARS, side: :both)
+        return if string.nil?
+
         side = side.to_sym
         safe = string.html_safe?
 
@@ -459,7 +461,7 @@ module Twig
           return limit.nil? ? value.split(delimiter) : value.split(delimiter, limit)
         end
 
-        if limit <= 1
+        if limit.nil? || limit <= 1
           return value.chars
         end
 
@@ -580,10 +582,18 @@ module Twig
       end
 
       def self.find(object, proc)
-        enumerable_function(object, :find, proc)
+        found = enumerable_function(object, :find, proc)
+
+        if object.is_a?(Hash) && found.is_a?(Array)
+          found[1]
+        else
+          found
+        end
       end
 
       def self.reverse(object, preserve_keys: false)
+        return if object.nil?
+
         object.is_a?(Hash) ? object.to_a.reverse.to_h : object.reverse
       end
 
@@ -604,10 +614,16 @@ module Twig
       end
 
       def self.first(object)
+        return if object.nil?
+        return object[0] if object.is_a?(String)
+
         (object.is_a?(Hash) ? object.values : object).first
       end
 
       def self.last(object)
+        return if object.nil?
+        return object[-1] if object.is_a?(String)
+
         (object.is_a?(Hash) ? object.values : object).last
       end
 
