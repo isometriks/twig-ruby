@@ -113,7 +113,7 @@ module Twig
     def create_template(template, name = nil)
       hash = ::Digest::SHA256.hexdigest(template)
       name = if name.nil?
-               "__string_template__#{name}"
+               "__string_template__#{hash}"
              else
                "#{name} (string template #{hash})"
              end
