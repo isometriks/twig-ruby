@@ -83,27 +83,30 @@ module Twig
             unless e.source_context
               e.source_context = template[0].source_context
             end
-
-            raise e
           end
 
-          raise Error::Runtime.new(
+          exception = Error::Runtime.new(
             "An exception has been thrown during the rendering of a template (#{e})",
             -1,
-            template[0].source_context
+            template[0].source_context,
+            e
           )
+          exception.guess
+
+          raise exception
         end
       elsif (parent = get_parent(context))
         parent.render_block(name, context, self.blocks.merge(blocks), use_blocks: false, template_context:)
       elsif blocks.key?(name)
         raise Error::Runtime.new(
-          "Block '#{name}' should not call parent() in #{blocks[name].template_name}",
+          "Block \"#{name}\" should not call parent() in \"#{blocks[name][0].template_name}\" " \
+          "as the block does not exist in the parent template \"#{template_name}\".",
           -1,
-          blocks[name].source_context
+          blocks[name][0].source_context
         )
       else
         raise Error::Runtime.new(
-          "Block '#{name}' on template '#{template_name}' does not exist.",
+          "Block \"#{name}\" on template \"#{template_name}\" does not exist.",
           -1,
           template_context.source_context
         )
