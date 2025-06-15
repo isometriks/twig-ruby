@@ -292,7 +292,10 @@ module Twig
           raise Error::Runtime, 'The "round" filter only supports the "common", "ceil", and "floor" methods'
         end
 
-        (value * (10.0**precision)).public_send(method) / (10.0**precision)
+        rounded = (value * (10.0**precision)).public_send(method) / (10.0**precision)
+        rounded = rounded.to_i unless precision.positive?
+
+        rounded&.zero? ? 0 : rounded
       end
 
       def self.max(*args)
