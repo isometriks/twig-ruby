@@ -36,12 +36,15 @@ module Twig
       e.guess if e.lineno == -1
       raise e
     rescue StandardError => e
-      raise Error::Runtime.new(
+      exception = Error::Runtime.new(
         "An exception has been thrown during the rendering of a template (\"#{e}\").",
         -1,
         source_context,
         e
       )
+      exception.guess
+
+      raise exception
     end
 
     def render_block(name, context, blocks = {}, use_blocks: true, template_context: self)

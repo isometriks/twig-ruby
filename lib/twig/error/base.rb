@@ -48,6 +48,7 @@ module Twig
       def guess
         locations = [self, @previous].compact.map(&:backtrace_locations).flatten
         locations.each do |location|
+          next if location.nil?
           next unless location.label&.start_with?('Twig::Compiled::')
 
           klass, _method = location.label.split('#')
