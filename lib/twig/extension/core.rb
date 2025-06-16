@@ -599,6 +599,8 @@ module Twig
       end
 
       def self.shuffle(object)
+        return object.chars.shuffle.join if object.is_a?(String)
+
         object.is_a?(Hash) ? object.to_a.shuffle.to_h : object.shuffle
       end
 
