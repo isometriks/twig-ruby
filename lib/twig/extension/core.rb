@@ -406,6 +406,7 @@ module Twig
       end
 
       def self.trim(string, character_mask: DEFAULT_TRIM_CHARS, side: :both)
+        return string if character_mask.nil? || character_mask.empty?
         return if string.nil?
 
         side = side.to_sym
@@ -416,11 +417,11 @@ module Twig
         end
 
         if %i[left both].include?(side)
-          string = string.gsub(/\A[#{Regexp.escape(DEFAULT_TRIM_CHARS)}]*/, '')
+          string = string.gsub(/\A[#{Regexp.escape(character_mask)}]*/, '')
         end
 
         if %i[right both].include?(side)
-          string = string.gsub(/[#{Regexp.escape(DEFAULT_TRIM_CHARS)}]*\z/, '')
+          string = string.gsub(/[#{Regexp.escape(character_mask)}]*\z/, '')
         end
 
         safe && character_mask == DEFAULT_TRIM_CHARS ? string.html_safe : string
