@@ -10,7 +10,7 @@ module Twig
     attr_accessor :blocks
 
     # @param [Environment] environment
-    def initialize(environment, call_context: nil, output_buffer: nil)
+    def initialize(environment)
       @environment = environment
       @parent = nil
       @parents = {}
@@ -27,7 +27,7 @@ module Twig
     # @param [Runtime::Context] context
     def render(context)
       unless context.is_a?(Runtime::Context)
-        raise Error::Runtime, 'Render must implement Twig::Runtime::Context'
+        raise Error::Runtime, 'Render must implement Twig::Runtime::Context.'
       end
 
       call(context.merge(env.globals), blocks.merge(blocks))

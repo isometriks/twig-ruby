@@ -253,6 +253,7 @@ RSpec.describe Twig::Extension::Core do
           {{ 5 is constant("INT", instance) ? "OK" : "KO" }}
           {{ not false?'OK':'KO' }}
           {{ nil?? 'OK' }}
+          {{ block("greeting", "blocks.twig") is defined ? "OK" : "KO" }}
         INPUTS
       end
 
@@ -283,6 +284,7 @@ RSpec.describe Twig::Extension::Core do
           OK
           OK
           OK
+          OK
         OUTPUTS
       end
 
@@ -302,5 +304,31 @@ RSpec.describe Twig::Extension::Core do
         }
       end
     end
+  end
+
+  it_behaves_like 'render_and_raise' do
+    let(:loader) do
+      Twig::Loader::Array.new(
+        {
+          'template.twig' => '{{ include("include.twig") }}',
+          'include.twig' => "\n\n\n{{ include('unknown.twig') }}",
+        }
+      )
+    end
+    let(:error) { Twig::Error::Loader }
+    let(:message) { /"unknown.twig" is not defined in "include.twig" at line 4/ }
+  end
+
+  it_behaves_like 'render_and_raise' do
+    let(:loader) do
+      Twig::Loader::Array.new(
+        {
+          'template.twig' => '{{ include("include.twig") }}',
+          'include.twig' => "\n\n\n{{ block('unknown') }}",
+        }
+      )
+    end
+    let(:error) { Twig::Error::Runtime }
+    let(:message) { /Block "unknown" on template "include.twig" does not exist in "include.twig" at line 4/ }
   end
 end
