@@ -250,6 +250,8 @@ module Twig
       end
 
       def self.replace(string, from)
+        return if string.nil?
+
         unless from.is_a?(Hash)
           raise Error::Runtime, "String replacements must be a Hash #{from.class.name} given"
         end
