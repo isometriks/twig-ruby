@@ -262,6 +262,7 @@ module Twig
       end
 
       def number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
+        number = 0 if number.nil? || number == ''
         decimal ||= @number_format[0]
         decimal_point ||= @number_format[1]
         thousands_separator ||= @number_format[2]
