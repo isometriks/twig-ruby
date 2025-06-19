@@ -759,11 +759,12 @@ module Twig
 
         object.any? do |k, v|
           (!v.nil? && compare(value, v)&.zero?) ||
-            compare(value, k)&.zero? ||
-            (value == false && in_filter(0, object)) ||
-            (value == [] && in_filter(false, object)) ||
-            (value == true && in_filter(1, object))
-        end
+            compare(value, k)&.zero?
+        end ||
+          object.any? { |v| compare(value, v)&.zero? } ||
+          (value == false && in_filter(0, object)) ||
+          (value == [] && in_filter(false, object)) ||
+          (value == true && in_filter(1, object))
       end
 
       def self.matches(regexp, string)
