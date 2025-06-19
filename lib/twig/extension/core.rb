@@ -562,7 +562,19 @@ module Twig
           raise Error::Runtime, "The \"has every\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
         end
 
-        object.all?(&proc)
+        if object.is_a?(Hash)
+          object.each do |k, v|
+            if proc.arity == 1
+              return false unless proc.call(v)
+            elsif !proc.call(v, k)
+              return false
+            end
+          end
+
+          true
+        else
+          object.all?(&proc)
+        end
       end
 
       def self.array_some?(object, proc)
