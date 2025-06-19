@@ -41,6 +41,10 @@ RSpec.describe Twig::TokenParser::Macro do
 
         '{% macro negative_number(nb = -1) %}{{ nb }}{% endmacro %}{{ _self.negative_number() }}',
         '{% macro negative_number2(nb = --1) %}{{ nb }}{% endmacro %}{{ _self.negative_number2() }}',
+        '{% macro m() %}{% endmacro %}{{ _self.m is defined ? "OK" : "KO" }}',
+        '{{ _self.m is defined ? "KO" : "OK" }}',
+        '{% from "macro.twig" import greeting %}{{ greeting is defined ? "OK" : "KO" }}',
+        '{% extends "macro.twig" %}{% block content %}{{ _self.greeting is defined ? "OK" : "KO" }}{% endblock %}',
       ]
     end
 
@@ -59,12 +63,17 @@ RSpec.describe Twig::TokenParser::Macro do
         Hello World!
         -1
         1
+        OK
+        OK
+        OK
+        OK
       OUTPUTS
     end
 
     let(:templates) do
       {
-        'macro.twig' => '{% macro greeting(greeting, message = "Earth") %}{{ greeting }} {{ message }}{% endmacro %}',
+        'macro.twig' => '{% block content "" %}{% macro greeting(greeting, message = "Earth") %}{{ greeting }} ' \
+                        '{{ message }}{% endmacro %}',
       }
     end
   end
