@@ -506,6 +506,8 @@ module Twig
       # @param [Object] fill
       # @param [Boolean] preserve_keys
       def self.batch(object, count, fill: nil, preserve_keys: true)
+        return if object.nil?
+
         hash = object.is_a?(Array) ? object.each_with_index.to_h.invert : object
         size = count.ceil
 
@@ -517,7 +519,9 @@ module Twig
           slice.to_h
         end
 
-        return result if fill.nil?
+        if fill.nil? || result.empty?
+          return result
+        end
 
         [*0...(size - result[-1].length)].each do
           result[-1][result[-1].length] = fill
