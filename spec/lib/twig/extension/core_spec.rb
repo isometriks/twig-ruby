@@ -306,6 +306,13 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe '#self.compare' do
+    it { expect(described_class.compare(:a, 'a')).to eq(0) }
+    it { expect(described_class.compare(:a, :b)).to eq(-1) }
+    it { expect(described_class.compare(:b, 'a')).to eq(1) }
+    it { expect(described_class.compare('b', :a)).to eq(1) }
+  end
+
   it_behaves_like 'render_and_raise' do
     let(:loader) do
       Twig::Loader::Array.new(

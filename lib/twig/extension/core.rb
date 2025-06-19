@@ -734,6 +734,14 @@ module Twig
           return a_trim.to_f <=> b
         end
 
+        if a.is_a?(String) && b.is_a?(Symbol)
+          return a <=> b.to_s
+        end
+
+        if a.is_a?(Symbol) && b.is_a?(String)
+          return a.to_s <=> b
+        end
+
         a <=> b
       end
 
