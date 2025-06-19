@@ -36,7 +36,7 @@ module Twig
         elsif node.is_a?(Node::Expression::Filter)
           # Filter expression is safe when the filter is safe
           if node.attributes.key?(:twig_callable) && (filter = node.attributes[:twig_callable])
-            unless (safe = filter.safe(node.nodes[:arguments]))
+            if (safe = filter.safe(node.nodes[:arguments])).empty?
               safe = intersect_safe(safe(node.nodes[:node]), filter.preserves_safety)
             end
 
