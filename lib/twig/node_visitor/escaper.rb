@@ -46,8 +46,11 @@ module Twig
         elsif node.is_a?(Node::Print) && (type = need_escaping) != false
           expression = node.nodes[:expr]
 
-          # @todo Operator Escape Interface
-          node.nodes[:expr] = escape_expression(expression, env, type)
+          if expression.is_a?(Node::Expression::OperatorEscape)
+            escape_conditional(expression, env, type)
+          else
+            node.nodes[:expr] = escape_expression(expression, env, type)
+          end
 
           return node
         end
@@ -62,6 +65,21 @@ module Twig
       end
 
       private
+
+      # @param [Node::Expression::Base, Node::Expression::OperatorEscape] expression
+      # @param [Environment] env
+      # @param [Symbol] type
+      def escape_conditional(expression, env, type)
+        expression.operand_names_to_escape.each do |name|
+          operand = expression.nodes[name]
+
+          if operand.is_a?(Node::Expression::OperatorEscape)
+            escape_conditional(operand, env, type)
+          else
+            expression.nodes[name] = escape_expression(operand, env, type)
+          end
+        end
+      end
 
       # @return [SafeAnalysis]
       attr_reader :safe_analysis
