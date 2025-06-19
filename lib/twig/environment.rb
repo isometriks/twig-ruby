@@ -36,7 +36,7 @@ module Twig
       })
 
       add_extension(Extension::Core.new)
-      add_extension(Extension::Escaper.new(options[:autoescape]))
+      add_extension(Extension::Escaper.new(@options[:autoescape]))
     end
 
     def template_class(name, index = nil)

@@ -30,6 +30,36 @@ class ApplicationController < ActionController::Base
 end
 ```
 
+## Rails Configuration
+
+These are all the defaults. You only need this configuration if you plan to change anything. 
+
+```ruby
+Rails.application.configure do
+  config.twig.root = ::Rails.root, # Used for default Filesystem Loader
+  config.twig.paths = %w[/ app/views/], # Used for default Filesystem Loader
+  config.twig.debug = ::Rails.env.development?,
+  config.twig.allow_helper_methods = true,
+  config.twig.cache = ::Rails.root.join('tmp/cache/twig').to_s,
+  config.twig.charset = 'UTF-8',
+  config.twig.strict_variables = true,
+  config.twig.auto_reload = nil,
+  config.twig.loader = lambda do
+    ::Twig::Loader::Filesystem.new(
+      current.root,
+      current.paths
+    )
+  end
+end
+```
+
+The loader is memoized as late as possible, so if you need to actually access the loader instance, you can
+use `Twig.loader` to create the instance. If you do this, you can no longer set a new loader with the config
+or paths. You would need to use any available methods on the loader to alter it. 
+
+If you plan to create your own loader that loads templates from another source like the database, you can provide
+a different lamba in the config for initializing it. 
+
 ## Additions
 
 Twig Ruby supports symbols as Ruby does and can be used in places strings can as 

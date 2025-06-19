@@ -79,3 +79,6 @@ Naming/MemoizedInstanceVariableName:
 
 Naming/PredicateMethod:
   Enabled: false
+
+Style/ClassVars:
+  Enabled: false

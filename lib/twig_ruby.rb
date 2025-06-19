@@ -37,14 +37,14 @@ require 'json'
   require "#{directory}base.rb" if File.file?("#{directory}base.rb")
 
   Dir["#{directory}*.rb"].each do |file|
-    next if %w[base.rb railtie.rb].include?(File.basename(file))
+    next if %w[base.rb engine.rb].include?(File.basename(file))
 
     require file
   end
 end
 
 # Railtie
-require 'twig/railtie' if defined?(Rails::Railtie)
+require 'twig/rails/engine' if defined?(Rails::Engine)
 
 module Twig
   module Compiled
