@@ -15,7 +15,7 @@ module Twig
             compiler.
               raw('(').
               subcompile(nodes[:node]).
-              raw(' === ::Twig::Extension::Core.constant(')
+              raw(' == ::Twig::Extension::Core.constant(')
 
             compiler.
               subcompile(nodes[:arguments].nodes[0])

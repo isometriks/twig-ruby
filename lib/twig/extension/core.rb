@@ -329,16 +329,16 @@ module Twig
           return object.class.const_get(constant)
         end
 
-        unless constant.include?('::')
-          raise Error::Runtime, 'constant() expects string in format A::CONST'
+        if constant.include?('::')
+          class_name, _, constant = constant.rpartition('::')
+        else
+          class_name = Kernel.name
         end
-
-        class_name, _, constant = constant.rpartition('::')
 
         unless Object.const_defined?(class_name)
           return false if defined_test
 
-          raise Error::Runtime, "Class #{class_name} does not exist"
+          raise Error::Runtime, "Class #{class_name} does not exist."
         end
 
         klass = Object.const_get(class_name)
@@ -346,7 +346,7 @@ module Twig
         unless klass.const_defined?(constant)
           return false if defined_test
 
-          raise Error::Runtime, "Class #{class_name} does not have a constant #{constant}"
+          raise Error::Runtime, "Class #{class_name} does not have a constant #{constant}."
         end
 
         return true if defined_test
