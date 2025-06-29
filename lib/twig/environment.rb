@@ -42,7 +42,7 @@ module Twig
     def template_class(name, index = nil)
       key = loader.get_cache_key(name)
 
-      "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{index ? "__#{index}" : ''}"
+      "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{"__#{index}" if index}"
     end
 
     # @param [String, Twig::TemplateWrapper] name
