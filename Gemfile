@@ -3,7 +3,7 @@
 source 'https://rubygems.org'
 
 gem 'activesupport', '~> 8.0'
-gem 'rake', '~> 13.2'
+gem 'rake', '~> 13.3'
 gem 'rubocop', '~> 1.69'
 
 group :test do
