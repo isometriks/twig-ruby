@@ -16,6 +16,10 @@ module Twig
         merge!(initial_context)
       end
 
+      def original_buffer
+        output_buffer_stack.first
+      end
+
       def merge!(other, overwrite: true)
         return if other == []
 

@@ -9,6 +9,12 @@ module Twig
         ]
       end
 
+      def token_parsers
+        [
+          TokenParser::Cache.new,
+        ]
+      end
+
       def strip_tags(string, tags = [])
         ApplicationController.helpers.sanitize(string, tags:)
       end

@@ -85,11 +85,16 @@ can be used with helpers like `form_with`
   {{ f.email_field(:email) }}
 {% endyield %}
 ```
+### Cache Tag
 
-or cache
+The way the `cache` tag works in Rails is that it captures output from the buffer that 
+sends the contents of the response. Twig cannot do this prematurely since a cache might be used within
+a block or other callable meant to return the string. There is a cache tag to handle this instead 
+that is passed the same arguments it normally would, but has extra code to capture the cache. 
+Using `{% yield cache() do %}` WILL NOT WORK CORRECTLY.
 
 ```twig
-{% yield cache(product) do %}
+{% cache(product) %}
   ...
 {% endyield %}
 ```

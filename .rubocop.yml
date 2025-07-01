@@ -82,3 +82,6 @@ Naming/PredicateMethod:
 
 Style/ClassVars:
   Enabled: false
+
+Style/ParallelAssignment:
+  Enabled: false
