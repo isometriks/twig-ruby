@@ -5,7 +5,7 @@
 - ~~apply~~
 - ~~autoescape~~
 - ~~block~~
-- cache
+- ~~cache~~ rails only (for now)
 - deprecated
 - ~~do~~
 - ~~embed~~

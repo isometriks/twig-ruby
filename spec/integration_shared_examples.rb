@@ -10,16 +10,17 @@ RSpec.shared_examples 'render_and_assert' do
   let(:templates) { {} }
   let(:extensions) { [] }
   let(:call_context) { nil }
+  let(:output_buffer) { nil }
 
   it 'matches the output' do
     results = outputs.is_a?(Array) ? outputs : outputs.strip.split("\n")
     templates = inputs.is_a?(Array) ? inputs : inputs.strip.split("\n")
     templates.each_with_index do |line, index|
-      expect(render(line, locals)).to eq(results[index])
+      expect(render(line, locals, output_buffer)).to eq(results[index])
     end
   end
 
-  def render(source, context)
+  def render(source, context, output_buffer)
     loader = Twig::Loader::Array.new({
       template: source,
       **templates,
@@ -33,7 +34,7 @@ RSpec.shared_examples 'render_and_assert' do
 
     environment.
       load('template').
-      render(context, call_context:).
+      render(context, call_context:, output_buffer:).
       to_s
   end
 end

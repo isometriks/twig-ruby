@@ -11,7 +11,7 @@ module Twig
             render(
               local_assigns,
               call_context: self,
-              output_buffer: Twig::OutputBuffer.new(@output_buffer)
+              output_buffer: @output_buffer
             )
 
           @output_buffer

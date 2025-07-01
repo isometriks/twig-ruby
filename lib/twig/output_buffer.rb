@@ -13,18 +13,14 @@ module Twig
     end
 
     def append=(string)
-      unless string.nil?
-        string = string.to_s
-
-        self.safe_append = string
-      end
+      self.safe_append = string
     end
 
     def safe_append=(string)
       if @decorated
         @decorated.safe_append = string
       else
-        @buffer << string.html_safe
+        @buffer << string.to_s.html_safe
       end
     end
 
