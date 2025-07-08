@@ -55,7 +55,13 @@ end
 
 The loader is memoized as late as possible, so if you need to actually access the loader instance, you can
 use `Twig.loader` to create the instance. If you do this, you can no longer set a new loader with the config
-or paths. You would need to use any available methods on the loader to alter it. 
+or paths. You would need to use any available methods on the loader to alter it:
+
+```ruby
+config.after_initialize do
+  Twig.loader.prepend_path('app/views/theme', 'theme')
+end
+```
 
 If you plan to create your own loader that loads templates from another source like the database, you can provide
 a different lamba in the config for initializing it. 
