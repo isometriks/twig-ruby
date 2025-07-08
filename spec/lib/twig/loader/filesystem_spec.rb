@@ -18,4 +18,26 @@ RSpec.describe Twig::Loader::Filesystem do
   it "reads the file's contents from disk" do
     expect(loader.get_source_context(template).code).to eq("Hello World!\n")
   end
+
+  context 'when the loader has a @theme namespace' do
+    let(:template) { '@theme/base.html.twig' }
+
+    before do
+      loader.add_path(File.join(fixture_path, '/loader/theme'), 'theme')
+    end
+
+    it 'reads file from namespace' do
+      expect(loader.get_source_context(template).code).to eq("theme/base.html.twig\n")
+    end
+
+    context 'when a path is prepended to @theme namespace' do
+      before do
+        loader.prepend_path('loader/theme_prepend', 'theme')
+      end
+
+      it 'gives precedence to prepended path' do
+        expect(loader.get_source_context(template).code).to eq("theme_prepend/base.html.twig\n")
+      end
+    end
+  end
 end

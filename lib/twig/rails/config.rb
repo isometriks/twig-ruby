@@ -6,7 +6,7 @@ module Twig
       def self.defaults
         ActiveSupport::OrderedOptions.new.merge!({
           root: ::Rails.root,
-          paths: %w[/ app/views/],
+          paths: %w[./ app/views/],
           debug: ::Rails.env.development?,
           allow_helper_methods: true,
           cache: ::Rails.root.join('tmp/cache/twig').to_s,
