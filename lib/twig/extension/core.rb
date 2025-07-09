@@ -252,10 +252,11 @@ module Twig
       def self.replace(string, from)
         return if string.nil?
 
-        unless from.is_a?(Hash)
-          raise Error::Runtime, "String replacements must be a Hash #{from.class.name} given"
+        unless from.is_a?(Hash) || from.is_a?(Array)
+          raise Error::Runtime, "The \"replace\" filter expects a sequence or a mapping, got \"#{from.class}\"."
         end
 
+        from = ensure_hash(from)
         regex = Regexp.union(
           *from.keys.map(&:to_s)
         )
