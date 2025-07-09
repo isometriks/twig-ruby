@@ -28,6 +28,7 @@ module Twig
 
       self.cache = @options[:cache]
 
+      @loaded_templates = {}
       @globals = {}
       @runtimes = {}
       @runtime_loaders = []
@@ -86,27 +87,31 @@ module Twig
       class_name = template_class(name, index)
       cache_key = cache.generate_key(name, class_name)
 
-      # @todo this isn't right
-      attempt_cache = !@auto_reload && template_fresh?(name, cache.timestamp(cache_key))
+      # If not auto_reloading just use whatever is in the cache
+      if !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
+        if @loaded_templates.key?(class_name)
+          return @loaded_templates[class_name]
+        end
 
-      if attempt_cache
-        @cache.load(cache_key)
-      end
-
-      # Cache didn't load a class or we should load fresh
-      unless attempt_cache && Twig.const_defined?(class_name)
-        code = render_ruby(name)
-
-        # File cache loader won't rely on eval
-        @cache.write(cache_key, code)
         @cache.load(cache_key)
 
-        # Finally just eval the generated code if cache does
-        # create the class
-        Twig.module_eval(code) unless Twig.const_defined?(class_name)
+        if Twig.const_defined?(class_name)
+          return @loaded_templates[class_name] = Twig.const_get(class_name).new(self)
+        end
       end
 
-      Twig.const_get(class_name).new(self)
+      # No caches have fresh template at this point, so write it now
+      code = render_ruby(name)
+
+      # File cache loader won't rely on eval
+      @cache.write(cache_key, code)
+      @cache.load(cache_key)
+
+      # Finally just eval the generated code if cache doesn't
+      # create the class
+      Twig.module_eval(code) unless Twig.const_defined?(class_name)
+
+      @loaded_templates[class_name] = Twig.const_get(class_name).new(self)
     end
 
     # @return [Twig::Template]
