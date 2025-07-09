@@ -628,11 +628,18 @@ module Twig
       end
 
       def self.slice(object, start, length = nil, preserve_keys: false)
-        if length.nil?
-          object[start...]
-        else
-          object[start, length]
+        if object.is_a?(Hash)
+          object, keys = [object.values, object.keys]
+          preserve_keys = true
         end
+
+        values = length.nil? ? object[start...] : object[start, length]
+
+        return values unless preserve_keys
+
+        keys ||= [*0...object.length]
+        keys = length.nil? ? keys[start...] : keys[start, length]
+        keys.zip(values).to_h
       end
 
       def self.first(object)
