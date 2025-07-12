@@ -35,6 +35,14 @@ module Twig
     STATE_STRING = 3
     STATE_INTERPOLATION = 4
 
+    SPECIAL_CHARS = {
+      'f' => "\f",
+      'n' => "\n",
+      'r' => "\r",
+      't' => "\t",
+      'v' => "\v",
+    }.freeze
+
     # @param [Environment] environment
     def initialize(environment)
       @environment = environment
@@ -220,7 +228,7 @@ module Twig
         push_token(Token::PUNCTUATION_TYPE, code_at)
         @cursor += 1
       elsif (match = @code.match(REGEX_STRING, @cursor))
-        push_token(Token::STRING_TYPE, match.to_s[1...-1])
+        push_token(Token::STRING_TYPE, stripcslashes(match.to_s[1...-1], match.to_s[0]))
         move_cursor(match.to_s)
       elsif (match = @code.match(REGEX_DQ_STRING_DELIM, @cursor))
         @brackets << ['"', @lineno]
@@ -248,7 +256,7 @@ module Twig
         move_cursor(match.to_s)
         push_state(STATE_INTERPOLATION)
       elsif (match = @code.match(REGEX_DQ_STRING_PART, @cursor)) && match.to_s != ''
-        push_token(Token::STRING_TYPE, match.to_s)
+        push_token(Token::STRING_TYPE, stripcslashes(match.to_s, '"'))
         move_cursor(match.to_s)
       elsif @code.match(REGEX_DQ_STRING_DELIM, @cursor)
         expect, lineno = @brackets.pop
@@ -262,6 +270,62 @@ module Twig
       else
         Error::Syntax.new("Unexpected character '#{code_at}'.", @lineno, @source)
       end
+    end
+
+    # @return [String]
+    def stripcslashes(str, quote_type)
+      result = ''
+      length = str.length
+
+      i = 0
+      while i < length
+        pos = str.index('\\', i)
+
+        unless pos
+          result += str[i..]
+          break
+        end
+
+        result += str[i...pos]
+        i = pos + 1
+
+        if i >= length
+          result += '\\'
+          break
+        end
+
+        next_char = str[i]
+
+        if SPECIAL_CHARS.key?(next_char)
+          result += SPECIAL_CHARS[next_char]
+        elsif next_char == '\\' || next_char == quote_type
+          result += next_char
+        elsif next_char == '#' && i + 1 < length && str[i + 1] == '{'
+          result += '#{'
+          i += 1
+        elsif next_char == 'x' && i + 1 < length && str[i + 1].match?(/[0-9a-fA-F]/)
+          hex = str[i + 1]
+          i += 1
+          if i + 1 < length && str[i + 1].match?(/[0-9a-fA-F]/)
+            hex += str[i + 1]
+            i += 1
+          end
+          result += [hex.to_i(16)].pack('C')
+        elsif next_char.match?(/[0-7]/) # octal
+          octal = next_char
+          while i + 1 < length && str[i + 1].match?(/[0-7]/) && octal.length < 3
+            octal += str[i + 1]
+            i += 1
+          end
+          result += [octal.to_i(8)].pack('C')
+        else
+          result += "\\#{next_char}"
+        end
+
+        i += 1
+      end
+
+      result
     end
 
     def push_token(type, value = '')

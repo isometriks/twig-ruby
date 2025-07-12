@@ -50,7 +50,7 @@ module Twig
     # @param [String] value
     # @return [Compiler]
     def string(value)
-      @source << "%q[#{value}]"
+      @source << "%q[#{value.to_s.gsub(/[\[\]\\]/, '[' => '\[', ']' => '\]', '\\' => '\\\\')}]"
 
       self
     end
