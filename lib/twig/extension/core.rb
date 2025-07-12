@@ -484,7 +484,7 @@ module Twig
       # @param [Hash, Array, Enumerable] object
       def self.sort(object, arrow = nil)
         if arrow.nil?
-          object.is_a?(Hash) ? object.sort.to_h : object.sort
+          object.is_a?(Hash) ? object.sort { |a, b| a[1] <=> b[1] }.to_h : object.sort
         else
           object.sort { |a, b| arrow.call(a, b) }.then do |sorted|
             object.is_a?(Hash) ? sorted.to_h : sorted
