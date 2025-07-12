@@ -621,7 +621,7 @@ module Twig
       def self.shuffle(object)
         return object.chars.shuffle.join if object.is_a?(String)
 
-        object.is_a?(Hash) ? object.to_a.shuffle.to_h : object.shuffle
+        object.is_a?(Hash) ? object.values.shuffle : object.shuffle
       end
 
       def self.length(object)
