@@ -125,6 +125,19 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  context 'when template has special char string literals' do
+    let(:template) { '{{ "Hello\nWorld" }}' }
+
+    it 'converts the special chars' do
+      expect(tokens).to eq([
+        'var_start()',
+        "string(Hello\nWorld)",
+        'var_end()',
+        'eof()',
+      ])
+    end
+  end
+
   context 'when template has verbatim tags' do
     let(:template) do
       <<~TEMPLATE.rstrip
