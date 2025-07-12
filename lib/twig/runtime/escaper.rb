@@ -46,7 +46,7 @@ module Twig
           end
         else
           string
-        end
+        end.html_safe
       end
     end
   end
