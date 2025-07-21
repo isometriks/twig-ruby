@@ -868,6 +868,9 @@ module Twig
               object.send(attribute, &)
             end
           end
+        # Constant could be nil but we should return if we find it
+        elsif (constant = get_constant(object, attribute)) && constant[0] == :found
+          constant[1]
         else
           if object.respond_to?(:[])
             return object[attribute]
@@ -881,6 +884,18 @@ module Twig
 
           raise NotImplementedError, 'Need to implement other get_attribute calls'
         end
+      end
+
+      def self.get_constant(object, attribute)
+        object = object.class unless object.respond_to?(:const_defined?)
+
+        if object.const_defined?(attribute)
+          [:found, object.const_get(attribute)]
+        else
+          [:not_found]
+        end
+      rescue NameError
+        [:not_found]
       end
 
       # Zeroes are false in Twig
