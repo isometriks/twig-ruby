@@ -7,11 +7,12 @@ module Twig
       def initialize(templates)
         super()
 
-        @templates = templates.transform_keys(&:to_sym)
+        @templates = templates.transform_keys { |name| normalize_name(name) }
       end
 
       def get_source_context(name)
-        name = name.to_sym
+        name = normalize_name(name)
+
         unless @templates[name]
           raise Error::Loader, "Template \"#{name}\" is not defined."
         end
@@ -20,11 +21,14 @@ module Twig
       end
 
       def exists?(name)
-        @templates.key?(name.to_sym)
+        name = normalize_name(name)
+
+        @templates.key?(name)
       end
 
       def get_cache_key(name)
-        name = name.to_sym
+        name = normalize_name(name)
+
         unless @templates[name]
           raise Error::Loader, "Template \"#{name}\" is not defined."
         end
@@ -33,12 +37,19 @@ module Twig
       end
 
       def fresh?(name, time)
-        name = name.to_sym
+        name = normalize_name(name)
+
         unless @templates[name]
           raise Error::Loader, "Template \"#{name}\" is not defined."
         end
 
         true
+      end
+
+      private
+
+      def normalize_name(name)
+        name.to_s
       end
     end
   end

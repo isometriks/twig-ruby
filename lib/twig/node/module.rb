@@ -30,8 +30,9 @@ module Twig
       end
 
       def compile(compiler)
+        class_name = compiler.environment.template_class(source_context.name, attributes[:index])
         class_begin = <<~CLASS
-          class Twig::#{compiler.environment.template_class(source_context.name, attributes[:index])} < ::Twig::Template
+          class Twig::#{class_name} < ::Twig::Template
         CLASS
 
         class_end = <<~CLASS
