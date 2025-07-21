@@ -463,7 +463,10 @@ module Twig
         value ||= ''
 
         unless delimiter == ''
-          return limit.nil? ? value.split(delimiter) : value.split(delimiter, limit)
+          return value.split(delimiter) if limit.nil?
+          return value.split(delimiter, limit) if limit >= 0
+
+          return value.split(delimiter)[0...limit]
         end
 
         if limit.nil? || limit <= 1
