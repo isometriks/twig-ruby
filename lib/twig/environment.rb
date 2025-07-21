@@ -43,19 +43,20 @@ module Twig
     def template_class(name, index = nil)
       key = loader.get_cache_key(name)
 
-      "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{"__#{index}" if index}"
+      "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{"___#{index}" if index}"
     end
 
     # @param [String, Twig::TemplateWrapper] name
     # @return [Twig::TemplateWrapper]
-    def load(name, **)
+    def load(name)
       if name.is_a?(Twig::TemplateWrapper)
         return name
       end
 
+      cls = template_class(name)
       TemplateWrapper.new(
         self,
-        load_template(name, **)
+        load_template(cls, name)
       )
     end
 
@@ -82,21 +83,33 @@ module Twig
       raise Error::Loader, "Unable to find one of the following templates: \"#{names.join('", "')}\"."
     end
 
+    # @param [String] cls The class name to load
+    # @param [String] name The template name
+    # @param [Integer, nil] index Index for embedded templates
     # @return [Twig::Template]
-    def load_template(name, index: nil, **)
-      class_name = template_class(name, index)
-      cache_key = cache.generate_key(name, class_name)
+    def load_template(cls, name, index: nil)
+      main_cls = cls
+
+      if index
+        cls += "___#{index}"
+      end
+
+      if !index.nil? && Twig.const_defined?(cls)
+        return @loaded_templates[cls] = Twig.const_get(cls).new(self)
+      end
+
+      cache_key = cache.generate_key(name, main_cls)
 
       # If not auto_reloading just use whatever is in the cache
       if !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
-        if @loaded_templates.key?(class_name)
-          return @loaded_templates[class_name]
+        if @loaded_templates.key?(cls)
+          return @loaded_templates[cls]
         end
 
         @cache.load(cache_key)
 
-        if Twig.const_defined?(class_name)
-          return @loaded_templates[class_name] = Twig.const_get(class_name).new(self)
+        if Twig.const_defined?(cls)
+          return @loaded_templates[cls] = Twig.const_get(cls).new(self)
         end
       end
 
@@ -109,9 +122,9 @@ module Twig
 
       # Finally just eval the generated code if cache doesn't
       # create the class
-      Twig.module_eval(code) unless Twig.const_defined?(class_name)
+      Twig.module_eval(code) unless Twig.const_defined?(cls)
 
-      @loaded_templates[class_name] = Twig.const_get(class_name).new(self)
+      @loaded_templates[cls] = Twig.const_get(cls).new(self)
     end
 
     # @return [Twig::Template]
@@ -130,7 +143,8 @@ module Twig
 
       @loader = chain_loader
 
-      TemplateWrapper.new(self, load_template(name))
+      cls = template_class(name)
+      TemplateWrapper.new(self, load_template(cls, name))
     ensure
       @loader = current
     end

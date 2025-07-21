@@ -261,7 +261,17 @@ module Twig
         return template.unwrap
       end
 
-      env.load_template(template, index:)
+      if template == template_name
+        klass = self.class.name
+
+        if (pos = klass.rindex('___'))
+          klass = klass[0...pos]
+        end
+      else
+        klass = env.template_class(template)
+      end
+
+      env.load_template(klass, template, index:)
     rescue Error::Base => e
       unless e.source_context
         e.source_context = source_context
