@@ -16,7 +16,7 @@ module Twig
         @number_format = [0, '.', ',']
       end
 
-      attr_writer :date_format, :number_format
+      attr_writer :date_format, :number_format, :timezone
 
       def expression_parsers
         unary = ExpressionParser::Prefix::Unary
@@ -228,25 +228,27 @@ module Twig
         ]
       end
 
-      def format_date(date, format: nil, timezone: nil)
+      def format_date(date, format: nil, timezone: self.timezone)
         format ||= @date_format
 
         convert_date(date, timezone:).strftime(format)
       end
 
-      def convert_date(date = nil, timezone: nil)
+      def convert_date(date = nil, timezone: self.timezone)
         if date == 'now' || date.nil?
           date = DateTime.now
         elsif date.is_a?(Integer)
-          date = Time.at(date).to_datetime
+          date = Time.then { |t| timezone == false ? t : t.zone }.at(date).to_datetime
         elsif date.is_a?(String)
-          date = DateTime.parse(date)
+          date = Time.then { |t| timezone == false ? t : t.zone }.parse(date)
         end
 
-        timezone ? date.in_time_zone(timezone) : date
+        timezone == false ? date : date.in_time_zone(timezone)
       end
 
-      def self.date_modify; end
+      def timezone
+        @timezone ||= Time.zone
+      end
 
       def self.sprintf(string, *values)
         format(string || '', *values)
