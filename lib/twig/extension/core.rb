@@ -851,7 +851,7 @@ module Twig
       def self.matches(regexp, string)
         return false if string.nil?
 
-        if (matches = regexp.match(%r{\A/([^/]*)/(.*)\z}))
+        if regexp.respond_to?(:match) && (matches = regexp.match(%r{\A/([^/]*)/(.*)\z}))
           modifiers = matches[2].empty? ? '' : "(?#{matches[2]})"
           regex = /#{modifiers}#{matches[1]}/
         else
