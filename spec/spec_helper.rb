@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'active_support/testing/time_helpers'
 require 'simplecov'
 require 'simplecov-json'
 
@@ -29,6 +30,7 @@ end
 
 RSpec.configure do |config|
   config.include(FixtureHelpers)
+  config.include(ActiveSupport::Testing::TimeHelpers)
 end
 
 require_relative '../lib/twig_ruby'

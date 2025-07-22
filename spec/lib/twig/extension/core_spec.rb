@@ -9,10 +9,14 @@ RSpec.describe Twig::Extension::Core do
       let(:inputs) do
         <<~INPUTS
           Hello {{ name|capitalize }}!
+          Hello{{ nil|capitalize }}!
           Hello {{ name|upper }}!
+          Hello{{ nil|upper }}!
           {{ "HeLLo WoRlD!"|lower }}
+          Hello{{ nil|lower }}!
           {{ "<h1>HEllO WorlD!</h1>"|lower }}
           {{ "hello world!"|title }}
+          Hello{{ nil|title }}!
           {{ "<h1>Raw Hello World!</h1>"|raw }}
           {{ ["Hello", "World"]|first }}
           {{ ["Hello", "World"]|last }}
@@ -100,10 +104,14 @@ RSpec.describe Twig::Extension::Core do
       let(:outputs) do
         <<~OUTPUTS
           Hello World!
+          Hello!
           Hello WORLD!
+          Hello!
           hello world!
+          Hello!
           &lt;h1&gt;hello world!&lt;/h1&gt;
           Hello World!
+          Hello!
           <h1>Raw Hello World!</h1>
           Hello
           World
@@ -339,5 +347,87 @@ RSpec.describe Twig::Extension::Core do
     end
     let(:error) { Twig::Error::Runtime }
     let(:message) { /Block "unknown" on template "include.twig" does not exist in "include.twig" at line 4/ }
+  end
+
+  describe '#self.length' do
+    it 'gets length of strings' do
+      expect(described_class.length('Hello World!')).to eq(12)
+    end
+
+    it 'gets length of an integer' do
+      expect(described_class.length(1234)).to eq(4)
+    end
+
+    it 'gets length of an array' do
+      expect(described_class.length([1, 2, 3])).to eq(3)
+    end
+
+    it 'gets length of a hash' do
+      expect(described_class.length({ a: 1, b: 2 })).to eq(2)
+    end
+  end
+
+  describe '#self.convert_date' do
+    let(:extension) { described_class.new }
+
+    it 'returns current date when using "now"' do
+      freeze_time do
+        expect(extension.convert_date('now')).to eq(Time.now)
+      end
+    end
+
+    it 'returns a date from an epoch' do
+      expect(extension.convert_date(1_610_612_800)).to eq(Time.at(1_610_612_800))
+    end
+
+    it 'returns a date from a date string' do
+      expect(extension.convert_date('2015-08-08')).to eq(Time.utc(2015, 8, 8))
+    end
+  end
+
+  describe '#self.max' do
+    it 'gets the maximum value from the arguments' do
+      expect(described_class.max(1, 2, 3)).to eq(3)
+    end
+
+    it 'uses first argument if not passed multiple' do
+      expect(described_class.max([1, 2, 3])).to eq(3)
+    end
+
+    it 'gets the maximum value of hash values' do
+      expect(described_class.max({ a: 1, b: 2 })).to eq(2)
+    end
+  end
+
+  describe '#self.compare' do
+    it 'can compare strings' do
+      expect(described_class.compare('a', 'b')).to eq(-1)
+      expect(described_class.compare('b', 'a')).to eq(1)
+      expect(described_class.compare('a', 'a')).to eq(0)
+    end
+
+    it 'can compare symbols' do
+      expect(described_class.compare(:a, :b)).to eq(-1)
+      expect(described_class.compare(:b, :a)).to eq(1)
+      expect(described_class.compare(:a, :a)).to eq(0)
+    end
+
+    it 'can compare integers' do
+      expect(described_class.compare(1, 2)).to eq(-1)
+      expect(described_class.compare(2, 1)).to eq(1)
+      expect(described_class.compare(1, 1)).to eq(0)
+    end
+
+    it 'can compare strings to symbols' do
+      expect(described_class.compare('a', :b)).to eq(-1)
+      expect(described_class.compare(:b, 'a')).to eq(1)
+      expect(described_class.compare('a', :a)).to eq(0)
+    end
+
+    it 'can compare integers and strings' do
+      expect(described_class.compare(1, '2')).to eq(-1)
+      expect(described_class.compare('2', 1)).to eq(1)
+      expect(described_class.compare(1, '1')).to eq(0)
+    end
   end
 end
