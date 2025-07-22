@@ -639,7 +639,11 @@ module Twig
       end
 
       def self.length(object)
-        object.length
+        return object.length if object.respond_to?(:length)
+        return object.count if object.respond_to?(:count)
+        return object.to_s.length unless object.method(:to_s).owner == Kernel
+
+        1
       end
 
       def self.slice(object, start, length = nil, preserve_keys: false)
