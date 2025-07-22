@@ -238,6 +238,8 @@ module Twig
           date = DateTime.now
         elsif date.is_a?(Integer)
           date = Time.at(date).to_datetime
+        elsif date.is_a?(String)
+          date = DateTime.parse(date)
         end
 
         timezone ? date.in_time_zone(timezone) : date
