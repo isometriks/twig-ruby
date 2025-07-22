@@ -44,7 +44,7 @@ module Twig
             write("end\n").
             write("if #{template}\n").
             indent.
-            write("#{template}.call(")
+            write("#{template}.render_with_blocks(")
 
           add_template_arguments(compiler)
 

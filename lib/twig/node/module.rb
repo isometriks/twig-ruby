@@ -75,7 +75,7 @@ module Twig
           end
 
           compiler.
-            raw(".unwrap.call(context, self.blocks.merge(blocks));\n")
+            raw(".unwrap.render_with_blocks(context, self.blocks.merge(blocks));\n")
         end
 
         compiler.
