@@ -455,8 +455,8 @@ module Twig
       def self.join(value, glue: '', and_glue: nil)
         return value unless value.respond_to?(:to_a)
 
-        value = value.values if value.is_a?(Hash)
-        return '' if value.empty?
+        value = value.values if value.respond_to?(:values)
+        value = value.to_a if value.respond_to?(:to_a)
 
         return value.join(glue) if and_glue.nil? || and_glue == glue
         return value[0] if value.length == 1
