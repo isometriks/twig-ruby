@@ -17,8 +17,14 @@ RSpec.describe Twig::Runtime::Escaper do
     expect(escaper.escape('onclick:alert(1)', :html_attr)).to eq('onclick&#x3A;alert&#x28;1&#x29;')
   end
 
+  it 'escapes css' do
+    expect(escaper.escape('div > a { color: blue; }', :css)).to eq(
+      'div\20 \3E \20 a\20 \7B \20 color\3A \20 blue\3B \20 \7D '
+    )
+  end
+
   it 'raises errors with invalid utf8 strings' do
-    %i[js html_attr].each do |type|
+    %i[js html_attr css].each do |type|
       expect { escaper.escape("Hello \x80 world!", type) }.to raise_error(
         Twig::Error::Runtime,
         /not a valid UTF-8 string/

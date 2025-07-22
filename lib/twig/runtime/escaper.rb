@@ -30,8 +30,12 @@ module Twig
           escape_html_attr(string.to_s, charset || @charset)
         when :js
           escape_js(string.to_s, charset || @charset)
+        when :css
+          escape_css(string.to_s, charset || @charset)
+        when :url
+          CGI.escape(string.to_s)
         else
-          string
+          string.to_s
         end.html_safe
       end
 
@@ -105,6 +109,33 @@ module Twig
             low = 0xDC00 | (u & 0x3FF)
 
             format('\u%04X\u%04X', high, low)
+          end
+        end
+
+        # Convert back to original encoding if needed
+        if charset != 'UTF-8'
+          string = string.encode(charset, 'UTF-8')
+        end
+
+        string
+      end
+
+      def escape_css(string, charset)
+        # Convert encoding if needed
+        if charset != 'UTF-8'
+          string = convert_encoding(string, 'UTF-8', charset)
+        end
+
+        # Validate UTF-8
+        unless string.valid_encoding?
+          raise Error::Runtime, 'The string to escape is not a valid UTF-8 string.'
+        end
+
+        string = string.gsub(/[^a-zA-Z0-9]/) do |char|
+          if char.bytesize == 1
+            format('\\%X ', char.ord)
+          else
+            format('\\%X ', char.codepoints.first)
           end
         end
 
