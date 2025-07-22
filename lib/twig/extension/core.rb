@@ -799,7 +799,8 @@ module Twig
 
       # @param [Environment] environment
       def self.get_attribute(
-        environment, object, attribute, type, arguments: {}, defined_test: false, ignore_strict_check: false, &
+        environment, source, object, attribute, type, arguments: {}, defined_test: false,
+        ignore_strict_check: false, lineno: -1, &
       )
         if type == Template::ARRAY_CALL || object.respond_to?(:[])
           if object.respond_to?(:[]) && (
@@ -882,7 +883,11 @@ module Twig
             return false
           end
 
-          raise NotImplementedError, 'Need to implement other get_attribute calls'
+          raise Error::Runtime.new(
+            "Method #{attribute} does not exist on #{object.class.name}",
+            lineno,
+            source
+          )
         end
       end
 
