@@ -166,6 +166,7 @@ module Twig
           TwigFunction.new('range', static(:range)),
           TwigFunction.new('constant', static(:constant)),
           TwigFunction.new('cycle', static(:cycle)),
+          TwigFunction.new('random', static(:random), needs_charset: true),
           TwigFunction.new('date', method(:convert_date)),
           TwigFunction.new('include', static(:include), {
             needs_environment: true, needs_context: true, is_safe: [:all]
@@ -682,6 +683,57 @@ module Twig
 
       def self.invoke(callable, *, **)
         callable.call(*, **)
+      end
+
+      def self.random(charset, values = nil, max = nil)
+        if values.nil?
+          return max.nil? ? rand : rand(0..max.to_i)
+        end
+
+        if values.is_a?(Integer) || values.is_a?(Float)
+          if max.nil?
+            if values.negative?
+              max = 0
+              min = values
+            else
+              max = values
+              min = 0
+            end
+          else
+            min = values
+          end
+
+          return rand(min.to_i..max.to_i)
+        end
+
+        if values.is_a?(String)
+          return '' if values.empty?
+
+          if charset != 'UTF-8'
+            values = convert_encoding(values, 'UTF-8', charset)
+          end
+
+          # Unicode version of string split - split at all positions, but not after start and not before end
+          values = values.chars
+
+          if charset != 'UTF-8'
+            values = values.map { |value| convert_encoding(value, charset, 'UTF-8') }
+          end
+        end
+
+        # Check if values is iterable (responds to each and has length/size)
+        unless values.respond_to?(:each) && (values.respond_to?(:length) || values.respond_to?(:size))
+          return values
+        end
+
+        # Convert to array if it's a hash or other enumerable
+        values = values.is_a?(Hash) ? values.values : values.to_a
+
+        if values.empty?
+          raise Error::Runtime, 'The "random" function cannot pick from an empty sequence or mapping.'
+        end
+
+        values.sample
       end
 
       def self.ensure_hash(value)
