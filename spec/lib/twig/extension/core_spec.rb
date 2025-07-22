@@ -36,7 +36,7 @@ RSpec.describe Twig::Extension::Core do
           {{ array_of_hashes|column(:fruit)|raw }}
           {{ [:hello]|merge([:world]) }}
           {{ { greeting: "Hello" }|merge({ subject: "World!" })|raw }}
-          {{ [1, 2, 4, 5]|filter(n => n % 2 == 0) }}
+          {{ [1, 2, 4, 5]|filter(n => n % 2 == 0)|values }}
           {{ [1, 2, 4, 5]|find(n => n == 4) }}
           {{ [1, 2, 3]|reduce((acc, n) => acc + n, 0) }}
           {{ [1, 2, 3]|reduce((acc, v, k) => acc + k * v, 0) }}
@@ -428,6 +428,54 @@ RSpec.describe Twig::Extension::Core do
       expect(described_class.compare(1, '2')).to eq(-1)
       expect(described_class.compare('2', 1)).to eq(1)
       expect(described_class.compare(1, '1')).to eq(0)
+    end
+  end
+
+  describe '#self.enumerable_function' do
+    RSpec.shared_examples 'enumerable_function' do
+      let(:object) { raise NotImplementedError }
+      let(:function) { raise NotImplementedError }
+      let(:proc) { raise NotImplementedError }
+      let(:result) { raise NotImplementedError }
+
+      it 'gives the correct enumerable function output' do
+        expect(described_class.public_send(function, object, proc)).to eq(result)
+      end
+    end
+
+    shared_context 'upcase_map' do
+      let(:function) { :map }
+      let(:proc) { ->(v) { v.upcase } } # rubocop:disable Style/SymbolProc
+    end
+
+    it_behaves_like 'enumerable_function' do
+      include_context 'upcase_map'
+
+      let(:object) { %w[a b c] }
+      let(:result) { %w[A B C] }
+    end
+
+    it_behaves_like 'enumerable_function' do
+      include_context 'upcase_map'
+
+      let(:object) { { a: 'a', b: 'b' } }
+      let(:result) { { a: 'A', b: 'B' } }
+    end
+
+    it_behaves_like 'enumerable_function' do
+      include_context 'upcase_map'
+
+      let(:object) do
+        Class.new do
+          include Enumerable
+
+          def each
+            yield :a, 'a'
+            yield :b, 'b'
+          end
+        end.new
+      end
+      let(:result) { %w[A B] }
     end
   end
 end

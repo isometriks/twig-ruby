@@ -554,7 +554,13 @@ module Twig
       end
 
       def self.map(object, proc)
-        enumerable_function(object, :map, proc)
+        result = enumerable_function(object, :map, proc)
+
+        if object.is_a?(Hash)
+          object.keys.zip(result).to_h
+        else
+          result
+        end
       end
 
       def self.reduce(object, proc, initial = nil)
@@ -617,13 +623,7 @@ module Twig
       end
 
       def self.find(object, proc)
-        found = enumerable_function(object, :find, proc)
-
-        if object.is_a?(Hash) && found.is_a?(Array)
-          found[1]
-        else
-          found
-        end
+        enumerable_function(object, :find, proc)&.dig(1)
       end
 
       def self.reverse(object, preserve_keys: false)
@@ -1100,14 +1100,14 @@ module Twig
       end
 
       def self.enumerable_function(object, function, proc)
+        enumerable = Runtime::EnumerableHash.from(object)
+
         case proc.arity
         when 1
-          enumerable = object.is_a?(Hash) ? object.values : object
-          enumerable.public_send(function) do |value|
+          enumerable.public_send(function) do |_, value|
             proc.call(value)
           end
         when 2
-          enumerable = object.is_a?(Hash) ? object : AutoHash.new.add(object)
           enumerable.public_send(function) do |key, value|
             proc.call(value, key)
           end
