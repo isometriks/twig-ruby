@@ -12,6 +12,7 @@ module Twig
           cache: ::Rails.root.join('tmp/cache/twig').to_s,
           charset: 'UTF-8',
           strict_variables: true,
+          autoescape: :name,
           auto_reload: nil,
           loader: lambda do
             ::Twig::Loader::Filesystem.new(

@@ -10,6 +10,7 @@ module Twig
   def self.environment
     @@environment ||= begin
       options = ::Twig::Rails::Config.current.slice(
+        :autoescape,
         :cache,
         :debug,
         :allow_helper_methods,
