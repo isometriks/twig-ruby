@@ -939,18 +939,24 @@ module Twig
         elsif (constant = get_constant(object, attribute)) && constant[0] == :found
           constant[1]
         else
-          if object.respond_to?(:[])
-            return object[attribute]
-          end
-
           return if ignore_strict_check || !environment.strict_variables?
 
           if defined_test
             return false
           end
 
+          message = if object.nil?
+                      "Impossible to access an attribute (\"#{attribute}\") on a null variable."
+                    elsif object.respond_to?(:[]) && !object.is_a?(String)
+                      keys = object.respond_to?(:keys) ? "with keys \"#{object.keys.join(', ')}\"" : ''
+                      "Key \"#{attribute}\" for sequence/mapping #{keys} does not exist."
+                    else
+                      "Impossible to access an attribute (\"#{attribute}\") on a #{object.class} " \
+                        "variable (\"#{object}\")."
+                    end
+
           raise Error::Runtime.new(
-            "Method #{attribute} does not exist on #{object.class.name}",
+            message,
             lineno,
             source
           )
