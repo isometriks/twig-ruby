@@ -46,7 +46,7 @@ module Twig
         compile_get_parent(compiler)
 
         compiler.
-          write("def call(context = {}, blocks = {})\n").
+          write("private def call(context = {}, blocks = {})\n").
           indent.
           write("unless context.is_a?(::Twig::Runtime::Context)\n").
           indent.
