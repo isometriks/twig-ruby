@@ -165,7 +165,7 @@ RSpec.describe Twig::Extension::Core do
           1, 2, 3, 4, 5
           Hello World!
           Special character
-          [{"0":1,"1":2},{"2":3,"1":"fill"}]
+          [{"0":1,"1":2},{"2":3,"3":"fill"}]
           Hello World!
           one|two|three,four,five
           one|two|three

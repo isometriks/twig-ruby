@@ -517,23 +517,29 @@ module Twig
       def self.batch(object, count, fill: nil, preserve_keys: true)
         return if object.nil?
 
-        hash = object.is_a?(Array) ? object.each_with_index.to_h.invert : object
+        hash = object.is_a?(Array) ? object.each_with_index.to_h { |k, v| [v, k] } : object
         size = count.ceil
+        last_key = 0
 
         result = hash.each_slice(size).map do |slice|
           unless preserve_keys
             slice = [*0...size].zip(slice.to_h.values)
           end
 
-          slice.to_h
+          sliced_hash = slice.to_h
+          last_key = sliced_hash.keys[-1]
+
+          sliced_hash
         end
 
         if fill.nil? || result.empty?
           return result
         end
 
+        result[-1] = AutoHash.new.merge(result[-1])
+
         [*0...(size - result[-1].length)].each do
-          result[-1][result[-1].length] = fill
+          result[-1].add(fill)
         end
 
         result
