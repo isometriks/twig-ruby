@@ -20,7 +20,7 @@ module Twig
 
         def compile(compiler)
           compiler.
-            raw('::Twig::Extension::Core.get_attribute(env, ')
+            raw('::Twig::Extension::Core.get_attribute(env, source_context, ')
 
           if attributes[:ignore_strict_check]
             nodes[:node].attributes[:ignore_strict_check] = true
@@ -50,6 +50,8 @@ module Twig
           end
 
           compiler.
+            raw(', lineno: ').
+            repr(lineno).
             raw(')')
         end
 
