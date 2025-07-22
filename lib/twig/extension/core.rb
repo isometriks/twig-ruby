@@ -16,7 +16,7 @@ module Twig
         @number_format = [0, '.', ',']
       end
 
-      attr_writer :number_format
+      attr_writer :date_format, :number_format
 
       def expression_parsers
         unary = ExpressionParser::Prefix::Unary
