@@ -6,7 +6,7 @@ module Twig
       def initialize(default_strategy = :html)
         super()
 
-        @default_strategy = default_strategy
+        self.default_strategy = default_strategy
       end
 
       def filters
@@ -35,8 +35,27 @@ module Twig
         ]
       end
 
+      # Sets the default strategy to use when not defined by the user.
+      #
+      # @param [Symbol, String, false, Proc] strategy An escaping strategy
+      def default_strategy=(strategy)
+        @default_strategy = if [:name, 'name'].include?(strategy)
+                              ->(name) { FileExtensionEscapingStrategy.guess(name) }
+                            else
+                              strategy
+                            end
+      end
+
+      # Gets the default strategy to use when not defined by the user.
+      #
+      # @param [String] name The template name
+      # @return [Symbol, false] The default strategy to use for the template
       def default_strategy(name)
-        :html
+        if @default_strategy.is_a?(Proc)
+          @default_strategy.call(name)
+        else
+          @default_strategy
+        end
       end
 
       # @param [Node::Base] filter_args
