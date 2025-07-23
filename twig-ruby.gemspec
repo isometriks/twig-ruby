@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'twig_ruby'
-  s.version     = '0.0.1'
+  s.version     = '0.0.2'
   s.summary     = 'Twig Templating for Ruby'
   s.description = ''
   s.authors     = ['Craig Blanchette', 'Fabian Potencier']
@@ -12,4 +12,6 @@ Gem::Specification.new do |s|
   s.license     = 'MIT'
   s.metadata['rubygems_mfa_required'] = 'true'
   s.required_ruby_version = '>= 3.4'
+  s.add_dependency 'activesupport'
+  s.add_dependency 'sanitize'
 end
