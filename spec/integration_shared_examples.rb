@@ -26,7 +26,7 @@ RSpec.shared_examples 'render_and_assert' do
       **templates,
     })
 
-    environment = Twig::Environment.new(loader, { debug: true }.merge(options))
+    environment = Twig::Environment.new(loader, { debug: true, strict_variables: true }.merge(options))
 
     extensions.each do |extension|
       environment.add_extension(extension)

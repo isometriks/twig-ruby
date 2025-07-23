@@ -178,6 +178,11 @@ module Twig
       raise Error::Runtime, "Unable to load the \"#{klass}\" runtime."
     end
 
+    # @param [RuntimeLoader::Base] loader
+    def add_runtime_loader(loader)
+      runtime_loaders << loader
+    end
+
     # @return [ExpressionParser::ExpressionParsers]
     def expression_parsers
       extension_set.expression_parsers

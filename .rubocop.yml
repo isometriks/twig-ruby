@@ -85,3 +85,11 @@ Style/ClassVars:
 
 Style/ParallelAssignment:
   Enabled: false
+
+Naming/FileName:
+  Exclude:
+    - "test/**/*"
+
+Naming/VariableNumber:
+  Exclude:
+    - "test/**/*"

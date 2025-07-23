@@ -1,0 +1,22 @@
+# frozen_string_literal: true
+
+class Data
+  def self.examples
+    [
+      {
+        data: {
+          days: {
+            1 => { money: 9 },
+            2 => { money: 21 },
+            3 => { money: 38 },
+            4 => { money: 6 },
+            18 => { money: 6 },
+            19 => { money: 3 },
+            31 => { money: 11 },
+          },
+        },
+        config: {},
+      },
+    ]
+  end
+end

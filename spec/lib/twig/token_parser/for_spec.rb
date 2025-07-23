@@ -11,6 +11,9 @@ RSpec.describe Twig::TokenParser::For do
         {% for i in empty %}{{ i }}{% else %}empty{% endfor %}
         {% for x in [0, 1] %}{% for y in [0, 1] %}{{ x }}-{{ y }},{% endfor %}{% endfor %}
         {% for i in 0..3 %}{{ loop.cycle('even', 'odd') }}-{% endfor %}
+        {% for i in [0, 1, 2] %}{{ loop.index0 }}{% endfor %}
+        {% for i in [0, 1, 2] %}{{ loop.index }}{% endfor %}
+        {% for x in [0, 1] %}{{ loop.index0 }}-{% for y in [0, 1, 2] %}{{ loop.index0 }}{% endfor %}{% endfor %}
       INPUTS
     end
 
@@ -20,6 +23,9 @@ RSpec.describe Twig::TokenParser::For do
         empty
         0-0,0-1,1-0,1-1,
         even-odd-even-odd-
+        012
+        123
+        0-0121-012
       OUTPUTS
     end
 
