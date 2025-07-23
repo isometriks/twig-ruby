@@ -484,8 +484,8 @@ module Twig
           return [value]
         end
 
-        [*0...length].map do |i|
-          value[i, limit]
+        [*0..(length / limit).ceil].map do |i|
+          value[i * limit, limit]
         end
       end
 

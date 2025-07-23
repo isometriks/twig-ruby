@@ -201,7 +201,7 @@ module Twig
     def filter(name, lineno)
       unless (filter = environment.filter(name))
         unless ignore_unknown_twig_callables?
-          raise Error::Syntax.new("Unknown '#{name}' filter.", lineno, parser.stream.source)
+          raise Error::Syntax.new("Unknown '#{name}' filter.", lineno, stream.source)
         end
 
         filter = TwigFilter.new(name, -> {})

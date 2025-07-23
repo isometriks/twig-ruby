@@ -19,7 +19,7 @@ module Twig
           parent_token = Token.new(Token::NAME_TYPE, parent.attributes[:name], token.lineno)
         end
 
-        # inject a fake parent to make the parent() function works
+        # inject a fake parent to make the parent() function work
         stream.inject([
           Token.new(Token::BLOCK_START_TYPE, '', token.lineno),
           Token.new(Token::NAME_TYPE, 'extends', token.lineno),

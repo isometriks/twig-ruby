@@ -1,12 +1,17 @@
 # frozen_string_literal: true
 
-require_relative '../twig_ruby'
-
 desc 'Tests against Twig PHP fixtures.'
 
 GIT_LOCATION = "#{__dir__}/../../tmp/twig-php".freeze
 WONT_IMPLEMENT = %w[
   tags/macro/super_globals.test
+  tags/for/non_countable.test
+  tags/for/generator.test
+  tags/for/objects.test
+  tags/for/iterator_aggregate.test
+  tags/for/objects_countable.test
+  expressions/matches_error_compilation.test
+  expressions/matches_error_runtime.test
   functions/enum/invalid_dynamic_enum.test
   functions/enum/invalid_enum.test
   functions/enum/invalid_literal_type.test
@@ -17,9 +22,18 @@ WONT_IMPLEMENT = %w[
   functions/enum_cases/valid.test
   functions/attribute.legacy.test
   functions/attribute_with_wrong_args.legacy.test
+  functions/constant.test
+  functions/dump.test
+  functions/dump_array.test
   tests/defined_for_attribute.legacy.test
+  filters/date_default_format_interval.test
+  filters/date_interval.test
   filters/date_immutable.test
   filters/date_modify.test
+  operators/not_precedence.test
+  operators/concat_vs_add_sub.test
+  functions/include/sandbox_disabling.test
+  functions/include/sandbox.test
 ].freeze
 
 class Color
@@ -36,26 +50,40 @@ class Color
   end
 end
 
-task :twig_parity do
+task :twig_parity, [:file] do |_t, args|
+  require 'rspec/support'
+  require_relative '../twig_ruby'
+  require_relative '../../test/parity'
+
   `git clone -b 4.x https://github.com/twigphp/Twig.git #{GIT_LOCATION}`
 
   stats = { pass: 0, fail: 0, total: 0 }
 
-  Dir.glob("#{GIT_LOCATION}/tests/Fixtures/**/*.test").each do |fixture|
-    next if WONT_IMPLEMENT.include?(fixture.delete_prefix("#{GIT_LOCATION}/tests/Fixtures/"))
+  fixtures = if args[:file]
+               [File.join(GIT_LOCATION, 'tests/Fixtures/', args[:file])]
+             else
+               Dir.glob("#{GIT_LOCATION}/tests/Fixtures/**/*.test")
+             end
 
-    data = TwigFixture.new(fixture).call
-    stats[:total] += 1
+  fixtures.each do |fixture|
+    base_name = fixture.delete_prefix("#{GIT_LOCATION}/tests/Fixtures/")
 
-    if data[:status]
-      stats[:pass] += 1
-    else
-      stats[:fail] += 1
-      puts '============================='
-      puts "FAIL: #{data[:file].delete_prefix("#{GIT_LOCATION}/tests/Fixtures/")}"
-      puts "--------\n#{data[:error]}\n--------"
-      puts "Link: #{data[:file]}:#{data[:lineno]}"
-      puts "=============================\n\n"
+    next if WONT_IMPLEMENT.include?(base_name)
+
+    TwigFixture.new(fixture, base_name).call.each do |data|
+      stats[:total] += 1
+
+      if data[:status]
+        stats[:pass] += 1
+      else
+        stats[:fail] += 1
+        puts '============================='
+        puts "FAIL: #{data[:file].delete_prefix("#{GIT_LOCATION}/tests/Fixtures/")}"
+        puts data[:error]
+        puts "Link: #{data[:file]}:#{data[:lineno]}"
+        puts "Rerun: rake twig_parity[#{base_name}]"
+        puts "=============================\n\n"
+      end
     end
   end
 
@@ -93,34 +121,83 @@ class TwigFixture
     --EXPECT--.*
   /mx
 
-  def initialize(file)
+  OUTPUTS_REGEX = /
+    --DATA--(.*?)(?:--CONFIG--(.*?))?--EXPECT--(.*?)(?=--DATA--|\z)
+  /mx
+
+  def initialize(file, base_name)
     @file = file
+    @base_name = base_name
   end
 
   def call
     parse
 
-    loader = ::Twig::Loader::Array.new(templates)
+    require_relative "#{__dir__}/../../test/fixtures/#{@base_name}.rb"
+    examples = Data.examples
+
+    examples.each.with_index.map do |example, i|
+      build_and_run(example[:data], example[:config], example[:gsub] || {}, outputs[i][2], i)
+    end
+  end
+
+  private
+
+  attr_accessor :message, :condition, :deprecation, :templates, :exception, :outputs
+
+  def build_and_run(data, config, replacements, expected, index)
+    gsub_templates = templates.transform_values do |template|
+      replace(template, replacements[:fixture]) + (' ' * index)
+    end
+
+    loader = ::Twig::Loader::Array.new(gsub_templates)
     environment = ::Twig::Environment.new(loader, {
       cache: false,
+      strict_variables: true,
+      auto_reload: true,
+      **config,
     })
+    environment.add_global('global', 'global')
     environment.add_extension(::TwigTestExtension.new)
     environment.add_extension(::Twig::Extension::Debug.new)
     environment.add_extension(::Twig::Extension::StringLoader.new)
+    environment.add_runtime_loader(::Twig::Parity::Runtime::Loader.new(environment))
+    expected ||= ''
+
+    # Reset timezone
+    ::Time.zone = 'UTC'
+
+    # Pass current environment if test is lazy
+    data = data.call(environment) if data.is_a?(Proc)
 
     begin
-      environment.load('index.twig')
+      output = environment.load('index.twig').render(data).gsub(/\A[\n ]*/, '').gsub(/[\n ]*\z/, '')
+      output = replace(output, replacements[:output])
+      expected = expected.gsub(/\A[\n ]*/, '').gsub(/[\n ]*\z/, '')
+      expected = replace(expected, replacements[:result])
 
-      {
-        message:,
-        file: @file,
-        status: true,
-      }
+      if output == expected
+        {
+          message:,
+          file: @file,
+          status: true,
+          output:,
+        }
+      else
+        {
+          message:,
+          file: @file,
+          status: false,
+          error: ::RSpec::Support::Differ.new.diff_as_string(output, expected),
+        }
+      end
     rescue ::Twig::Error::Base => e
       if exception
-        message_only = exception.match(/Twig\\Error\\\w+: (.*)/).captures[0]
+        message_only = exception.match(/Twig\\Error\\\w+: (.*)/)&.captures&.[](0)
+        message_only = replace(message_only, replacements[:exception]) if message_only
         exception_matches = message_only == e.message
-        error = "#{Color.red("- #{message_only}")}\n#{Color.green("+ #{e.message}")}"
+        error = ::RSpec::Support::Differ.new.diff_as_string(e.message, message_only)
+        # error = "#{Color.red("- #{message_only}")}\n#{Color.green("+ #{e.message}")}"
       else
         error = Color.red(e.message)
       end
@@ -132,12 +209,26 @@ class TwigFixture
         lineno: e.lineno,
         error:,
       }
+    rescue Exception => e # rubocop:disable Lint/RescueException
+      {
+        message:,
+        file: @file,
+        status: exception_matches,
+        lineno: -1,
+        error: "Full Error: #{e.message}",
+      }
     end
   end
 
-  private
+  def replace(string, replacements)
+    return string if replacements.nil?
 
-  attr_accessor :message, :condition, :deprecation, :templates, :exception, :outputs
+    replacements.each do |find, replace|
+      string = string.gsub(find, replace)
+    end
+
+    string
+  end
 
   def contents
     @contents ||= File.read(@file)
@@ -150,23 +241,24 @@ class TwigFixture
       self.deprecation = matches.captures[2]
       self.templates = parse_templates(matches.captures[3]) # @todo actually parse the templates
       self.exception = matches.captures[5]
-      self.outputs = matches.captures[4] #  $outputs = [[null, $match[5], null, '']];
+      self.outputs = [[nil, matches.captures[4], nil, '']]
     elsif (matches = contents.match(EXPECT_REGEX))
       self.message = matches.captures[0]
       self.condition = matches.captures[1]
       self.deprecation = matches.captures[2]
       self.templates = parse_templates(matches.captures[3])
       self.exception = false
-      self.outputs = nil
-      # preg_match_all('/--DATA--(.*?)(?:--CONFIG--(.*?))?--EXPECT--(.*?)(?=\-\-DATA\-\-|$)/s',
-      # $test, $outputs, \PREG_SET_ORDER);
+      self.outputs = contents.scan(OUTPUTS_REGEX)
     end
   end
 
   def parse_templates(test)
     templates = {}
     test.scan(/--TEMPLATE(?:\((.*?)\))?--(.*?)(?=--TEMPLATE|\z)/mx).map do |name, contents|
-      templates[name || 'index.twig'] = contents
+      templates[name || 'index.twig'] = contents.
+        gsub(/[\n]*\z/, '').
+        gsub('d/m/Y H:i:s P', '%d/%m/%Y %H:%M:%S %:z'). # Change dates to Ruby format
+        gsub('Twig\Tests\TwigTestFoo', 'TwigTestFoo') # Change class name to match Ruby
     end
 
     templates
@@ -182,147 +274,5 @@ class TwigFixture
     end
 
     object
-  end
-end
-
-class TwigTestExtension < Twig::Extension::Base
-  def token_parsers
-    [
-      TwigTestTokenParser§.new, # rubocop:disable Naming/AsciiIdentifiers
-    ]
-  end
-
-  def filters
-    [
-      ::Twig::TwigFilter.new('§', method(:non_ascii_function)),
-      ::Twig::TwigFilter.new('nl2br', method('nl2br'), pre_escape: [:html], is_safe: [:html]),
-      ::Twig::TwigFilter.new('escape_and_nl2br', method(:escape_and_nl2br), {
-        needs_environment: true, is_safe: [:html]
-      }),
-      ::Twig::TwigFilter.new('not', static(:not_filter)),
-      ::Twig::TwigFilter.new('escape_something', method(:escape_something), is_safe: [:something]),
-      ::Twig::TwigFilter.new('preserves_safety', method(:preserves_safety), is_safe: [:html]),
-      ::Twig::TwigFilter.new('static_call_string', static(:static_call)),
-      ::Twig::TwigFilter.new('static_call_array', static(:static_call)),
-      ::Twig::TwigFilter.new('magic_call', [self, :magic_call]),
-      ::Twig::TwigFilter.new('magic_call_string', static(:magic_static_call)),
-      ::Twig::TwigFilter.new('magic_call_array', static(:magic_static_call)),
-      ::Twig::TwigFilter.new(
-        'magic_call_closure',
-        ->(environment:) { environment.extension(TwigTestExtension).magic_call },
-        needs_environment: true
-      ),
-      ::Twig::TwigFilter.new('*_path', method(:dynamic_path)),
-      ::Twig::TwigFilter.new('*_foo_*_bar', method(:dynamic_foo)),
-      ::Twig::TwigFilter.new('anon_foo', ->(name) { "*#{name}*" }),
-    ]
-  end
-
-  def functions
-    [
-      ::Twig::TwigFunction.new('§', method(:non_ascii_function)),
-      ::Twig::TwigFunction.new('safe_br', method(:br), is_safe: [:html]),
-      ::Twig::TwigFunction.new('unsafe_br', method(:br)),
-      ::Twig::TwigFunction.new('static_call_string', static(:static_call)),
-      ::Twig::TwigFunction.new('static_call_array', static(:static_call)),
-      ::Twig::TwigFunction.new('*_path', method(:dynamic_path)),
-      ::Twig::TwigFunction.new('*_foo_*_bar', method(:dynamic_foo)),
-      ::Twig::TwigFunction.new('anon_foo', ->(name) { "*#{name}*" }),
-      ::Twig::TwigFunction.new('deprecated_function', -> { 'foo' }), # @todo - Needs deprecation info
-    ]
-  end
-
-  def tests
-    [
-      ::Twig::TwigTest.new('multi word', static(:multi_word?)),
-      ::Twig::TwigTest.new('test_*', method(:dynamic_test)),
-    ]
-  end
-
-  def non_ascii_function(value)
-    "§#{value}§"
-  end
-
-  def br
-    '<br />'
-  end
-
-  # @param [Twig::Environment] env
-  def escape_and_nl2br(env, value, sep = '<br />')
-    nl2br(
-      env.runtime(Twig::Runtime::Escaper).escape(value, :html),
-      sep
-    )
-  end
-
-  def nl2br(value, sep = '<br />')
-    value.gsub("\n", "#{sep}\n")
-  end
-
-  def dynamic_path(element, item)
-    "#{element}/#{item}"
-  end
-
-  def dynamic_foo(foo, bar, item)
-    "#{foo}/#{bar}/#{item}"
-  end
-
-  def dynamic_test(element, item)
-    element == item
-  end
-
-  # @param [String] value
-  def escape_something(value)
-    value.upcase
-  end
-
-  # @param [String] value
-  def preserves_safety(value)
-    value.upcase
-  end
-
-  def magic_call
-    'foo'
-  end
-
-  def self.static_call(value)
-    "*#{value}*"
-  end
-
-  def self.magic_static_call(value)
-    'foo'
-  end
-
-  def self.not_filter(value)
-    "not #{value}"
-  end
-
-  def self.method_missing(method)
-    raise method.inspect
-  end
-
-  def self.respond_to_missing?(method, include_private = false)
-    [:magic_static_call].include?(method.to_sym)
-  end
-
-  def respond_to_missing?(method, include_private = false)
-    [:magic_call].include?(method.to_sym)
-  end
-
-  def self.multi_word?(string)
-    string.include?(' ')
-  end
-end
-
-# Rubo
-class TwigTestTokenParser§ < Twig::TokenParser::Base # rubocop:disable Naming/AsciiIdentifiers
-  def parse(token)
-    parser.stream.expect(Twig::Token::BLOCK_END_TYPE)
-
-    Twig::Node::Print.new(Twig::Node::Expression::Constant.new('§', -1), -1)
-  end
-
-  def tag
-    '§'
   end
 end
