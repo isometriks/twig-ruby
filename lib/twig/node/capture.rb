@@ -9,7 +9,6 @@ module Twig
         super({ body: }, { raw: false }, lineno)
       end
 
-      # @todo raw is missing, but I think only used by cache node?
       def compile(compiler)
         compiler.
           raw("context.buffer_and_return do\n").

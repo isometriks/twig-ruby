@@ -24,7 +24,6 @@ module Twig
           end
 
           def compile(compiler)
-            # @todo reserved vars
             attributes[:name] = compiler.var_name if attributes[:name].nil?
 
             compiler.raw(attributes[:name].to_s)

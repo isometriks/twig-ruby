@@ -96,7 +96,6 @@ module Twig
         [
           # Formatting filters
           TwigFilter.new('date', method(:format_date)),
-          # TwigFilter.new('date_modify', $this->modifyDate(...)),
           TwigFilter.new('format', static(:sprintf)),
           TwigFilter.new('replace', static(:replace)),
           TwigFilter.new('number_format', method(:number_format)),
@@ -194,7 +193,6 @@ module Twig
           TwigTest.new('constant', nil, { node_class: Node::Expression::Test::Constant }),
           TwigTest.new('empty', static(:test_empty?)),
           TwigTest.new('iterable', nil, { node_class: Node::Expression::Test::Iterable }),
-          # @todo: These should probably check enumerables etc. move to a method?
           TwigTest.new('sequence', nil, { node_class: Node::Expression::Test::Sequence }),
           TwigTest.new('mapping', nil, { node_class: Node::Expression::Test::Mapping }),
         ]
@@ -826,7 +824,6 @@ module Twig
         a <=> b
       end
 
-      # @todo some stuff missing here for Twig's custom compare
       def self.in_filter(value, object)
         return false unless object.respond_to?(:include?)
 
