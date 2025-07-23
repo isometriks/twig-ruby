@@ -11,9 +11,9 @@ module Twig
 
       def self.from(object)
         if object.is_a?(Array)
-          AutoHash.new.add(*object)
+          new(AutoHash.new.add(*object))
         elsif object.is_a?(Hash)
-          object.to_h
+          new(object.to_h)
         else
           new(object)
         end
@@ -36,7 +36,11 @@ module Twig
       end
 
       def values
-        object.collect { |_, v| v }
+        collect { |_, v| v }
+      end
+
+      def keys
+        collect { |k, _| k }
       end
 
       def filter
