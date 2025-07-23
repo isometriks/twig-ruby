@@ -239,7 +239,7 @@ class TwigFixture
       self.message = matches.captures[0]
       self.condition = matches.captures[1]
       self.deprecation = matches.captures[2]
-      self.templates = parse_templates(matches.captures[3]) # @todo actually parse the templates
+      self.templates = parse_templates(matches.captures[3])
       self.exception = matches.captures[5]
       self.outputs = [[nil, matches.captures[4], nil, '']]
     elsif (matches = contents.match(EXPECT_REGEX))

@@ -8,7 +8,6 @@ module Twig
         @method = method
       end
 
-      # @todo Read method arguments and try to match kwargs to positional args
       # like {{ ["Hello", "World"] | join(glue: " ") }}
       def call(*arguments, **kwargs)
         positional = []

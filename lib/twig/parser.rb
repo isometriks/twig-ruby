@@ -123,7 +123,6 @@ module Twig
             return Node::Nodes.new(rv, lineno)
           end
 
-          # @todo Check that there is a token parser for this token value
           subparser = @environment.token_parser(token.value)
 
           unless subparser
