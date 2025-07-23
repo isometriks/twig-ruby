@@ -45,6 +45,24 @@ module Twig
         end
       end
 
+      def changed(value)
+        if !defined?(@last_changed) || value != @last_changed
+          @last_changed = value
+
+          true
+        else
+          false
+        end
+      end
+
+      def previous
+        @loop.previous&.dig(1)
+      end
+
+      def next
+        @loop.next&.dig(1)
+      end
+
       # @return [Integer] The depth starting from 0
       def depth0
         @depth

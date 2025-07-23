@@ -1,28 +1,34 @@
 # frozen_string_literal: true
 
-##
-# This file is part of Twig.
-#
-# (c) Fabien Potencier
-#
-# For the full copyright and license information, please view the LICENSE
-# file that was distributed with this source code.
-
 module Twig
   module Runtime
     class LoopIterator
-      attr_reader :index0
+      attr_reader :index0, :previous, :next
 
       def initialize(seq)
-        @seq = Extension::Core.ensure_hash(seq)
+        @seq = Runtime::EnumerableHash.from(seq).to_enum
         @index0 = 0
+        @previous = nil
+        @next = nil
       end
 
       def each(&)
         @index0 = 0
-        @seq.each do |k, v|
-          yield k, v
+
+        loop do
+          current = @seq.next
+
+          begin
+            @next = @seq.peek
+          rescue StopIteration
+            @next = nil
+          end
+
+          yield current[0], current[1]
           @index0 += 1
+          @previous = current
+        rescue StopIteration
+          break
         end
       end
 
@@ -31,11 +37,11 @@ module Twig
       end
 
       def last
-        revindex0.zero?
+        revindex0.zero? || length.zero?
       end
 
       def length
-        @length ||= @seq.length
+        @length ||= @seq.count
       end
 
       def index
@@ -43,7 +49,7 @@ module Twig
       end
 
       def revindex0
-        length - index
+        [0, length - index].max
       end
 
       def revindex
