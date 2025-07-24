@@ -150,7 +150,7 @@ class TwigFixture
       replace(template, replacements[:fixture]) + (' ' * index)
     end
 
-    loader = ::Twig::Loader::Array.new(gsub_templates)
+    loader = ::Twig::Loader::Hash.new(gsub_templates)
     environment = ::Twig::Environment.new(loader, {
       cache: false,
       strict_variables: true,

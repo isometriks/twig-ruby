@@ -2,7 +2,7 @@
 
 module Twig
   module Loader
-    class Array < Loader::Base
+    class Hash < Loader::Base
       # @param [Hash<String>] templates
       def initialize(templates)
         super()

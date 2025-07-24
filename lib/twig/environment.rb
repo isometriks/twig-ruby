@@ -137,7 +137,7 @@ module Twig
              end
 
       chain_loader = Loader::Chain.new([
-        Loader::Array.new({ name => template }),
+        Loader::Hash.new({ name => template }),
         current = loader,
       ])
 
