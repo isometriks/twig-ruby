@@ -997,7 +997,7 @@ module Twig
           (object.respond_to?(:empty?) && object.empty?) ||
           (object.respond_to?(:length) && (object.length&.== 0)) || # rubocop:disable Style/ZeroLengthPredicate
           (object.respond_to?(:size) && (object.size&.== 0)) || # rubocop:disable Style/ZeroLengthPredicate
-          (object.respond_to?(:to_s) && (object.to_s&.== ''))
+          (object.respond_to?(:to_s) && (object.to_s == ''))
       end
 
       # @param [Environment] environment
