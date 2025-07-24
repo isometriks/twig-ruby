@@ -2,53 +2,84 @@
 
 Implementation of [Twig](https://twig.symfony.com/) in Ruby.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Template Features](#template-features)
+  - [Filters](#filters)
+  - [Functions](#functions)
+  - [Tests](#tests)
+  - [Tags](#tags)
+- [Rails Integration](#rails-integration)
+- [Advanced Features](#advanced-features)
+- [Configuration](#configuration)
+
+## Installation
+
 ```bash
 bundle add twig-ruby
 ```
 
-## Rendering a Template
+## Quick Start
+
+Here's a simple example to get you started:
 
 ```ruby
+require 'twig_ruby'
+
+# Create a loader with your templates
 loader = Twig::Loader::Hash.new({
-  'template.twig' => '{{ var }}',
+  'hello.twig' => 'Hello {{ name }}!'
 })
+
+# Create environment and render
 environment = Twig::Environment.new(loader)
-template = environment.load('template.twig')
-greeting = template.render({ var: "Hello World!" })
+template = environment.load('hello.twig')
+puts template.render({ name: "World" })
+# Output: Hello World!
 ```
 
 Or from your file system:
 
 ```ruby
-loader = Twig::Loader::Filesystem(__dir__, ['app/views'])
+loader = Twig::Loader::Filesystem.new(__dir__, ['app/views'])
 ```
 
-## Callables
+## Template Features
 
 Twig has the notion of Filters, Functions, and Tests
 
-Filters
+### Filters
+
+Filters are used to modify variables.
 
 ```twig
 {{ "hello"|capitalize }} {# Hello #}
 {{ ["Hello", "World"]|join(" ") }} {# Hello World #}
 ```
 
-Functions
+### Functions
+
+Functions are used to generate content.
 
 ```twig
 {{ max([1, 2, 3]) }} {# 3 #}
 {{ include("other.twig") }} {# contents of other.twig #}
 ```
 
-Tests
+### Tests
+
+Tests are used to evaluate variables.
 
 ```twig
 {{ 2 is even ? 'yup' : 'nope' }} {# yup #}
 {{ ([1, 2, 3] has some n => n % 2 == 0) ? 'yup' : 'nope' }} {# yup #}
 ```
 
-## Tags
+### Tags
+
+Tags are used to control the logic of the template.
 
 ```twig
 {% if n > 1 %}
@@ -66,7 +97,7 @@ Tests
 </ul>
 ```
 
-## Rails
+## Rails Integration
 
 This gem includes a Railtie that will automatically add your views folder and
 register a `:twig` template handler. Just simply create your views such as
@@ -83,7 +114,7 @@ register a `:twig` template handler. Just simply create your views such as
 ```
 
 Since Twig can support layouts through inheritance, you may not want to use layouts anymore as this is
-something you can do in every template with `{% extends 'layouts/base.html.twig' %}` - You can disabled 
+something you can do in every template with `{% extends 'layouts/base.html.twig' %}` - You can disable
 rails layouts globally with `layout false` in your `ApplicationController`
 
 ```ruby
@@ -92,7 +123,7 @@ class ApplicationController < ActionController::Base
 end
 ```
 
-## Rails Configuration
+## Configuration
 
 These are all the defaults. You only need this configuration if you plan to change anything. 
 
@@ -105,6 +136,7 @@ Rails.application.configure do
   config.twig.cache = ::Rails.root.join('tmp/cache/twig').to_s,
   config.twig.charset = 'UTF-8',
   config.twig.strict_variables = true,
+  config.autoescape = :name,
   config.twig.auto_reload = nil,
   config.twig.loader = lambda do
     ::Twig::Loader::Filesystem.new(
@@ -128,7 +160,7 @@ end
 If you plan to create your own loader that loads templates from another source like the database, you can provide
 a different lamba in the config for initializing it. 
 
-## Additions
+## Advanced Features
 
 Twig Ruby supports symbols as Ruby does and can be used in places strings can as 
 hash keys, arguments, etc.
