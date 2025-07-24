@@ -14,6 +14,9 @@ Implementation of [Twig](https://twig.symfony.com/) in Ruby.
 - [Rails Integration](#rails-integration)
 - [Advanced Features](#advanced-features)
 - [Configuration](#configuration)
+- Advanced Docs
+  - [Loaders](doc/loaders.md)
+  - [Extensions](doc/extensions.md)
 
 ## Installation
 
