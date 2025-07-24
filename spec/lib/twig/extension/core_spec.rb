@@ -325,7 +325,7 @@ RSpec.describe Twig::Extension::Core do
 
   it_behaves_like 'render_and_raise' do
     let(:loader) do
-      Twig::Loader::Array.new(
+      Twig::Loader::Hash.new(
         {
           'template.twig' => '{{ include("include.twig") }}',
           'include.twig' => "\n\n\n{{ include('unknown.twig') }}",
@@ -338,7 +338,7 @@ RSpec.describe Twig::Extension::Core do
 
   it_behaves_like 'render_and_raise' do
     let(:loader) do
-      Twig::Loader::Array.new(
+      Twig::Loader::Hash.new(
         {
           'template.twig' => '{{ include("include.twig") }}',
           'include.twig' => "\n\n\n{{ block('unknown') }}",

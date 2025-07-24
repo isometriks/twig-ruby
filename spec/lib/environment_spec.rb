@@ -4,7 +4,7 @@ require 'spec_helper'
 
 RSpec.describe Twig::Environment do
   let(:templates) { { 'index.twig': template } }
-  let(:loader) { Twig::Loader::Array.new(templates) }
+  let(:loader) { Twig::Loader::Hash.new(templates) }
   let(:environment) { Twig::Environment.new(loader).tap { |env| env.add_extension(extension) } }
 
   context 'when there are dynamic callables' do

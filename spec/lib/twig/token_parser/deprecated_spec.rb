@@ -4,7 +4,7 @@ require 'spec_helper'
 
 RSpec.describe Twig::TokenParser::Deprecated do
   it 'outputs a deprecation warning' do
-    loader = Twig::Loader::Array.new({
+    loader = Twig::Loader::Hash.new({
       'index.twig' => '{% deprecated "Use base.twig instead" version="1.0" package="twig" %}',
     })
     environment = Twig::Environment.new(loader)

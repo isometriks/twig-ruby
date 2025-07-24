@@ -21,7 +21,7 @@ RSpec.shared_examples 'render_and_assert' do
   end
 
   def render(source, context, output_buffer)
-    loader = Twig::Loader::Array.new({
+    loader = Twig::Loader::Hash.new({
       template: source,
       **templates,
     })
@@ -41,7 +41,7 @@ end
 
 RSpec.shared_examples 'render_and_raise' do
   let(:template) { raise NotImplementedError, 'Set template to render' }
-  let(:loader) { Twig::Loader::Array.new({ 'template.twig' => template }) }
+  let(:loader) { Twig::Loader::Hash.new({ 'template.twig' => template }) }
   let(:environment) { Twig::Environment.new(loader) }
   let(:error) { NotImplementedError }
   let(:message) { raise NotImplementedError, 'Add regex error message to match' }

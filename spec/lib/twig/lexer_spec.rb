@@ -5,7 +5,7 @@ require 'integration_shared_examples'
 
 RSpec.describe Twig::Lexer do
   let(:template) { '' }
-  let(:loader) { Twig::Loader::Array.new({ 'index.twig' => template }) }
+  let(:loader) { Twig::Loader::Hash.new({ 'index.twig' => template }) }
   let(:environment) { Twig::Environment.new(loader) }
   let(:lexer) { described_class.new(environment) }
   let(:source) { loader.get_source_context('index.twig') }

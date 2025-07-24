@@ -9,8 +9,8 @@ bundle add twig-ruby
 ## Rendering a Template
 
 ```ruby
-loader = Twig::Loader::Array({
-  'template.twig': '{{ var }}',
+loader = Twig::Loader::Hash.new({
+  'template.twig' => '{{ var }}',
 })
 environment = Twig::Environment.new(loader)
 template = environment.load('template.twig')

@@ -3,8 +3,8 @@
 require 'spec_helper'
 
 RSpec.describe Twig::Loader::Filesystem do
-  let(:first_loader) { Twig::Loader::Array.new({ 'first.twig' => 'first' }) }
-  let(:second_loader) { Twig::Loader::Array.new({ 'second.twig' => 'second' }) }
+  let(:first_loader) { Twig::Loader::Hash.new({ 'first.twig' => 'first' }) }
+  let(:second_loader) { Twig::Loader::Hash.new({ 'second.twig' => 'second' }) }
   let(:chain_loader) { Twig::Loader::Chain.new([first_loader, second_loader]) }
 
   it 'gets templates from chain loader with multiple array loaders' do
