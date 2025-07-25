@@ -19,7 +19,7 @@ to look in relative to that:
 loader = Twig::Loader::Filesystem.new(__dir__, %w[views ui])
 ```
 
-If the file you ran this in was at `/app` and you tried to load `index.html.twig'
+If the file you ran this in was at `/app` and you tried to load `index.html.twig`
 it would first look to see if `/app/views/index.html.twig` existed, and then look
 to see if `/app/ui/index.html.twig` exists and render it.
 
@@ -33,12 +33,19 @@ loader.add_path('themes/default', 'theme')
 loader.add_path('themes/active', 'theme')
 ```
 
-When using namespaces, you refer to them like `@theme` so as with the example above, if
-you tried to load `@theme/index.html.twig` then it would look into `/app/themes/default/index.html.twig`
-and then `/app/themes/active/index.html.twig`
+When using namespaces, you refer to them with the `@` prefix (e.g., `@theme`). Using the example above, if
+you tried to load `@theme/index.html.twig`, Twig would search for the template in this order:
 
-Though, we probably want our active theme to take precedence over the default theme, in this case you can use
-`prepend_path` so we could do `loader.prepend_path('themes/active', 'theme')` instead.
+1. First in `/app/themes/default/index.html.twig`
+2. Then in `/app/themes/active/index.html.twig`
+
+The search order follows the order paths were added. If you want the active theme to take precedence over the default theme (which is typically what you'd want), use `prepend_path` to add the active theme first in the search order:
+
+```ruby
+loader.prepend_path('themes/active', 'theme')
+```
+
+This would reverse the search order, looking in the active theme first, then falling back to the default theme.
 
 Of course, you also have `set_paths` if you wanted to set the paths exactly:
 
@@ -71,34 +78,37 @@ an ActiveRecord model named `Template`:
 ```ruby
 class DatabaseLoader < Twig::Loader::Base
   def get_source_context(name)
-    template = Template.find_by(name:)
-    raise Twig::Error::Loader unless template
-
+    template = find_template(name)
     ::Twig::Source.new(template.body, name)
   end
-  
+
   def get_cache_key(name)
-    template = Template.find_by(name:)
-    raise Twig::Error::Loader unless template
-    
+    template = find_template(name)
     "#{template.id}:#{template.name}"
   end
-  
-  def fresh?(name, time)
-    template = Template.find_by(name:)
-    raise Twig::Error::Loader unless template
 
+  def fresh?(name, time)
+    template = find_template(name)
     template.updated_at.to_i < time
   end
-  
+
   def exists?(name)
     !Template.find_by(name:).nil?
+  end
+
+  private
+
+  def find_template(name)
+    template = Template.find_by(name:)
+    raise Twig::Error::Loader, "Template '#{name}' not found" unless template
+    
+    template
   end
 end
 ```
 
-There's a lot of oportunities to cache a lot of the database calls in the class above but it
-is written for simplicity. 
+There are many opportunities to improve performance by adding caching to the database calls in the class above,
+but it is written for simplicity.
 
 ## Template Reloading
 
