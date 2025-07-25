@@ -116,9 +116,14 @@ register a `:twig` template handler. Just simply create your views such as
 {% endblock %}
 ```
 
-Since Twig can support layouts through inheritance, you may not want to use layouts anymore as this is
-something you can do in every template with `{% extends 'layouts/base.html.twig' %}` - You can disable
-rails layouts globally with `layout false` in your `ApplicationController`
+Since Twig supports layouts through template inheritance (which is more flexible than Rails layouts),
+you'll typically want to use Twig's inheritance system instead of Rails layouts. This allows you to:
+
+1. Create a base template with common structure
+2. Override specific blocks in child templates
+3. Nest layouts for more complex page structures
+
+To use Twig's inheritance instead of Rails layouts, disable Rails layouts in your controller:
 
 ```ruby
 class ApplicationController < ActionController::Base
@@ -132,15 +137,15 @@ These are all the defaults. You only need this configuration if you plan to chan
 
 ```ruby
 Rails.application.configure do
-  config.twig.root = ::Rails.root, # Used for default Filesystem Loader
-  config.twig.paths = %w[/ app/views/], # Used for default Filesystem Loader
-  config.twig.debug = ::Rails.env.development?,
-  config.twig.allow_helper_methods = true,
-  config.twig.cache = ::Rails.root.join('tmp/cache/twig').to_s,
-  config.twig.charset = 'UTF-8',
-  config.twig.strict_variables = true,
-  config.autoescape = :name,
-  config.twig.auto_reload = nil,
+  config.twig.root = ::Rails.root # Used for default Filesystem Loader
+  config.twig.paths = %w[/ app/views/] # Used for default Filesystem Loader
+  config.twig.debug = ::Rails.env.development?
+  config.twig.allow_helper_methods = true
+  config.twig.cache = ::Rails.root.join('tmp/cache/twig').to_s
+  config.twig.charset = 'UTF-8'
+  config.twig.strict_variables = true
+  config.twig.autoescape = :name
+  config.twig.auto_reload = nil
   config.twig.loader = lambda do
     ::Twig::Loader::Filesystem.new(
       current.root,
@@ -193,7 +198,7 @@ Using `{% yield cache() do %}` WILL NOT WORK CORRECTLY.
 ```twig
 {% cache(product) %}
   ...
-{% endyield %}
+{% endcache %}
 ```
 
 Macros can also use Ruby notation for default values:

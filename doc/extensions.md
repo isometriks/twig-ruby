@@ -1,11 +1,12 @@
 # Extensions
 
-Extensions are how to add functionality to Twig. The most common things to add
-with an extension are functions, filters, tests, and globals. 
+Extensions are used to add functionality to Twig. The most common elements to add
+through an extension are functions, filters, tests, and globals.
 
-You can extend from `Twig::Extension::Base` which will give you some shortcuts 
-for building an extension and already returns empty arrays / hashes for things
-you may not want to implement. 
+To create an extension, extend the `Twig::Extension::Base` class, which provides helpful shortcuts
+for building extensions and implements empty methods for extension points you may not need.
+This base class handles common boilerplate code so you can focus on implementing just the
+functionality you need.
 
 ## Functions
 
@@ -17,6 +18,8 @@ All the callables can be setup as class methods, instance methods, or procs
 class UpperExtension < Twig::Extension::Base
   def functions
     [
+      # The 'static' helper creates a callable reference to a class method
+      # It's equivalent to self.class.method(:upper) but more concise
       Twig::TwigFunction.new('upper', static(:upper)),
     ]
   end
@@ -55,13 +58,33 @@ class UpperExtension < Twig::Extension::Base
 end
 ``` 
 
-Now you need to add the extension to the environment:
+## Registering Extensions
+
+After creating an extension, you need to register it with the Twig environment. There are several ways to do this:
+
+### Per-Environment Registration
 
 ```ruby
+# Create your environment
+environment = Twig::Environment.new(loader)
+
+# Add your extension
 environment.add_extension(UpperExtension.new)
 ```
 
-And you can use it in your templates:
+### Global Registration with Rails
+
+In a Rails application, you can register extensions in an initializer:
+
+```ruby
+# config/initializers/twig.rb
+Rails.application.config.to_prepare do
+  Twig.environment.add_extension(UpperExtension.new)
+  # Add other extensions as needed
+end
+```
+
+Once registered, you can use your extension's functionality in templates:
 
 ```twig
 {{ upper("hello world") }} {# HELLO WORLD #}
@@ -106,16 +129,39 @@ end
 
 ## Globals
 
-You can also provide global variables that can be accessed in any template without being passed
+Globals allow you to provide variables that are accessible in any template without needing to pass them explicitly in the context. This is useful for application-wide configuration values, constants, or commonly used data.
 
 ```ruby
-class UpperExtension < Twig::Extension::Base
+class AppExtension < Twig::Extension::Base
   def globals
     {
-      ga_tracking: 'UA-xxxxx-x'
+      # Static configuration values
+      ga_tracking: 'UA-xxxxx-x',
+      app_version: '1.2.3',
+
+      # Dynamic values
+      current_year: Time.now.year,
+      is_production: Rails.env.production?,
+
+      # Helper methods/lambdas
+      format_date: ->(date) { date.strftime('%B %d, %Y') }
     }
   end
 end
 ```
 
-Now you can use `{{ ga_tracking }}` anywhere you'd like. 
+Once registered, these globals can be used in any template:
+
+```twig
+<footer>
+  © {{ current_year }} My Company | Version {{ app_version }}
+  {% if is_production %}
+    <!-- Analytics code: {{ ga_tracking }} -->
+  {% endif %}
+
+  <!-- Using a lambda global -->
+  Last updated: {{ format_date.call(page.updated_at) }}
+</footer>
+```
+
+Globals are especially useful for values that would otherwise need to be included in every template render call.
