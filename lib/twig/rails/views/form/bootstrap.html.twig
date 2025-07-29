@@ -1,0 +1,41 @@
+{% block row_class -%}
+mb-3{{ options.fetch(:floating, false) ? " form-floating" : "" }}
+{%- endblock %}
+
+{% block unwrapped_row %}
+  {% if options.fetch(:floating, false) %}
+    {{ field }}
+    {{ label }}
+  {% else %}
+    {{ label }}
+    {{ field }}
+  {% endif %}
+{% endblock %}
+
+{% block row %}
+  <div class="{{ block('row_class') }}">
+    {{ block('unwrapped_row') }}
+  </div>
+{% endblock %}
+
+{% block row_checkbox %}
+  <div class="form-check {{ block('row_class') }}">
+    {{ block('unwrapped_row') }}
+  </div>
+{% endblock %}
+
+{% block text_field %}
+  {% do options.delete(:floating) %}
+  {{ template.text_field(object_name, name, options.merge({
+    class: "form-control #{options.fetch(:class, "")}"
+  })) }}
+{% endblock %}
+
+{% block select %}
+  {{ template.select(object_name, name, options.merge(class: "form-select")) }}
+{% emdblock %}
+
+{% block label %}
+  {% set class = options.delete(:floating) ? "" : "form-label " %}
+  {{ template.label(object_name, name, options.merge({ class: "#{class}#{options.fetch(:class, "")}" })) }}
+{% endblock %}

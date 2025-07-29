@@ -4,6 +4,8 @@ require 'rails'
 require 'English'
 require 'twig/rails/config'
 require 'twig/rails/renderer'
+require 'twig/rails/form/twig'
+require 'twig/rails/form/bootstrap'
 
 module Twig
   # @return [Environment]

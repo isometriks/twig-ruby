@@ -18,7 +18,10 @@ module Twig
             ::Twig::Loader::Filesystem.new(
               current.root,
               current.paths
-            )
+            ).tap do |loader|
+              loader.add_path("#{__dir__}/views")
+              loader.add_path("#{__dir__}/views", 'twig')
+            end
           end,
         })
       end
