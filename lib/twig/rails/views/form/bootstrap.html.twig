@@ -33,9 +33,15 @@ mb-3{{ options.fetch(:floating, false) ? " form-floating" : "" }}
 
 {% block select %}
   {{ template.select(object_name, name, options.merge(class: "form-select")) }}
-{% emdblock %}
+{% endblock %}
 
 {% block label %}
   {% set class = options.delete(:floating) ? "" : "form-label " %}
   {{ template.label(object_name, name, options.merge({ class: "#{class}#{options.fetch(:class, "")}" })) }}
+{% endblock %}
+
+{% block input_group %}
+  <div class="input-group">
+    {{ blocked.call }}
+  </div>
 {% endblock %}
