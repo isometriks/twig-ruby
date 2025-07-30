@@ -21,7 +21,7 @@ Implementation of [Twig](https://twig.symfony.com/) in Ruby.
 ## Installation
 
 ```bash
-bundle add twig-ruby
+bundle add twig_ruby
 ```
 
 ## Quick Start
