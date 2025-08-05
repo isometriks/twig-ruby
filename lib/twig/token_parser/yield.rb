@@ -27,6 +27,16 @@ module Twig
         body = parser.subparse(method(:decide_yield_end), drop_needle: true)
         stream.expect(Token::BLOCK_END_TYPE)
 
+        # If it's a context variable, turn it into a helper method
+        # ex: {% yield turbo_frame_tag do %}
+        if expr.is_a?(Node::Expression::Variable::Context)
+          expr = Node::Expression::HelperMethod.new(
+            expr.attributes[:name],
+            Node::Nodes.new({}),
+            lineno
+          )
+        end
+
         Node::Yield.new(expr, body, arguments, lineno)
       end
 

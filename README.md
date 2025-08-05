@@ -182,6 +182,14 @@ can be used with helpers like `form_with`
   {{ f.email_field(:email) }}
 {% endyield %}
 ```
+
+Rails helpers can also be called. Parenthesis is only required when passing arguments:
+
+```twig
+{{ stylesheet_link_tag(:app, "data-turbo-track": "reload") }}
+{{ javascript_importmap_tags }}
+```
+
 ### Cache Tag
 
 The way the `cache` tag works in Rails is that it captures output from the buffer that 
