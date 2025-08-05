@@ -30,13 +30,8 @@ module Twig
 
           compiler.add_debug_info(self)
 
-          if attributes[:name][0] == '@'
-            check = "context.call_context.instance_variable_defined?('#{name}')"
-            get = "context.call_context.instance_variable_get('#{name}')"
-          else
-            check = "context.key?(:#{name})"
-            get = "context[:#{name}]"
-          end
+          check = "context.has?(:#{name})"
+          get = "context.get(:#{name})"
 
           if define_test_enabled?
             if attributes[:always_defined] || SPECIAL_VARS.key?(name)

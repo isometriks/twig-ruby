@@ -52,6 +52,24 @@ module Twig
         self.class.new(other, call_context:, output_buffer:)
       end
 
+      def has?(name)
+        if name[0] == '@'
+          call_context.instance_variable_defined?(name)
+        else
+          key?(name) || call_context.respond_to?(name)
+        end
+      end
+
+      def get(name)
+        if name[0] == '@'
+          call_context.instance_variable_get(name)
+        elsif key?(name)
+          self[name]
+        elsif call_context.respond_to?(name)
+          call_context.send(name)
+        end
+      end
+
       def push_stack
         stack.push({ remove: [], replace: {} })
       end
