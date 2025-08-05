@@ -12,11 +12,13 @@ RSpec.describe Twig::TokenParser::Yield do
         {% yield basic() do %}Hello World!{% endyield %}
         {% yield basic() do |q| %}Hello World!{% endyield %}
         {% yield pair() do |k, v| %}{{ k }} {{ v }}{% endyield %}
+        {% yield pair do |k, v| %}{{ k }} {{ v }}{% endyield %}
       INPUTS
     end
 
     let(:outputs) do
       <<~OUTPUTS
+        Hello World!
         Hello World!
         Hello World!
         Hello World!
