@@ -42,7 +42,7 @@ module Twig
 
       # @return [ExpressionParser::Base, nil]
       def by_name(type, name)
-        parsers_by_name[type][name]
+        parsers_by_name.dig(type, name)
       end
 
       private
