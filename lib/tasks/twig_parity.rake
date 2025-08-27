@@ -256,7 +256,7 @@ class TwigFixture
     templates = {}
     test.scan(/--TEMPLATE(?:\((.*?)\))?--(.*?)(?=--TEMPLATE|\z)/mx).map do |name, contents|
       templates[name || 'index.twig'] = contents.
-        gsub(/[\n]*\z/, '').
+        gsub(/\n*\z/, '').
         gsub('d/m/Y H:i:s P', '%d/%m/%Y %H:%M:%S %:z'). # Change dates to Ruby format
         gsub('Twig\Tests\TwigTestFoo', 'TwigTestFoo') # Change class name to match Ruby
     end
