@@ -880,11 +880,11 @@ module Twig
             return object[attribute] || (attribute.is_a?(String) ? object[attribute.to_sym] : object[attribute.to_s])
           end
 
-          if defined_test
-            return false
-          end
-
           if type == Template::ARRAY_CALL
+            if defined_test
+              return false
+            end
+
             if ignore_strict_check || !environment.strict_variables?
               return
             end
@@ -893,7 +893,13 @@ module Twig
           end
         end
 
-        if object.respond_to?(attribute)
+        responds_to = begin
+          object.respond_to?(attribute)
+        rescue StandardError
+          false
+        end
+
+        if responds_to
           if defined_test
             return true
           end
@@ -933,7 +939,7 @@ module Twig
             end
           end
         # Constant could be nil but we should return if we find it
-        elsif (constant = get_constant(object, attribute)) && constant[0] == :found
+        elsif (constant = get_constant(object, attribute.to_s)) && constant[0] == :found
           constant[1]
         else
           return if ignore_strict_check || !environment.strict_variables?
