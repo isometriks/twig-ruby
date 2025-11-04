@@ -871,7 +871,8 @@ module Twig
             (
               object.is_a?(Hash) && (
                 object.key?(attribute) ||
-                (attribute.respond_to?(:to_sym) && object.key?(attribute.to_sym))
+                (attribute.respond_to?(:to_sym) && object.key?(attribute.to_sym)) ||
+                  (attribute.respond_to?(:to_s) && object.key?(attribute.to_s))
               )
             )
           )
