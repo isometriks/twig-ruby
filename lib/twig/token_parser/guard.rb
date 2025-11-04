@@ -19,9 +19,15 @@ module Twig
         end
 
         name_token = stream.expect(Token::NAME_TYPE)
+        name = name_token.value
+
+        if type_token.value == 'test' && stream.test(Token::NAME_TYPE)
+          name = "#{name} #{stream.current.value}"
+          stream.next
+        end
 
         begin
-          exists = !parser.environment.send(type_token.value, name_token.value).nil?
+          exists = !parser.environment.send(type_token.value, name).nil?
         rescue Error::Syntax
           exists = false
         end
