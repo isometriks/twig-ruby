@@ -233,9 +233,8 @@ module Twig
         # try 2 word tests
         name = "#{name} #{current_token.value}"
 
-        if (test = environment.test(name))
-          stream.next
-        end
+        test = environment.test(name)
+        stream.next
       else
         test = environment.test(name)
       end
