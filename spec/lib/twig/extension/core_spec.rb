@@ -478,4 +478,31 @@ RSpec.describe Twig::Extension::Core do
       let(:result) { %w[A B] }
     end
   end
+
+  describe '#get_attribute' do
+    let(:loader) { Twig::Loader::Hash.new({}) }
+    let(:environment) { Twig::Environment.new(loader) }
+
+    it 'does not use bracket access if doing a method call' do
+      klass = Class.new do
+        def [](_)
+          99
+        end
+
+        def foo
+          42
+        end
+      end.new
+
+      expect(
+        described_class.get_attribute(
+          environment,
+          instance_double(Twig::Source),
+          klass,
+          :foo,
+          Twig::Template::METHOD_CALL
+        )
+      ).to eq(42)
+    end
+  end
 end
