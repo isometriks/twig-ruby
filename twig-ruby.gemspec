@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = 'twig_ruby'
-  s.version     = '0.0.7'
+  s.version     = '0.0.8'
   s.summary     = 'Twig Templating for Ruby'
   s.description = ''
   s.authors     = ['Craig Blanchette', 'Fabian Potencier']
