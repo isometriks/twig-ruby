@@ -4,7 +4,7 @@ source 'https://rubygems.org'
 
 gem 'activesupport', '~> 8.1'
 gem 'rake', '~> 13.3'
-gem 'rubocop', '~> 1.81'
+gem 'rubocop', '~> 1.82'
 
 group :test do
   gem 'rspec', '~> 3.13'
