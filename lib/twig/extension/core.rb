@@ -869,7 +869,7 @@ module Twig
           if object.respond_to?(:[]) && (
             (object.is_a?(Array) && attribute.is_a?(Integer) && attribute < object.length) ||
             (
-              object.is_a?(Hash) && (
+              object.respond_to?(:key?) && (
                 object.key?(attribute) ||
                 (attribute.respond_to?(:to_sym) && object.key?(attribute.to_sym)) ||
                   (attribute.respond_to?(:to_s) && object.key?(attribute.to_s))
