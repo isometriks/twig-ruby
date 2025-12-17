@@ -504,5 +504,19 @@ RSpec.describe Twig::Extension::Core do
         )
       ).to eq(42)
     end
+
+    it 'uses bracket access even when not a hash or array if doing an array call' do
+      object = Class.new(SimpleDelegator).new({ pi: 3.14 })
+
+      expect(
+        described_class.get_attribute(
+          environment,
+          instance_double(Twig::Source),
+          object,
+          :pi,
+          Twig::Template::METHOD_CALL
+        )
+      ).to eq(3.14)
+    end
   end
 end
