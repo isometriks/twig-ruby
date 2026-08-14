@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 
+# require_relative rather than requiring the gem: this needs the version and
+# nothing else, and evaluating the whole library to read one constant would pull
+# ActiveSupport in at packaging time.
+require_relative 'lib/twig/version'
+
 Gem::Specification.new do |s|
   s.name        = 'twig_ruby'
-  s.version     = '0.0.8'
+  s.version     = Twig::VERSION
   s.summary     = 'Twig Templating for Ruby'
   s.description = ''
   s.authors     = ['Craig Blanchette', 'Fabian Potencier']
