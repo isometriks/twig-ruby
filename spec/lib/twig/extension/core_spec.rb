@@ -539,6 +539,46 @@ RSpec.describe Twig::Extension::Core do
       )
     end
 
+    context 'with a key holding a falsy value' do
+      it 'returns false for a string key reached by a string name' do
+        expect(subscript_of({ 'flag' => false }, 'flag')).to be(false)
+        expect(attribute_of({ 'flag' => false }, 'flag')).to be(false)
+      end
+
+      it 'returns false for a symbol key reached by a symbol name' do
+        expect(subscript_of({ flag: false }, :flag)).to be(false)
+      end
+
+      it 'returns false across the string/symbol divide' do
+        expect(subscript_of({ flag: false }, 'flag')).to be(false)
+        expect(subscript_of({ 'flag' => false }, :flag)).to be(false)
+      end
+
+      it 'returns nil for a key that genuinely holds nil' do
+        expect(subscript_of({ 'flag' => nil }, 'flag')).to be_nil
+      end
+
+      it 'prefers the key that matches over the other form of the name' do
+        # Both keys exist; the one the template asked for wins, even though it
+        # holds nil and the other holds something truthy.
+        expect(subscript_of({ 'a' => nil, a: 1 }, 'a')).to be_nil
+        expect(subscript_of({ 'a' => 1, a: nil }, :a)).to be_nil
+      end
+
+      it 'reports a falsy value as defined' do
+        expect(
+          described_class.get_attribute(
+            environment,
+            instance_double(Twig::Source),
+            { 'flag' => false },
+            'flag',
+            Twig::Template::ARRAY_CALL,
+            defined_test: true
+          )
+        ).to be(true)
+      end
+    end
+
     context 'with an array index' do
       let(:strict) { Twig::Environment.new(loader, { strict_variables: true }) }
 

@@ -5,6 +5,10 @@ module Twig
     class Core < Base
       DEFAULT_TRIM_CHARS = " \t\n\r\0\x0B"
 
+      # Returned by subscript_key when nothing matched. A sentinel rather than
+      # nil, because nil is a perfectly good hash key and a perfectly good value.
+      KEY_NOT_FOUND = Object.new.freeze
+
       class << self
         include ActiveSupport::NumberHelper
       end
@@ -860,33 +864,53 @@ module Twig
         raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
 
+      # The key or index that +attribute+ matches on a subscriptable object, or
+      # KEY_NOT_FOUND when it matches none.
+      #
+      # Returning the key rather than the value is the point: it lets the caller
+      # subscript exactly once. Fetching first and testing the result instead —
+      # as `object[attribute] || object[attribute.to_s]` did — can't tell a key
+      # holding nil or false from a key that isn't there, so { 'billable' =>
+      # false } came back as nil.
+      #
+      # @return [Object] the matching key, or KEY_NOT_FOUND
+      def self.subscript_key(object, attribute)
+        if object.is_a?(Array)
+          return KEY_NOT_FOUND unless attribute.is_a?(Integer)
+
+          # Ruby indexes from the end with a negative, so -1 is the last element
+          # while anything below -length is as absent as anything above length.
+          in_bounds = attribute >= -object.length && attribute < object.length
+
+          return in_bounds ? attribute : KEY_NOT_FOUND
+        end
+
+        return KEY_NOT_FOUND unless object.respond_to?(:key?)
+        return attribute if object.key?(attribute)
+
+        # A template writes h.foo, h['foo'] and h[:foo] for the same Ruby hash,
+        # so both forms of the name count as a match.
+        symbol = attribute.to_sym if attribute.respond_to?(:to_sym)
+        return symbol if !symbol.nil? && object.key?(symbol)
+
+        string = attribute.to_s if attribute.respond_to?(:to_s)
+        return string if !string.nil? && object.key?(string)
+
+        KEY_NOT_FOUND
+      end
+
       # @param [Environment] environment
       def self.get_attribute(
         environment, source, object, attribute, type, arguments: {}, defined_test: false,
         ignore_strict_check: false, lineno: -1, &
       )
         if type == Template::ARRAY_CALL || object.respond_to?(:[])
-          if object.respond_to?(:[]) && (
-            # Ruby indexes from the end with a negative, so -1 is the last
-            # element and anything below -length is as absent as anything above
-            # length. Checking only the upper bound let every negative through
-            # to the lookup below, where an out-of-range one fell out of the
-            # array and into a String subscript: TypeError, not a Twig error.
-            (
-              object.is_a?(Array) && attribute.is_a?(Integer) &&
-                attribute >= -object.length && attribute < object.length
-            ) ||
-            (
-              object.respond_to?(:key?) && (
-                object.key?(attribute) ||
-                (attribute.respond_to?(:to_sym) && object.key?(attribute.to_sym)) ||
-                  (attribute.respond_to?(:to_s) && object.key?(attribute.to_s))
-              )
-            )
-          )
+          key = object.respond_to?(:[]) ? subscript_key(object, attribute) : KEY_NOT_FOUND
+
+          unless key.equal?(KEY_NOT_FOUND)
             return true if defined_test
 
-            return object[attribute] || (attribute.is_a?(String) ? object[attribute.to_sym] : object[attribute.to_s])
+            return object[key]
           end
 
           if type == Template::ARRAY_CALL
