@@ -899,6 +899,17 @@ module Twig
         KEY_NOT_FOUND
       end
 
+      # Names the keys that do exist rather than dumping the object, which for
+      # anything the size of a request's parameters buries the one absent key
+      # under everything else.
+      #
+      # @return [String]
+      def self.key_not_found_message(object, attribute)
+        keys = object.respond_to?(:keys) ? " with keys \"#{object.keys.join(', ')}\"" : ''
+
+        "Key \"#{attribute}\" for sequence/mapping#{keys} does not exist."
+      end
+
       # @param [Environment] environment
       def self.get_attribute(
         environment, source, object, attribute, type, arguments: {}, defined_test: false,
@@ -922,7 +933,11 @@ module Twig
               return
             end
 
-            raise Error::Runtime, "Can't find key #{attribute} in #{object.inspect}."
+            raise Error::Runtime.new(
+              key_not_found_message(object, attribute),
+              lineno,
+              source
+            )
           end
         end
 
@@ -987,8 +1002,7 @@ module Twig
           message = if object.nil?
                       "Impossible to access an attribute (\"#{attribute}\") on a null variable."
                     elsif object.respond_to?(:[]) && !object.is_a?(String)
-                      keys = object.respond_to?(:keys) ? "with keys \"#{object.keys.join(', ')}\"" : ''
-                      "Key \"#{attribute}\" for sequence/mapping #{keys} does not exist."
+                      key_not_found_message(object, attribute)
                     else
                       "Impossible to access an attribute (\"#{attribute}\") on a #{object.class} " \
                         "variable (\"#{object}\")."

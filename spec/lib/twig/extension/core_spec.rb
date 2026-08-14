@@ -482,6 +482,10 @@ RSpec.describe Twig::Extension::Core do
   describe '#get_attribute' do
     let(:loader) { Twig::Loader::Hash.new({}) }
     let(:environment) { Twig::Environment.new(loader) }
+    let(:strict) { Twig::Environment.new(loader, { strict_variables: true }) }
+    # A missing key raises with the source attached, so the double has to answer
+    # what Error::Base asks of it.
+    let(:source) { instance_double(Twig::Source, path: nil, name: nil) }
 
     it 'does not use bracket access if doing a method call' do
       klass = Class.new do
@@ -519,24 +523,40 @@ RSpec.describe Twig::Extension::Core do
       ).to eq(3.14)
     end
 
-    def attribute_of(object, attribute)
-      described_class.get_attribute(
-        environment,
-        instance_double(Twig::Source),
-        object,
-        attribute,
-        Twig::Template::METHOD_CALL
-      )
+    def attribute_of(object, attribute, env = environment)
+      described_class.get_attribute(env, source, object, attribute, Twig::Template::METHOD_CALL)
     end
 
     def subscript_of(object, attribute, env = environment)
-      described_class.get_attribute(
-        env,
-        instance_double(Twig::Source),
-        object,
-        attribute,
-        Twig::Template::ARRAY_CALL
-      )
+      described_class.get_attribute(env, source, object, attribute, Twig::Template::ARRAY_CALL)
+    end
+
+    context 'when the key is missing' do
+      it 'names the keys that exist rather than dumping the object' do
+        expect { subscript_of({ 'a' => 'x', 'b' => 'y' }, 'c', strict) }.
+          to raise_error(Twig::Error::Runtime, %r{Key "c" for sequence/mapping with keys "a, b" does not exist})
+      end
+
+      it 'reports the same way for bracket and dot access' do
+        object = { 'a' => 'x' }
+        bracket = begin
+          subscript_of(object, 'c', strict)
+        rescue Twig::Error::Runtime => e
+          e.message
+        end
+        dot = begin
+          attribute_of(object, 'c', strict)
+        rescue Twig::Error::Runtime => e
+          e.message
+        end
+
+        expect(bracket).to eq(dot)
+      end
+
+      it 'does not double the space when the object has no keys' do
+        expect { subscript_of(%w[a b], 5, strict) }.
+          to raise_error(Twig::Error::Runtime, %r{sequence/mapping does not exist})
+      end
     end
 
     context 'with a key holding a falsy value' do
@@ -580,8 +600,6 @@ RSpec.describe Twig::Extension::Core do
     end
 
     context 'with an array index' do
-      let(:strict) { Twig::Environment.new(loader, { strict_variables: true }) }
-
       it 'reads from the end with a negative index' do
         expect(subscript_of(%w[a b c], -1)).to eq('c')
         expect(subscript_of(%w[a b c], -3)).to eq('a')
