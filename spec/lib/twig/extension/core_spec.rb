@@ -529,6 +529,40 @@ RSpec.describe Twig::Extension::Core do
       )
     end
 
+    def subscript_of(object, attribute, env = environment)
+      described_class.get_attribute(
+        env,
+        instance_double(Twig::Source),
+        object,
+        attribute,
+        Twig::Template::ARRAY_CALL
+      )
+    end
+
+    context 'with an array index' do
+      let(:strict) { Twig::Environment.new(loader, { strict_variables: true }) }
+
+      it 'reads from the end with a negative index' do
+        expect(subscript_of(%w[a b c], -1)).to eq('c')
+        expect(subscript_of(%w[a b c], -3)).to eq('a')
+      end
+
+      it 'treats an out-of-range negative index as missing, not as a TypeError' do
+        expect { subscript_of(%w[a b c], -99, strict) }.
+          to raise_error(Twig::Error::Runtime, /-99/)
+      end
+
+      it 'treats an out-of-range positive index as missing' do
+        expect { subscript_of(%w[a b c], 99, strict) }.
+          to raise_error(Twig::Error::Runtime, /99/)
+      end
+
+      it 'returns nil for an out-of-range index when not strict' do
+        expect(subscript_of(%w[a b c], -99)).to be_nil
+        expect(subscript_of(%w[a b c], 99)).to be_nil
+      end
+    end
+
     context 'with a collection' do
       it 'calls methods on an array rather than subscripting with the name' do
         expect(attribute_of(%w[a b], :any?)).to be(true)

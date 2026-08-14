@@ -867,7 +867,15 @@ module Twig
       )
         if type == Template::ARRAY_CALL || object.respond_to?(:[])
           if object.respond_to?(:[]) && (
-            (object.is_a?(Array) && attribute.is_a?(Integer) && attribute < object.length) ||
+            # Ruby indexes from the end with a negative, so -1 is the last
+            # element and anything below -length is as absent as anything above
+            # length. Checking only the upper bound let every negative through
+            # to the lookup below, where an out-of-range one fell out of the
+            # array and into a String subscript: TypeError, not a Twig error.
+            (
+              object.is_a?(Array) && attribute.is_a?(Integer) &&
+                attribute >= -object.length && attribute < object.length
+            ) ||
             (
               object.respond_to?(:key?) && (
                 object.key?(attribute) ||
