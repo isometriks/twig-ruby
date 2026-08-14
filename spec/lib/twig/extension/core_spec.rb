@@ -518,5 +518,57 @@ RSpec.describe Twig::Extension::Core do
         )
       ).to eq(3.14)
     end
+
+    def attribute_of(object, attribute)
+      described_class.get_attribute(
+        environment,
+        instance_double(Twig::Source),
+        object,
+        attribute,
+        Twig::Template::METHOD_CALL
+      )
+    end
+
+    context 'with a collection' do
+      it 'calls methods on an array rather than subscripting with the name' do
+        expect(attribute_of(%w[a b], :any?)).to be(true)
+        expect(attribute_of(%w[a b], :size)).to eq(2)
+        expect(attribute_of([], :any?)).to be(false)
+      end
+
+      it 'calls methods on a hash rather than returning nil' do
+        expect(attribute_of({ 'a' => 1 }, :any?)).to be(true)
+        expect(attribute_of({}, :any?)).to be(false)
+      end
+
+      it 'still prefers a real key over a method of the same name' do
+        expect(attribute_of({ 'size' => 'from key' }, 'size')).to eq('from key')
+        expect(attribute_of({ 'first' => 'Ada' }, 'first')).to eq('Ada')
+      end
+
+      it 'still prefers a real index over a method name' do
+        expect(attribute_of(%w[a b], 0)).to eq('a')
+      end
+    end
+
+    context 'with a method the object only claims to respond to' do
+      let(:liar) do
+        Class.new do
+          def respond_to_missing?(name, include_all = false)
+            name.to_sym == :hidden || super
+          end
+
+          private
+
+          def hidden
+            'private'
+          end
+        end.new
+      end
+
+      it 'does not reach private methods' do
+        expect { attribute_of(liar, :hidden) }.to raise_error(NoMethodError)
+      end
+    end
   end
 end

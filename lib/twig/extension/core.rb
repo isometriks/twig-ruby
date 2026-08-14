@@ -925,19 +925,22 @@ module Twig
 
           kwargs = kwargs.transform_keys(&:to_sym)
 
+          # public_send, not send: respond_to? above already excludes private and
+          # protected methods, but an object with a loose respond_to_missing?
+          # can report true for one. Templates only reach the public interface.
           if positional.length.positive? && kwargs.empty?
-            object.send(attribute, *positional, &)
+            object.public_send(attribute, *positional, &)
           elsif positional.empty? && kwargs.length.positive?
-            object.send(attribute, **kwargs, &)
+            object.public_send(attribute, **kwargs, &)
           elsif positional.length.positive? && kwargs.length.positive?
-            object.send(attribute, *positional, **kwargs, &)
+            object.public_send(attribute, *positional, **kwargs, &)
           else
-            case object
-            when Hash, Array
-              object[attribute]
-            else
-              object.send(attribute, &)
-            end
+            # Reached only when the object responds to the attribute and the
+            # key/index lookup above did not match, so subscripting a Hash or
+            # Array here could only ever miss — it raised TypeError on arrays
+            # ({{ list.any? }}) and returned nil on hashes, silently rendering
+            # nothing. Collections dispatch methods like any other object.
+            object.public_send(attribute, &)
           end
         # Constant could be nil but we should return if we find it
         elsif (constant = get_constant(object, attribute.to_s)) && constant[0] == :found
