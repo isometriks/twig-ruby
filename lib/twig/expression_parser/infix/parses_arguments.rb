@@ -50,8 +50,11 @@ module Twig
           end
 
           name = nil
-          if (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
-             (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
+          if value.is_a?(Node::Expression::Binary::SetBinary)
+            name = value.nodes[:left].attributes[:name]
+            value = value.nodes[:right]
+          elsif (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
+                (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
             # Allow quoted kwargs - form_with("data-turbo-stream": true)
             if value.is_a?(Node::Expression::Constant) && value.attributes[:value].is_a?(String)
               name = value.attributes[:value]

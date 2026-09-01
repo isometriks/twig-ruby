@@ -29,7 +29,7 @@ module Twig
         [
           # Unary operators
           unary.new(Node::Expression::Unary::Not, 'not', 70),
-          unary.new(Node::Expression::Unary::Spread, '...', 512, description: 'Spread Operator'),
+          unary.new(Node::Expression::Unary::Spread, '...', 512, description: 'Spread Operator', operand_precedence: 0),
           unary.new(Node::Expression::Unary::Neg, '-', 500),
           unary.new(Node::Expression::Unary::Pos, '+', 500),
 
@@ -50,6 +50,8 @@ module Twig
           binary.new(Node::Expression::Binary::BitwiseAnd, 'b-and', 16),
           binary.new(Node::Expression::Binary::Equal, '==', 20),
           binary.new(Node::Expression::Binary::NotEqual, '!=', 20),
+          binary.new(Node::Expression::Binary::SameAs, '===', 20),
+          binary.new(Node::Expression::Binary::NotSameAs, '!==', 20),
           binary.new(Node::Expression::Binary::Spaceship, '<=>', 20),
           binary.new(Node::Expression::Binary::Less, '<', 20),
           binary.new(Node::Expression::Binary::Greater, '>', 20),
@@ -90,6 +92,9 @@ module Twig
 
           # Arrow function
           ExpressionParser::Infix::Arrow.new,
+
+          # Assignment operator
+          ExpressionParser::Infix::Assignment.new,
 
           # All literals
           ExpressionParser::Prefix::Literal.new,

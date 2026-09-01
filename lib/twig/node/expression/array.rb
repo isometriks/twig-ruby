@@ -24,6 +24,14 @@ module Twig
             return compiler.repr(true)
           end
 
+          # Empty expressions are only valid in destructuring contexts
+          values.each do |value|
+            if value.is_a?(Expression::EmptySlot)
+              raise Error::Syntax.new('Empty array elements are only allowed in destructuring assignments.',
+                value.lineno)
+            end
+          end
+
           compiler.
             raw('[').
             indent

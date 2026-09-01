@@ -77,14 +77,6 @@ module Twig
               return Node::Expression::Variable::Context.new(token.value, token.lineno)
             end
 
-            if token.value == '=' && %w[== !=].include?(parser.stream.look(-1).value)
-              raise Error::Syntax.new(
-                "Unexpected operator of value \"#{token.value}\". Did you try to use \"===\" or \"!==\" for " \
-                'strict comparison? Use "is same as(value)" instead.',
-                token.lineno,
-                parser.stream.source
-              )
-            end
           end
 
           raise Error::Syntax.new(
@@ -155,7 +147,9 @@ module Twig
 
             first = false
 
-            if stream.next_if(Token::OPERATOR_TYPE, '...')
+            if stream.test(Token::PUNCTUATION_TYPE, ',') || stream.test(Token::PUNCTUATION_TYPE, ']')
+              node.add_element(Node::Expression::EmptySlot.new(stream.current.lineno))
+            elsif stream.next_if(Token::OPERATOR_TYPE, '...')
               expr = parser.parse_expression
               node.add_element(Node::Expression::Unary::ArraySpread.new(expr, expr.lineno))
             else
