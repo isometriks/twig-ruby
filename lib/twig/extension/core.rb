@@ -50,6 +50,8 @@ module Twig
           binary.new(Node::Expression::Binary::BitwiseAnd, 'b-and', 16),
           binary.new(Node::Expression::Binary::Equal, '==', 20),
           binary.new(Node::Expression::Binary::NotEqual, '!=', 20),
+          binary.new(Node::Expression::Binary::SameAs, '===', 20),
+          binary.new(Node::Expression::Binary::NotSameAs, '!==', 20),
           binary.new(Node::Expression::Binary::Spaceship, '<=>', 20),
           binary.new(Node::Expression::Binary::Less, '<', 20),
           binary.new(Node::Expression::Binary::Greater, '>', 20),
