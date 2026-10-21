@@ -145,7 +145,7 @@ Rails.application.configure do
   config.twig.charset = 'UTF-8'
   config.twig.strict_variables = true
   config.twig.autoescape = :name
-  config.twig.auto_reload = nil
+  config.twig.auto_reload = !::Rails.env.production?
   config.twig.loader = lambda do
     ::Twig::Loader::Filesystem.new(
       current.root,

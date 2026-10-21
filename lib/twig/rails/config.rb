@@ -13,7 +13,9 @@ module Twig
           charset: 'UTF-8',
           strict_variables: true,
           autoescape: :name,
-          auto_reload: nil,
+          # The compiled cache outlives the process, so check it against the
+          # templates everywhere but production, test included.
+          auto_reload: !::Rails.env.production?,
           loader: lambda do
             ::Twig::Loader::Filesystem.new(
               current.root,
