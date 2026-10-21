@@ -14,6 +14,7 @@ Implementation of [Twig](https://twig.symfony.com/) in Ruby.
 - [Rails Integration](#rails-integration)
 - [Advanced Features](#advanced-features)
 - [Configuration](#configuration)
+- [Things to Know](#things-to-know)
 - Advanced Docs
   - [Loaders](doc/loaders.md)
   - [Extensions](doc/extensions.md)
@@ -195,6 +196,26 @@ Rails helpers can also be called. Parenthesis is only required when passing argu
 {{ javascript_importmap_tags }}
 ```
 
+Names can end in `?` like Ruby predicates, so these helpers can be called bare too:
+
+```twig
+{% if user_signed_in? and not current_user.admin? %}...{% endif %}
+{% if current_page?(root_path) %}...{% endif %}
+```
+
+The `?` stays on the name when what follows it couldn't start an expression: the end of
+the tag, `)`, `]`, `}`, `,`, `|`, a `:` that isn't a symbol, another `?`, or an operator
+like `and` or `==`.
+Anything else makes it the ternary operator, as in Twig PHP, so `{{ ready?1:2 }}`,
+`{{ ready? 'yes' : 'no' }}` and `{{ ready? :yes : :no }}` are ternaries on `ready`, and
+`ready?:b` and `ready??b` are still the `?:` and `??` operators.
+
+A mapping key keeps its `?` before the colon, so `{open?: true}` has the key `open?`.
+An attribute keeps it before `-`, `+`, `[` or `(`, which could go on with the attribute, so
+`user.admin? - 1` and `user.roles?[0]` read `admin?` and `roles?`. Write
+`user.admin ? -1` if you mean a ternary there. Arrow function and macro arguments can't end
+in `?`.
+
 ### Cache Tag
 
 The way the `cache` tag works in Rails is that it captures output from the buffer that 
@@ -224,3 +245,52 @@ Twig Ruby (Both versions work)
   <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}" size="{{ size }}"/>
 {% endmacro %}
 ```
+
+## Things to Know
+
+These all work as intended, most of them just as in Twig PHP, but they can still catch you out.
+
+**A newline straight after a tag is removed.** `{{ name }}{% if address %}` followed by a
+newline and `{{ address }}{% endif %}` renders the two values with nothing between them.
+Whitespace control can only take whitespace away, never add it, so leave a blank line after
+the tag (the second newline is kept) or print one with `{{ "\n" }}`.
+
+**`empty` is a test, not a filter.** Write `{% if items is not empty %}`; `items|empty` is a
+syntax error. The test also handles `nil`, where `items.any?` would raise "Impossible to
+access an attribute on a null variable".
+
+**`strict_variables` raises on missing keys.** The Rails config turns it on, so
+`{{ params[:page] }}` raises when there's no `page` param. `??` and `default` are the way
+to allow for it:
+
+```twig
+{{ params[:page] ?? 1 }}
+{{ params[:q]|default('') }}
+```
+
+**Controller methods need `helper_method`.** A name that isn't in the template's context is
+looked up on the view, which only sees public helpers. A controller method a template calls
+has to be exposed the same way it would be for ERB:
+
+```ruby
+class ApplicationController < ActionController::Base
+  helper_method :current_account
+end
+```
+
+**Text templates aren't escaped in Rails.** The default `autoescape` picks a strategy from
+the template name: HTML for `.html.twig`, JavaScript for `.js.twig` and `.json.twig`, CSS
+for `.css.twig`, and none for `.text.twig` (Rails' name for plain text, as in a mailer's
+`welcome.text.twig`) or `.txt.twig`. Set `config.twig.autoescape = :name` to use Twig PHP's
+own guess, which only knows `txt`.
+
+**Clear `tmp/cache/twig` after upgrading or changing the config.** Escaping is decided when
+a template is compiled, and the compiled cache is keyed only by the template's name, not by
+the gem version or the options it was compiled with. `auto_reload` only notices edits to the
+template itself, so a `.text.twig` template compiled under the old `:name` default keeps
+escaping until its cache file is removed, in every environment.
+
+**Compiled templates are checked for edits everywhere but production.** They're cached in
+`tmp/cache/twig`, which outlives the process, so `auto_reload` is on in development and
+test, and a test run after an edit picks the edit up. In production the cache is trusted
+without a check, so start each deploy with an empty `tmp/cache/twig`.
