@@ -17,7 +17,17 @@ module Twig
               stream.expect(Token::PUNCTUATION_TYPE, ',', 'Arguments must be separated by a comma')
             end
 
-            arguments.push(stream.expect(Token::NAME_TYPE).value)
+            argument = stream.expect(Token::NAME_TYPE)
+
+            if argument.value.end_with?('?')
+              raise Error::Syntax.new(
+                "A yield block argument cannot end with \"?\" (\"#{argument.value}\").",
+                argument.lineno,
+                stream.source
+              )
+            end
+
+            arguments.push(argument.value)
           end
 
           stream.expect(Token::OPERATOR_TYPE, '|')

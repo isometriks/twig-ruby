@@ -19,15 +19,9 @@ module Twig
           when Token::NAME_TYPE
             parser.stream.next
 
-            # We can adjust for a ternary with no space here like a? b : c, we should however ignore function
-            # nodes because a?() is fine
-            token_value = token.value
-            if token.value.end_with?('?') && parser.current_token.value != '('
-              parser.stream.inject([Token.new(Token::OPERATOR_TYPE, '?', token.lineno)])
-              token_value = token.value.chomp('?')
-            end
-
-            case token_value
+            # A name only ends in ? (user_signed_in?) where the lexer has
+            # ruled out a ternary, so it's always the whole name here.
+            case token.value
             when 'true', 'TRUE'
               @type = :constant
 
@@ -43,7 +37,7 @@ module Twig
             else
               @type = :variable
 
-              return Node::Expression::Variable::Context.new(token_value, token.lineno)
+              return Node::Expression::Variable::Context.new(token.value, token.lineno)
             end
           when Token::NUMBER_TYPE
             parser.stream.next

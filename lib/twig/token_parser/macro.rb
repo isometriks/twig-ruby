@@ -63,6 +63,15 @@ module Twig
           end
 
           token = stream.expect(Token::NAME_TYPE, nil, 'An argument must be a name')
+
+          if token.value.end_with?('?')
+            raise Error::Syntax.new(
+              "A macro argument cannot end with \"?\" (\"#{token.value}\").",
+              token.lineno,
+              stream.source
+            )
+          end
+
           name = Node::Expression::Variable::Local.new(token.value, parser.current_token.lineno)
 
           if (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||

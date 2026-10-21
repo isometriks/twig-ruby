@@ -39,4 +39,12 @@ RSpec.describe Twig::TokenParser::Yield do
       end.new
     end
   end
+
+  context 'with a block argument ending in ?' do
+    it_behaves_like 'render_and_raise' do
+      let(:template) { '{% yield pair do |k, v?| %}{{ k }}{% endyield %}' }
+      let(:error) { Twig::Error::Syntax }
+      let(:message) { /A yield block argument cannot end with "\?" \("v\?"\)/ }
+    end
+  end
 end

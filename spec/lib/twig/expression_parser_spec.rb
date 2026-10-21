@@ -190,6 +190,214 @@ module Twig
       end
     end
 
+    context 'with names ending in ?' do
+      it_behaves_like 'render_and_assert' do
+        let(:options) { { allow_helper_methods: true } }
+
+        let(:inputs) do
+          [
+            '{% if user_signed_in? %}Y{% else %}N{% endif %}',
+            '{% if not user_signed_in? %}Y{% else %}N{% endif %}',
+            '{% if admin? %}Y{% else %}N{% endif %}',
+            '{% if user_signed_in? and admin? %}Y{% else %}N{% endif %}',
+            '{% if user_signed_in? or admin? %}Y{% else %}N{% endif %}',
+            "{% if current_page?('/home') %}Y{% else %}N{% endif %}",
+            "{% if current_page?('/away') %}Y{% else %}N{% endif %}",
+            "{{ content_for?('sidebar') }}",
+            '{{ user_signed_in? }}',
+            "{{ user_signed_in? ? 'in' : 'out' }}",
+            "{{ admin? ? 'admin' : 'user' }}",
+            "{{ user_signed_in? ? admin? : 'n/a' }}",
+            "{{ admin? ?: 'none' }}",
+            "{{ [user_signed_in?, admin?]|join(',') }}",
+            '{{ user_signed_in?|default(false) }}',
+            '{{ user.errors.any? }}',
+            "{{ user.errors.any? ? 'y' : 'n' }}",
+            '{{ user.registerable? }}',
+          ]
+        end
+
+        let(:outputs) do
+          [
+            'Y',
+            'N',
+            'N',
+            'N',
+            'Y',
+            'Y',
+            'N',
+            'true',
+            'true',
+            'in',
+            'user',
+            'false',
+            'none',
+            'true,false',
+            'true',
+            'true',
+            'y',
+            'false',
+          ]
+        end
+
+        let(:locals) do
+          { user: Struct.new(:errors, :registerable?).new(['oops'], false) }
+        end
+
+        let(:call_context) do
+          Class.new do
+            def user_signed_in? = true
+            def admin? = false
+            def current_page?(path) = path == '/home'
+            def content_for?(name) = name == 'sidebar'
+          end.new
+        end
+      end
+    end
+
+    context 'with a ? straight after a name that starts a ternary' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ x?1:2 }}',
+            '{{ y?1:2 }}',
+            '{{ x? a : b }}',
+            "{{ x?'a':'b' }}",
+            '{{ x?-1:1 }}',
+            '{{ x?[1]|first:2 }}',
+            '{{ y?:"elvis" }}',
+            '{{ x?:"elvis" }}',
+            '{{ nope??"coalesce" }}',
+            '{{ x ? a : b }}',
+            '{{ y ?: b }}',
+            '{{ nope ?? b }}',
+          ]
+        end
+
+        let(:outputs) do
+          [
+            '1',
+            '2',
+            'A',
+            'a',
+            '-1',
+            '1',
+            'elvis',
+            'true',
+            'coalesce',
+            'A',
+            'B',
+            'B',
+          ]
+        end
+
+        let(:locals) do
+          { x: true, y: false, a: 'A', b: 'B' }
+        end
+      end
+    end
+
+    context 'with a mapping key ending in ?' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ {visible?: true}|keys|join }}',
+            '{{ {a: 1, x?:2}|keys|join(",") }}',
+            '{{ {visible? : true}|keys|join }}',
+            '{{ {k?: x? :y : 2}|first }}',
+          ]
+        end
+
+        let(:outputs) do
+          %w[visible? a,x? visible? y]
+        end
+
+        let(:locals) do
+          { x: true }
+        end
+      end
+    end
+
+    context 'with a ? straight after a name and then a symbol' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ x? :y : 2 }}',
+            '{{ y? :a : :b }}',
+            '{% if x? :y : z %}T{% else %}F{% endif %}',
+          ]
+        end
+
+        let(:outputs) do
+          %w[y b T]
+        end
+
+        let(:locals) do
+          { x: true, y: false, z: false }
+        end
+      end
+    end
+
+    context 'with an attribute ending in ? before an operator that goes on with it' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ user.pred? - 1 }}',
+            '{{ user.pred?+ 1 }}',
+            '{{ user.pred? (5) }}',
+            '{{ user.list?[0] }}',
+            "{{ user.pred? 'y' : 'n' }}",
+          ]
+        end
+
+        let(:outputs) do
+          %w[0 2 5 a y]
+        end
+
+        let(:locals) do
+          {
+            user: Class.new do
+              def pred?(value = 1) = value
+              def pred = true
+              def list? = %w[a b]
+            end.new,
+          }
+        end
+      end
+    end
+
+    context 'with an arrow function argument ending in ?' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ [1]|map(x? => x?)|join }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /An arrow function argument cannot end with "\?" \("x\?"\)/ }
+      end
+    end
+
+    context 'with an arrow function argument list ending in ?' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ [1]|map((x?, k) => x?)|join }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /An arrow function argument cannot end with "\?" \("x\?"\)/ }
+      end
+    end
+
+    context 'with an arrow function argument that is not a variable' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ [1]|map(true => true)|join }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /The arrow function argument must be a list of variables or a single variable/ }
+      end
+    end
+
+    context 'with a macro argument ending in ?' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{% macro m(a?) %}{{ a? }}{% endmacro %}{{ _self.m(1) }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /A macro argument cannot end with "\?" \("a\?"\)/ }
+      end
+    end
+
     context 'when template has invalid mapping' do
       it_behaves_like 'render_and_raise' do
         let(:template) { '{{ var.call(4,5,,) }}' }

@@ -209,9 +209,18 @@ module Twig
 
         push_token(Token::OPERATOR_TYPE, operator)
         move_cursor(match.to_s)
-      elsif (match = @code.match(/\G#{REGEX_NAME}(?:\?(?!\?))?/, @cursor)) # Optional ? but not ??
-        push_token(Token::NAME_TYPE, match.to_s)
-        move_cursor(match.to_s)
+      elsif (match = @code.match(/\G#{REGEX_NAME}/, @cursor))
+        name = match.to_s
+        name += '?' if predicate_mark?(@cursor + name.length)
+
+        push_token(Token::NAME_TYPE, name)
+        move_cursor(name)
+
+        # x? :a : :b is a ternary with a symbol, not the ? : alias of ?:
+        if @code.match?(/\G\?[[:space:]]+#{REGEX_SYMBOL}/, @cursor)
+          push_token(Token::OPERATOR_TYPE, '?')
+          move_cursor('?')
+        end
       elsif (match = @code.match(/\G#{REGEX_SYMBOL}/, @cursor))
         push_token(Token::SYMBOL_TYPE, match.to_s[1..])
         move_cursor(match.to_s)
@@ -238,6 +247,81 @@ module Twig
         move_cursor(match.to_s)
       else
         raise Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
+      end
+    end
+
+    # Whether the ? at position belongs to the name before it, like a Ruby
+    # predicate (user_signed_in?), rather than starting a ternary (a?b:c).
+    #
+    # The ? is part of the name only when a ternary couldn't follow: before a
+    # call's parenthesis, or when what comes next (after any whitespace)
+    # can't start an expression, such as the end of the tag, a closing bracket,
+    # a comma, a filter or a binary operator. Anything that could start an
+    # expression leaves the ? to the ternary, as in Twig PHP. A mapping key
+    # keeps it before its colon ({visible?: true}), and an attribute keeps it
+    # before an operator that could also go on with the expression
+    # (user.admin? - 1, user.roles?[0]), as it always has.
+    #
+    # @param [Integer] position
+    def predicate_mark?(position)
+      return false unless @code[position] == '?'
+
+      after = position + 1
+
+      # a?(x) calls a?
+      return true if @code[after] == '('
+
+      # {visible?: true} is a key followed by its colon, not a?:b
+      return true if @code[after] == ':' && mapping_key?
+
+      # a??b, a?:b and the like are operators that start with ?
+      operator = @code.match(operator_regex, position)&.to_s
+      return false if operator && operator != '?' && !operator.match?(/[[:space:]]/)
+
+      return true if @code.match?(lex_var_regex, after) || @code.match?(lex_block_regex, after)
+
+      rest = @code.match(/\G[[:space:]]*/, after).end(0)
+
+      return true if rest >= @end
+
+      case @code[rest]
+      when ')', ']', '}', ',', '|', '?', '.', '#'
+        true
+      when ':'
+        # :name is a symbol, which starts an expression
+        !@code.match?(/\G#{REGEX_SYMBOL}/, rest)
+      else
+        # a binary operator can't start an expression, but a unary one can
+        operator = @code.match(operator_regex, rest)&.to_s&.gsub(/[[:space:]]+/, ' ')
+        return false if operator.nil?
+        return true unless expression_start_operators.include?(operator)
+
+        # user.admin? - 1 and user.roles?[0] go on with the attribute
+        @tokens.last&.test(Token::OPERATOR_TYPE, '.') && infix_operators.include?(operator)
+      end
+    end
+
+    # Whether the name being lexed is a key of the mapping it's directly in.
+    def mapping_key?
+      @brackets.last&.first == '{' && @tokens.last&.test(Token::PUNCTUATION_TYPE, ['{', ','])
+    end
+
+    # Operators that can go on with an expression, such as - and [.
+    def infix_operators
+      @infix_operators ||= [].tap do |operators|
+        environment.expression_parsers.each do |parser|
+          operators.push(parser.name, *parser.aliases) if parser.type == :infix
+        end
+      end
+    end
+
+    # Operators that can begin an expression: the prefix (unary) operators,
+    # and [ for a sequence.
+    def expression_start_operators
+      @expression_start_operators ||= ['['].tap do |operators|
+        environment.expression_parsers.each do |parser|
+          operators.push(parser.name, *parser.aliases) if parser.type == :prefix
+        end
       end
     end
 
