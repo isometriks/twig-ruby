@@ -3,6 +3,7 @@
 require 'rails'
 require 'English'
 require 'twig/rails/config'
+require 'twig/rails/escaping_strategy'
 require 'twig/rails/renderer'
 
 module Twig

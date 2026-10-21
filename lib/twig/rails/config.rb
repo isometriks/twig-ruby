@@ -12,7 +12,7 @@ module Twig
           cache: ::Rails.root.join('tmp/cache/twig').to_s,
           charset: 'UTF-8',
           strict_variables: true,
-          autoescape: :name,
+          autoescape: ->(name) { ::Twig::Rails::EscapingStrategy.guess(name) },
           # The compiled cache outlives the process, so check it against the
           # templates everywhere but production, test included.
           auto_reload: !::Rails.env.production?,

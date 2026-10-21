@@ -144,7 +144,7 @@ Rails.application.configure do
   config.twig.cache = ::Rails.root.join('tmp/cache/twig').to_s
   config.twig.charset = 'UTF-8'
   config.twig.strict_variables = true
-  config.twig.autoescape = :name
+  config.twig.autoescape = ->(name) { ::Twig::Rails::EscapingStrategy.guess(name) }
   config.twig.auto_reload = !::Rails.env.production?
   config.twig.loader = lambda do
     ::Twig::Loader::Filesystem.new(
