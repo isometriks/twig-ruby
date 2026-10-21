@@ -73,6 +73,11 @@ module Twig
 
           if bucket[:value].include?(:html_attr)
             bucket[:value] << :html
+            bucket[:value] << :html_attr_relaxed
+          end
+
+          if bucket[:value].include?(:html_attr_relaxed)
+            bucket[:value] << :html
           end
 
           return bucket[:value]
