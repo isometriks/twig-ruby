@@ -41,7 +41,7 @@ module Twig
       unless token.test(type, value)
         expected = Token.type_to_english(type)
         unexpected = Token.type_to_english(token.type)
-        token_value = token.value.empty? ? '' : " of value \"#{token.value}\""
+        token_value = token.value.to_s.empty? ? '' : " of value \"#{token.value}\""
         value = " with value \"#{value}\"" if value
         message = "#{message} " if message
 

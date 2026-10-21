@@ -128,6 +128,14 @@ module Twig
       end
     end
 
+    context 'with an instance variable as an attribute name' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ foo.@bar }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /Expected name or number, got value "@bar" of type "instance variable"/ }
+      end
+    end
+
     context 'with arrow function' do
       it_behaves_like 'render_and_assert' do
         let(:inputs) do

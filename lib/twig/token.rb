@@ -33,6 +33,7 @@ module Twig
       INTERPOLATION_START_TYPE => 'begin of string interpolation',
       INTERPOLATION_END_TYPE => 'end of string interpolation',
       SYMBOL_TYPE => 'symbol',
+      CLASS_VAR_TYPE => 'instance variable',
     }.freeze
 
     attr_reader :type, :value, :lineno
