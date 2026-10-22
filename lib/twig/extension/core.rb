@@ -229,6 +229,7 @@ module Twig
           TokenParser::Import.new,
           TokenParser::Include.new,
           TokenParser::Set.new,
+          TokenParser::Types.new,
           TokenParser::Use.new,
           TokenParser::With.new,
           TokenParser::Yield.new,
