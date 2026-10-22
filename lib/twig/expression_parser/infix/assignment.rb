@@ -10,6 +10,8 @@ module Twig
           case left
           when Node::Expression::Array
             return Node::Expression::Binary::SequenceDestructuringSetBinary.new(left, right, token.lineno)
+          when Node::Expression::Hash
+            return Node::Expression::Binary::ObjectDestructuringSetBinary.new(left, right, token.lineno)
           when Node::Expression::Variable::Context
             return Node::Expression::Binary::SetBinary.new(left, right, token.lineno)
           end
