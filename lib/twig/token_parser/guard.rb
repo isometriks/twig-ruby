@@ -12,7 +12,7 @@ module Twig
 
         unless %w[function filter test].include?(type_token.value)
           raise Error::Syntax.new(
-            "Supported guard types are function, filter, and test, \"#{token.value}\" given.",
+            "Supported guard types are function, filter and test, \"#{type_token.value}\" given.",
             type_token.lineno,
             stream.source
           )
