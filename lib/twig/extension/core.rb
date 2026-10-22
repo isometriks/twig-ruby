@@ -876,26 +876,101 @@ module Twig
           (value == true && in_filter(1, object))
       end
 
-      def self.matches(regexp, string)
-        return false if string.nil?
+      PCRE_BRACKET_DELIMITERS = { '(' => ')', '[' => ']', '{' => '}', '<' => '>' }.freeze
+      PCRE_MODIFIERS = { 'i' => Regexp::IGNORECASE, 'x' => Regexp::EXTENDED, 's' => Regexp::MULTILINE }.freeze
+      # Only the boolean result matters to matches, so modifiers that change
+      # captures or greediness, or that Onigmo always applies, can be ignored.
+      # Ruby's ^ and $ are always line anchors, so m is the default and D
+      # cannot be honoured. Onigmo always matches by character, so u only
+      # decides whether a malformed subject raises.
+      PCRE_IGNORED_MODIFIERS = %w[m D S U X J n].freeze
 
-        if regexp.respond_to?(:match) && (matches = regexp.match(%r{\A/([^/]*)/(.*)\z}))
-          modifiers = matches[2].empty? ? '' : "(?#{matches[2]})"
-          regex = /#{modifiers}#{matches[1]}/
-        else
-          regex = /#{regex}/
-        end
+      def self.matches(regexp, string)
+        regex, utf8 = parse_pcre(regexp)
+        subject = string.to_s
 
         begin
-          string.to_s.match?(regex)
+          subject.match?(regex)
         rescue ArgumentError, Encoding::CompatibilityError
-          raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: " \
-                                'Malformed UTF-8 characters, possibly incorrectly encoded.'
-        rescue Regexp::TimeoutError
-          raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: Backtrack limit exhausted."
+          # Only the u modifier makes preg_match check the subject's encoding.
+          # Without it the bytes are read as they are, so stray ones are
+          # replaced rather than rejected.
+          if utf8
+            raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: " \
+                                  'Malformed UTF-8 characters, possibly incorrectly encoded.'
+          end
+
+          subject.dup.force_encoding(Encoding::UTF_8).scrub.match?(regex)
         end
+      rescue Regexp::TimeoutError
+        raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: Backtrack limit exhausted."
       rescue RegexpError => e
-        raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
+        raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" is not valid: #{e.message}"
+      end
+
+      # Converts a PCRE pattern with delimiters and modifiers, as PHP's
+      # preg_match takes it, into a Regexp. Raises RegexpError with PHP's
+      # message for a malformed pattern.
+      def self.pcre_to_regexp(pattern)
+        parse_pcre(pattern).first
+      end
+
+      # @return [Array(Regexp, Boolean)] the Regexp, and whether the u modifier
+      #   was given
+      def self.parse_pcre(pattern)
+        pattern = pattern.to_s.lstrip
+        raise RegexpError, 'Empty regular expression' if pattern.empty?
+
+        delimiter = pattern[0]
+        if delimiter.match?(/[[:alnum:]\\\0]/)
+          raise RegexpError, 'Delimiter must not be alphanumeric, backslash, or NUL'
+        end
+
+        closing = PCRE_BRACKET_DELIMITERS.fetch(delimiter, delimiter)
+        depth = 1
+        position = 1
+        while position < pattern.length
+          case pattern[position]
+          when '\\'
+            position += 1
+          when closing
+            depth -= 1
+            break if depth.zero?
+          when delimiter
+            depth += 1
+          end
+
+          position += 1
+        end
+
+        if position >= pattern.length
+          raise RegexpError, if closing == delimiter
+                               "No ending delimiter '#{closing}' found"
+                             else
+                               "No ending matching delimiter '#{closing}' found"
+                             end
+        end
+
+        options = 0
+        anchored = false
+        utf8 = false
+        pattern[(position + 1)..].each_char do |modifier|
+          if PCRE_MODIFIERS.key?(modifier)
+            options |= PCRE_MODIFIERS[modifier]
+          elsif modifier == 'A'
+            anchored = true
+          elsif modifier == 'u'
+            utf8 = true
+          elsif !PCRE_IGNORED_MODIFIERS.include?(modifier) && !modifier.match?(/[ \r\n]/)
+            raise RegexpError, "Unknown modifier '#{modifier}'"
+          end
+        end
+
+        body = pattern[1...position]
+        # A newline ends a trailing comment in extended mode before the group closes
+        body = "\\A(?:#{body}#{"\n" if options.anybits?(Regexp::EXTENDED)})" if anchored
+
+        [Regexp.new(body, options), utf8]
       end
 
       # The key or index that +attribute+ matches on a subscriptable object, or

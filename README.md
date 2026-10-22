@@ -259,6 +259,14 @@ the tag (the second newline is kept) or print one with `{{ "\n" }}`.
 syntax error. The test also handles `nil`, where `items.any?` would raise "Impossible to
 access an attribute on a null variable".
 
+**`matches` takes a delimited pattern, as in Twig PHP.** Write `{{ code matches '/^\d+$/' }}`
+or `'#^a#i'`; a bare `'\d+'` is a syntax error. The `i`, `x` and `s` modifiers work, and
+`A` anchors the match to the start. Patterns run on Ruby's regexp engine, where `^` and `$`
+always match at line breaks too, so use `\A` and `\z` to anchor to the whole string. `m` no
+longer makes `.` match newlines (use `s`), and a `nil` subject is matched as an empty string.
+Matching is always by character, as if `u` were set; a subject that is not valid UTF-8 raises
+only when the pattern has `u`.
+
 **`strict_variables` raises on missing keys.** The Rails config turns it on, so
 `{{ params[:page] }}` raises when there's no `page` param. `??` and `default` are the way
 to allow for it:

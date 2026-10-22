@@ -16,8 +16,6 @@ module TwigParity
     tags/for/objects.test
     tags/for/iterator_aggregate.test
     tags/for/objects_countable.test
-    expressions/matches_error_compilation.test
-    expressions/matches_error_runtime.test
     expressions/matches_error_execution.test
     functions/enum/invalid_dynamic_enum.test
     functions/enum/invalid_enum.test
