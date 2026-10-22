@@ -4,12 +4,15 @@ module Twig
   module Node
     class For < Node::Base
       def initialize(key_target, value_target, seq, if_expr, body, else_expr, lineno)
+        loop = ForLoop.new(lineno)
+        loop.attributes[:else_expr] = !else_expr.nil?
+        body = Nodes.new(AutoHash.new.add(body, loop))
+
+        # Wrap the loop marker too, so _iterated is only set when the
+        # condition lets an item through and the else clause still renders
         unless if_expr.nil?
           body = If.new(Nodes.new(AutoHash.new.add(if_expr, body)), nil, lineno)
         end
-
-        loop = ForLoop.new(lineno)
-        body = Nodes.new(AutoHash.new.add(body, loop))
 
         nodes = {
           key_target:,

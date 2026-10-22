@@ -8,7 +8,7 @@ module Twig
       end
 
       def compile(compiler)
-        if attributes.key?(:else_expr)
+        if attributes[:else_expr]
           compiler.write("context[:_iterated] = true\n")
         end
       end
