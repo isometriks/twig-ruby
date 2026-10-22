@@ -418,6 +418,22 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe '#self.split' do
+    it 'splits an empty string into a single empty character' do
+      expect(described_class.split('UTF-8', '', '')).to eq([''])
+      expect(described_class.split('UTF-8', nil, '')).to eq([''])
+    end
+
+    it 'splits a multibyte string into characters' do
+      expect(described_class.split('UTF-8', 'héllo', '')).to eq(%w[h é l l o])
+    end
+
+    it 'raises a runtime error for a string that is not valid UTF-8' do
+      expect { described_class.split('UTF-8', "\xC3\x28abc", '') }.
+        to raise_error(Twig::Error::Runtime, /Unable to split the string passed to "split" into characters/)
+    end
+  end
+
   describe 'include_only' do
     it 'keeps globals but not the current context' do
       loader = Twig::Loader::Hash.new({

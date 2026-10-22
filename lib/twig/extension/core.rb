@@ -487,7 +487,7 @@ module Twig
         end
 
         if limit.nil? || limit <= 1
-          return value.chars
+          return split_into_characters(value, 'split')
         end
 
         length = value.length
@@ -640,12 +640,14 @@ module Twig
 
       def self.reverse(object, preserve_keys: false)
         return if object.nil?
+        # String#reverse raises a bare ArgumentError on invalid bytes
+        return split_into_characters(object, 'reverse').reverse.join if object.is_a?(String)
 
         object.is_a?(Hash) ? object.to_a.reverse.to_h : object.reverse
       end
 
       def self.shuffle(object)
-        return object.chars.shuffle.join if object.is_a?(String)
+        return split_into_characters(object, 'shuffle').shuffle.join if object.is_a?(String)
 
         object.is_a?(Hash) ? object.values.shuffle : object.shuffle
       end
@@ -737,8 +739,7 @@ module Twig
             values = convert_encoding(values, 'UTF-8', charset)
           end
 
-          # Unicode version of string split - split at all positions, but not after start and not before end
-          values = values.chars
+          values = split_into_characters(values, 'random')
 
           if charset != 'UTF-8'
             values = values.map { |value| convert_encoding(value, charset, 'UTF-8') }
@@ -758,6 +759,19 @@ module Twig
         end
 
         values.sample
+      end
+
+      # Unicode version of str_split(), an empty string giving a single empty character.
+      def self.split_into_characters(string, name)
+        string = string.dup.force_encoding(Encoding::UTF_8) if string.encoding == Encoding::BINARY
+
+        unless string.valid_encoding?
+          raise Error::Runtime, "Unable to split the string passed to \"#{name}\" into characters: " \
+                                'Malformed UTF-8 characters, possibly incorrectly encoded.'
+        end
+
+        characters = string.chars
+        characters.empty? ? [''] : characters
       end
 
       def self.ensure_hash(value)
