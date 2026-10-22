@@ -1065,16 +1065,12 @@ module Twig
 
       # @param [Environment] environment
       # @param [Context] context
-      def self.include(
-        environment, context, template, variables = {}, with_context: true, ignore_missing: false, sandboxed: false
-      )
+      def self.include(environment, context, template, variables = {}, with_context: true, ignore_missing: false)
         variables = if with_context
                       context.merge(variables)
                     else
                       context.only(variables)
                     end
-
-        # @todo: Missing sandbox
 
         begin
           loaded = environment.resolve_template(template)
