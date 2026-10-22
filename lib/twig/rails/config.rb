@@ -9,7 +9,9 @@ module Twig
           paths: %w[./ app/views/],
           debug: ::Rails.env.development?,
           allow_helper_methods: true,
-          cache: ::Rails.root.join('tmp/cache/twig').to_s,
+          # One directory per environment, so the dev server and the test
+          # workers don't keep replacing each other's compiled templates.
+          cache: ::Rails.root.join('tmp/cache/twig', ::Rails.env).to_s,
           charset: 'UTF-8',
           strict_variables: true,
           autoescape: ->(name) { ::Twig::Rails::EscapingStrategy.guess(name) },

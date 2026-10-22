@@ -50,7 +50,8 @@ describe Twig::Rails::Config do
     expect(autoescape.call('app/views/mailer/welcome.html.twig')).to eq(:html)
   end
 
-  it 'puts the cache under tmp/cache/twig' do
-    expect(defaults_in('test').cache).to eq('/app/tmp/cache/twig')
+  it 'gives each environment its own cache under tmp/cache/twig' do
+    expect(defaults_in('development').cache).to eq('/app/tmp/cache/twig/development')
+    expect(defaults_in('test').cache).to eq('/app/tmp/cache/twig/test')
   end
 end

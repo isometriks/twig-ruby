@@ -142,7 +142,7 @@ Rails.application.configure do
   config.twig.paths = %w[/ app/views/] # Used for default Filesystem Loader
   config.twig.debug = ::Rails.env.development?
   config.twig.allow_helper_methods = true
-  config.twig.cache = ::Rails.root.join('tmp/cache/twig').to_s
+  config.twig.cache = ::Rails.root.join('tmp/cache/twig', ::Rails.env).to_s
   config.twig.charset = 'UTF-8'
   config.twig.strict_variables = true
   config.twig.autoescape = ->(name) { ::Twig::Rails::EscapingStrategy.guess(name) }
@@ -284,13 +284,16 @@ for `.css.twig`, and none for `.text.twig` (Rails' name for plain text, as in a 
 `welcome.text.twig`) or `.txt.twig`. Set `config.twig.autoescape = :name` to use Twig PHP's
 own guess, which only knows `txt`.
 
-**Clear `tmp/cache/twig` after upgrading or changing the config.** Escaping is decided when
-a template is compiled, and the compiled cache is keyed only by the template's name, not by
-the gem version or the options it was compiled with. `auto_reload` only notices edits to the
-template itself, so a `.text.twig` template compiled under the old `:name` default keeps
-escaping until its cache file is removed, in every environment.
+**Clear `tmp/cache/twig` after editing your own `autoescape` lambda.** Escaping is decided
+when a template is compiled. The compiled cache is keyed by the template's name, the gem's
+version and source, the extensions, and the `debug`, `strict_variables`,
+`allow_helper_methods` and `autoescape` options, so upgrading the gem or changing those
+options compiles every template again. A lambda is keyed by the file and line it's defined
+on, though, so when you change what your lambda returns without moving it, a template
+compiled under the old one keeps its escaping until its cache file is removed.
 
 **Compiled templates are checked for edits everywhere but production.** They're cached in
-`tmp/cache/twig`, which outlives the process, so `auto_reload` is on in development and
-test, and a test run after an edit picks the edit up. In production the cache is trusted
-without a check, so start each deploy with an empty `tmp/cache/twig`.
+`tmp/cache/twig/<env>`, which outlives the process, so `auto_reload` is on in development
+and test, and a test run after an edit picks the edit up. Each environment has its own
+directory, so a test run never replaces what the dev server compiled. In production the
+cache is trusted without a check, so start each deploy with an empty `tmp/cache/twig`.
