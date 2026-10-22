@@ -1082,9 +1082,11 @@ module Twig
           return ''
         end
 
-        variables.buffer_and_return do
+        rendered = variables.buffer_and_return do
           loaded.render(variables)
-        end
+        end.to_s
+
+        rendered.empty? ? '' : rendered.html_safe
       end
 
       # @param [Environment] environment

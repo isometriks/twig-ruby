@@ -409,6 +409,15 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  context 'when the result of include is assigned' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { %({% set assigned = include("amp.twig") %}[{{ assigned }}]) }
+      let(:output) { '[a &amp; b]' }
+      let(:templates) { { 'amp.twig' => '{{ text }}' } }
+      let(:locals) { { text: 'a & b' } }
+    end
+  end
+
   describe '#self.compare' do
     it 'can compare strings' do
       expect(described_class.compare('a', 'b')).to eq(-1)
