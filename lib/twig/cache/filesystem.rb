@@ -24,7 +24,7 @@ module Twig
         false
       end
 
-      def write(key, content)
+      def write(key, content, mtime: nil)
         dirname = File.dirname(key)
 
         FileUtils.mkdir_p(dirname) unless File.directory?(dirname)
@@ -34,6 +34,7 @@ module Twig
         tmp = "#{key}.#{SecureRandom.hex(8)}.tmp"
         begin
           File.write(tmp, content)
+          File.utime(mtime, mtime, tmp) if mtime
           File.rename(tmp, key)
         ensure
           FileUtils.rm_f(tmp)

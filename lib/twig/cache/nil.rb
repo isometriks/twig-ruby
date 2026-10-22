@@ -11,7 +11,7 @@ module Twig
         0
       end
 
-      def write(_key, _content); end
+      def write(_key, _content, mtime: nil); end
       def remove(_key); end
 
       # Nothing is ever cached, so there is never anything to load

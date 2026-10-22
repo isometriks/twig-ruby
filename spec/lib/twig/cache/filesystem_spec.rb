@@ -66,6 +66,12 @@ RSpec.describe Twig::Cache::Filesystem do
     expect(cache.timestamp(cache_key)).to eq(1_234_567_890)
   end
 
+  it 'stamps an entry with the time it is given' do
+    cache.write(cache_key, 'Hello World!', mtime: 1_234_567_890)
+
+    expect(cache.timestamp(cache_key)).to eq(1_234_567_890)
+  end
+
   it 'creates missing directories with nothing but the gem required' do
     # A fresh process, since the spec run itself may already have loaded
     # FileUtils through something else.

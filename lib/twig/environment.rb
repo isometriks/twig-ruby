@@ -113,9 +113,13 @@ module Twig
         end
       end
 
-      # No caches have fresh template at this point, so write it now
+      # No caches have fresh template at this point, so write it now. The entry
+      # is stamped with the moment before the source was read, so a save made
+      # while compiling still looks newer than it. The clock is one that time
+      # travel in tests leaves alone, so an entry is never stamped in the future.
+      compiled_at = Process.clock_gettime(Process::CLOCK_REALTIME, :second)
       code = render_ruby(name)
-      @cache.write(cache_key, code)
+      write_cache(cache_key, code, compiled_at)
 
       # Evaluate what was just compiled rather than loading the cache entry
       # back, which another process may have replaced in the meantime. This
@@ -299,6 +303,20 @@ module Twig
       compile_source(
         loader.get_source_context(name)
       )
+    end
+
+    # A cache written for PHP's two-argument write still works, but its
+    # entries are stamped when they're written instead
+    #
+    # @param [String] key
+    # @param [String] code
+    # @param [Integer] mtime
+    def write_cache(key, code, mtime)
+      if @cache.method(:write).parameters.any? { |type, param| type == :keyrest || param == :mtime }
+        @cache.write(key, code, mtime:)
+      else
+        @cache.write(key, code)
+      end
     end
 
     def lexer
