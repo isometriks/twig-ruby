@@ -25,19 +25,16 @@ module Twig
           end
 
           def compile(compiler)
-            compiler.add_debug_info(self)
+            compiler.
+              add_debug_info(self).
+              raw('::Twig::Runtime::Destructuring.sequence(context, [')
 
             @variables.each_with_index do |name, i|
               compiler.raw(', ') if i.positive?
-              if name
-                compiler.raw('context[').string(name).raw(']')
-              else
-                compiler.raw('_')
-              end
+              compiler.repr(name)
             end
 
-            compiler.raw(' = *(').subcompile(nodes[:right]).raw(' + ::Array.new(')
-            compiler.repr(@variables.length).raw('))')
+            compiler.raw('], ').subcompile(nodes[:right]).raw(')')
           end
 
           def operator(compiler)
