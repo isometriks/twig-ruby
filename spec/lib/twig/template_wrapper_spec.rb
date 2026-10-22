@@ -92,4 +92,23 @@ RSpec.describe Twig::TemplateWrapper do
       end
     end
   end
+
+  context 'when the parent template does not exist' do
+    let(:environment) do
+      Twig::Environment.new(Twig::Loader::Hash.new({
+        'template_wrapper/missing_parent.twig' => "\n\n{% extends 'template_wrapper/missing.twig' %}",
+      }))
+    end
+
+    it 'reports the extends line when introspecting blocks' do
+      expect { environment.load('template_wrapper/missing_parent.twig').block?('foo') }.
+        to raise_error(Twig::Error::Loader) { |error|
+          expect(error.lineno).to eq(3)
+          expect(error.message).to eq(
+            'Template "template_wrapper/missing.twig" is not defined in ' \
+            '"template_wrapper/missing_parent.twig" at line 3.'
+          )
+        }
+    end
+  end
 end

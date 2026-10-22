@@ -229,15 +229,18 @@ module Twig
           write('')
 
         if parent.is_a?(Node::Expression::Constant)
-          compiler.subcompile(parent)
-        else
-          compiler.
-            raw('load(').
-            subcompile(parent).
-            raw(', ').
-            repr(parent.lineno).
-            raw(')')
+          # a constant parent never depends on the context, so resolve it once
+          compiler.raw('@parent ||= ')
         end
+
+        # loading here rather than in get_parent lets an error, such as a
+        # missing parent, report the line of the extends tag
+        compiler.
+          raw('load(').
+          subcompile(parent).
+          raw(', ').
+          repr(parent.lineno).
+          raw(')')
 
         compiler.
           raw("\n").
