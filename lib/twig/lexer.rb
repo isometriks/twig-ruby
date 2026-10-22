@@ -457,7 +457,7 @@ module Twig
     def operator_regex
       return @operator_regex if defined?(@operator_regex)
 
-      expression_parsers = ['=']
+      expression_parsers = []
 
       environment.expression_parsers.each do |expression_parser|
         expression_parsers.concat([expression_parser.name], expression_parser.aliases)

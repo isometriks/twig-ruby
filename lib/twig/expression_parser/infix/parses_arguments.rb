@@ -36,6 +36,7 @@ module Twig
             break if stream.test(Token::PUNCTUATION_TYPE, ')')
           end
 
+          name = nil
           if stream.next_if(Token::OPERATOR_TYPE, '...')
             has_spread = true
             value = Node::Expression::Unary::Spread.new(parser.parse_expression, stream.current.lineno)
@@ -45,13 +46,23 @@ module Twig
               stream.current.lineno,
               stream.source
             )
+          elsif stream.test(Token::STRING_TYPE) && stream.look(1).test(Token::OPERATOR_TYPE, '=')
+            # Quoted kwargs with = - form_with("data-turbo-stream" = true). Parsed as an
+            # expression, the = would try to assign to the string
+            name = stream.next.value
+            stream.next
+            value = parser.parse_expression
           else
             value = parser.parse_expression
           end
 
-          name = nil
-          if (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
-             (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
+          if name
+            # Named by a quoted kwarg above
+          elsif value.is_a?(Node::Expression::Binary::SetBinary)
+            name = value.nodes[:left].attributes[:name]
+            value = value.nodes[:right]
+          elsif (token = stream.next_if(Token::OPERATOR_TYPE, '=')) ||
+                (token = stream.next_if(Token::PUNCTUATION_TYPE, ':'))
             # Allow quoted kwargs - form_with("data-turbo-stream": true)
             if value.is_a?(Node::Expression::Constant) && value.attributes[:value].is_a?(String)
               name = value.attributes[:value]

@@ -93,6 +93,9 @@ module Twig
           # Arrow function
           ExpressionParser::Infix::Arrow.new,
 
+          # Assignment operator
+          ExpressionParser::Infix::Assignment.new,
+
           # All literals
           ExpressionParser::Prefix::Literal.new,
         ]
