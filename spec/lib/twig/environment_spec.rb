@@ -95,6 +95,44 @@ RSpec.describe Twig::Environment do
     end
   end
 
+  context 'when another process recompiles into a shared cache' do
+    let(:cache_directory) { Dir.mktmpdir }
+    let(:environment) { described_class.new(loader, cache: cache_directory, auto_reload: true) }
+    let(:template) { 'recompiled_elsewhere.twig' }
+
+    it 'renders the new source instead of its own stale copy' do
+      now = Time.now.to_i
+      write_template(template, 'Version one', mtime: Time.at(now - 60))
+      expect(environment.load(template).render({})).to eq('Version one')
+
+      # A test worker or a console picks up the edit first, and stamps its
+      # cache entry later than the edit
+      write_template(template, 'Version two', mtime: Time.at(now))
+      pid = fork do
+        allow(Process).to receive(:clock_gettime).and_call_original
+        allow(Process).to receive(:clock_gettime).with(Process::CLOCK_REALTIME, :second).and_return(now + 5)
+        other = described_class.new(loader, cache: cache_directory, auto_reload: true)
+        exit!(other.load(template).render({}) == 'Version two')
+      end
+      _, status = Process.wait2(pid)
+      expect(status).to be_success
+
+      expect(environment).not_to receive(:render_ruby)
+      expect(environment.load(template).render({})).to eq('Version two')
+    end
+  end
+
+  context 'when auto reloading and nothing changes' do
+    let(:environment) { described_class.new(loader, cache: false, auto_reload: true) }
+
+    it 'compiles each template once even without a cache' do
+      write_template('unchanged.twig', 'Same', mtime: Time.now - 60)
+
+      expect(environment).to receive(:render_ruby).once.and_call_original
+      3.times { expect(environment.load('unchanged.twig').render({})).to eq('Same') }
+    end
+  end
+
   context 'with a cache whose write takes only key and content' do
     let(:cache) do
       Class.new(Twig::Cache::Base) do

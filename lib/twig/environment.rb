@@ -29,6 +29,8 @@ module Twig
       self.cache = @options[:cache]
 
       @loaded_templates = {}
+      @loaded_at = {}
+      @load_lock = Monitor.new
       @globals = {}
       @runtimes = {}
       @runtime_loaders = []
@@ -88,45 +90,58 @@ module Twig
     # @param [Integer, nil] index Index for embedded templates
     # @return [Twig::Template]
     def load_template(cls, name, index: nil)
-      main_cls = cls
+      # Template#load passes its own class name, which starts with Twig::
+      main_cls = cls.delete_prefix('Twig::')
+      cls = index ? "#{main_cls}___#{index}" : main_cls
 
-      if index
-        cls += "___#{index}"
-      end
-
+      # Embedded templates are compiled with their parent, whose own load has
+      # just brought them up to date
       if !index.nil? && Twig.const_defined?(cls)
         return @loaded_templates[cls] = Twig.const_get(cls).new(self)
       end
 
-      cache_key = cache.generate_key(name, main_cls)
+      if !@auto_reload && @loaded_templates.key?(cls)
+        return @loaded_templates[cls]
+      end
 
-      # If not auto_reloading just use whatever is in the cache
-      if !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
-        if @loaded_templates.key?(cls)
+      @load_lock.synchronize do
+        # Freshness is judged by when this process evaluated the template, not
+        # by the cache entry: another process sharing the cache may have
+        # recompiled the template since, leaving an entry newer than the edit
+        # while this process still holds the code from before it.
+        if @loaded_templates.key?(cls) && @loaded_at.key?(main_cls) &&
+           (!@auto_reload || template_fresh?(name, @loaded_at[main_cls]))
           return @loaded_templates[cls]
         end
 
-        @cache.load(cache_key)
+        cache_key = cache.generate_key(name, main_cls)
+        cached_at = cache.timestamp(cache_key)
 
-        if Twig.const_defined?(cls)
+        if (!@auto_reload || template_fresh?(name, cached_at)) &&
+           @cache.load(cache_key) && Twig.const_defined?(cls)
+          @loaded_at[main_cls] = cached_at
+
           return @loaded_templates[cls] = Twig.const_get(cls).new(self)
         end
+
+        # No caches have fresh template at this point, so write it now. The
+        # entry is stamped with the moment before the source was read, so a
+        # save made while compiling still looks newer than it. The clock is
+        # one that time travel in tests leaves alone, so an entry is never
+        # stamped in the future.
+        compiled_at = Process.clock_gettime(Process::CLOCK_REALTIME, :second)
+        code = render_ruby(name)
+        write_cache(cache_key, code, compiled_at)
+
+        # Evaluate what was just compiled rather than loading the cache entry
+        # back, which another process may have replaced in the meantime. This
+        # also brings an already defined class up to date when nothing is
+        # cached.
+        Twig.module_eval(code, cache_key.empty? ? "(twig #{name})" : cache_key, 1)
+        @loaded_at[main_cls] = compiled_at
+
+        @loaded_templates[cls] = Twig.const_get(cls).new(self)
       end
-
-      # No caches have fresh template at this point, so write it now. The entry
-      # is stamped with the moment before the source was read, so a save made
-      # while compiling still looks newer than it. The clock is one that time
-      # travel in tests leaves alone, so an entry is never stamped in the future.
-      compiled_at = Process.clock_gettime(Process::CLOCK_REALTIME, :second)
-      code = render_ruby(name)
-      write_cache(cache_key, code, compiled_at)
-
-      # Evaluate what was just compiled rather than loading the cache entry
-      # back, which another process may have replaced in the meantime. This
-      # also brings an already defined class up to date when nothing is cached.
-      Twig.module_eval(code, cache_key.empty? ? "(twig #{name})" : cache_key, 1)
-
-      @loaded_templates[cls] = Twig.const_get(cls).new(self)
     end
 
     # @return [Twig::Template]
