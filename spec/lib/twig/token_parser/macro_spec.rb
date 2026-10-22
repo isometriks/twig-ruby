@@ -78,6 +78,16 @@ RSpec.describe Twig::TokenParser::Macro do
     end
   end
 
+  it 'rejects a colon default for the variadic argument, like an equals default' do
+    loader = Twig::Loader::Hash.new({ 'index.twig' => '{% macro f(...rest: 1) %}{% endmacro %}' })
+
+    expect { Twig::Environment.new(loader).load('index.twig') }.
+      to raise_error(
+        Twig::Error::Syntax,
+        'The variadic argument "rest" in macro "f" cannot have a default value in "index.twig" at line 1.'
+      )
+  end
+
   context 'when a macro argument has the same name as a global' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do
@@ -88,7 +98,7 @@ RSpec.describe Twig::TokenParser::Macro do
           "{% macro foo(a, g) %}{{ _context|keys|join(',') }}{% endmacro %}{{ _self.foo(1, 2) }}",
         ]
       end
-      let(:outputs) { %w[arg default GLOBAL a,g,varargs] }
+      let(:outputs) { %w[arg default GLOBAL a,g] }
       let(:extensions) do
         [
           Class.new(Twig::Extension::Base) do

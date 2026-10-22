@@ -41,6 +41,16 @@ RSpec.describe Twig::Runtime::Macro do
       )
   end
 
+  it 'collects extra arguments in the variadic argument' do
+    macro = described_class.new('test', body, { 'a' => false }, 'rest')
+
+    # A sequence, like PHP's list, unless a named argument is among them
+    expect(macro.call({ 0 => 1, 1 => 2, 2 => 3 }, nil, source, 1)).to eq('a' => 1, 'rest' => [2, 3])
+    expect(macro.call({ 0 => 1 }, nil, source, 1)).to eq('a' => 1, 'rest' => [])
+    expect(macro.call({ 0 => 1, 1 => 2, 2 => 3, 'id' => 4 }, nil, source, 1)).
+      to eq('a' => 1, 'rest' => { 0 => 2, 1 => 3, 'id' => 4 })
+  end
+
   it 'hands the call context to the body' do
     macro = described_class.new('test', ->(call_context, _args) { call_context })
 
@@ -75,9 +85,17 @@ RSpec.describe Twig::Runtime::Macro do
           '{% macro m(a, b = 2) %}{{ a }}{{ b }}{% endmacro %}' \
           '{{ _self.m(...{ 0: "z" }) }}{{ _self.m(...{ 1: "z", 0: "y" }) }}',
           '{% macro m() %}{% endmacro %}{{ _self.template_reference is defined ? "KO" : "OK" }}',
+          # A colon default (a Ruby extension) before a variadic
+          '{% macro m(a: 1, ...rest) %}{{ a }}{{ rest|join }}{% endmacro %}{{ _self.m() }}{{ _self.m(2, 3, 4) }}',
+          # A variadic forwarded to another macro
+          '{% macro f(a, b = "B") %}[{{ a }}{{ b }}]{% endmacro %}' \
+          '{% macro g(...rest) %}{{ _self.f(...rest) }}{% endmacro %}{{ _self.g(1, 2) }}{{ _self.g(1, b: 3) }}',
+          # A sequence unless it holds a named argument, so it encodes like PHP's list
+          '{% macro f(...rest) %}{{ rest|json_encode|raw }}{% endmacro %}' \
+          '{{ _self.f(1, 2) }}{{ _self.f() }}{{ _self.f(x: 1) }}',
         ]
       end
-      let(:outputs) { %w[123 12 12 1 123 z2zy OK] }
+      let(:outputs) { ['123', '12', '12', '1', '123', 'z2zy', 'OK', '1234', '[12][13]', '[1,2][]{"x":1}'] }
     end
 
     it 'does not reach the methods of the template' do

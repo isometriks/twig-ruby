@@ -14,7 +14,8 @@ module Twig
       # @param [Proc] body Called with the caller's call_context and the Hash of bound arguments
       # @param [Hash{String => Boolean}] arguments The declared argument names, in definition
       #   order, mapped to whether they have a default value
-      # @param [String, nil] variadic
+      # @param [String, nil] variadic The name of the argument that collects extra positional
+      #   and named arguments, if the macro declares one
       def initialize(name, body, arguments = {}, variadic = nil)
         @name = name
         @body = body
@@ -32,19 +33,20 @@ module Twig
         positional, named = split_arguments(arguments, source, lineno)
         names = @arguments.keys
         bound = {}
-        extra = AutoHash.new
+        extra = []
+        extra_named = {}
 
         positional.each_with_index do |value, index|
           if index < names.length
             bound[names[index]] = value
           else
-            extra.add(value)
+            extra << value
           end
         end
 
         named.each do |key, value|
           if (index = @argument_indexes[key]).nil?
-            extra[key] = value
+            extra_named[key] = value
           elsif index < positional.length
             raise Error::Runtime.new("Argument \"#{key}\" is defined twice for macro \"#{@name}\".", lineno, source)
           else
@@ -52,7 +54,10 @@ module Twig
           end
         end
 
-        bound['varargs'] = extra
+        if @variadic
+          # A sequence, like the list PHP passes, unless a named argument has to be kept too
+          bound[@variadic] = extra_named.empty? ? extra : AutoHash.new.add(*extra).merge!(extra_named)
+        end
 
         @body.call(call_context, bound)
       end

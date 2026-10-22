@@ -4,21 +4,20 @@ module Twig
   module Node
     # Represents a macro node.
     class Macro < Node::Base
-      VARARGS_NAME = 'varargs'
-
       # @param [String] name
       # @param [Body] body
       # @param [Expression::Hash] arguments
       # @param [Integer] lineno
-      def initialize(name, body, arguments, lineno)
+      # @param [String, nil] variadic_name The name after "...", which collects extra arguments
+      def initialize(name, body, arguments, lineno, variadic_name = nil)
         seen = {}
         arguments.key_value_pairs.each do |key, value|
           arg_name = key.attributes[:name]
 
-          if "\u035C#{VARARGS_NAME}" == arg_name
+          if !variadic_name.nil? && variadic_name == strip_reserved_prefix(arg_name)
             raise Error::Syntax.new(
-              "The argument \"#{VARARGS_NAME}\" in macro \"#{name}\" cannot be defined because the variable " \
-              "\"#{VARARGS_NAME}\" is reserved for arbitrary arguments.",
+              "The variadic argument \"#{variadic_name}\" in macro \"#{name}\" cannot have the same name as " \
+              'another argument.',
               value.lineno,
               value.source_context
             )
@@ -35,7 +34,7 @@ module Twig
           seen[arg_name] = true
         end
 
-        super({ body: body, arguments: arguments }, { name: name }, lineno)
+        super({ body: body, arguments: arguments }, { name: name, variadic_name: }, lineno)
       end
 
       # Compiles to a Runtime::Macro. The body binds the arguments by name from the Hash the
@@ -69,12 +68,16 @@ module Twig
 
         capture_node = Node::Capture.new(nodes[:body], nodes[:body].lineno)
 
+        if (variadic_name = attributes[:variadic_name])
+          compiler.
+            write('').
+            string(variadic_name).
+            raw(' => args[').
+            string(variadic_name).
+            raw("],\n")
+        end
+
         compiler.
-          write('').
-          string(VARARGS_NAME).
-          raw(' => args[').
-          string(VARARGS_NAME).
-          raw("],\n").
           outdent.
           write("}, call_context:).merge!(env.globals, overwrite: false)\n\n").
           write("blocks = {}\n\n").
@@ -92,7 +95,10 @@ module Twig
             repr(has_default)
         end
 
-        compiler.raw(signature.empty? ? '}, nil)' : ' }, nil)')
+        compiler.
+          raw(signature.empty? ? '}, ' : ' }, ').
+          repr(attributes[:variadic_name]).
+          raw(')')
       end
 
       private
