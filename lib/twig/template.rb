@@ -186,6 +186,16 @@ module Twig
       raise NotImplementedError
     end
 
+    # The escaping strategy the template body was compiled with. It describes
+    # the template's own source, not its output: autoescape, escape, and
+    # anything rendered by a parent, embedded or included template can use
+    # another strategy.
+    #
+    # @return [Symbol, false] false when the template is not autoescaped
+    def default_escape_strategy
+      false
+    end
+
     def traitable?
       true
     end

@@ -27,6 +27,16 @@ module Twig
       template.block?(name, context)
     end
 
+    # The escaping strategy the template body was compiled with. It describes
+    # the template's own source, not its output: autoescape, escape, and
+    # anything rendered by a parent, embedded or included template can use
+    # another strategy.
+    #
+    # @return [Symbol, false] false when the template is not autoescaped
+    def default_escape_strategy
+      template.default_escape_strategy
+    end
+
     # @param [Environment] environment
     def owned_by?(environment)
       self.environment.equal?(environment) && template.owned_by?(environment)

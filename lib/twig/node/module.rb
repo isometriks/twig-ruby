@@ -18,6 +18,7 @@ module Twig
           {
             index: nil,
             embedded_templates:,
+            strategy: false,
           },
           1
         )
@@ -91,6 +92,7 @@ module Twig
         compile_macros(compiler)
         compile_get_template_name(compiler)
         compile_traitable(compiler)
+        compile_default_escape_strategy(compiler)
         compile_debug_info(compiler)
         compile_get_source_context(compiler)
 
@@ -313,6 +315,21 @@ module Twig
           write("def traitable?\n").
           indent.
           write("false\n").
+          outdent.
+          write("end\n\n")
+      end
+
+      def compile_default_escape_strategy(compiler)
+        unless (strategy = attributes[:strategy])
+          return
+        end
+
+        compiler.
+          write("def default_escape_strategy\n").
+          indent.
+          write('').
+          repr(strategy).
+          raw("\n").
           outdent.
           write("end\n\n")
       end

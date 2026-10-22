@@ -29,6 +29,12 @@ module Twig
             @default_strategy = default_strategy if default_strategy
           end
 
+          # the compiled template exposes the strategy it was compiled with
+          node.attributes[:strategy] = case @default_strategy
+                                       when String, Symbol then @default_strategy.to_sym
+                                       else false
+                                       end
+
           @blocks = {}
           @safe_vars = []
         when Node::AutoEscape
