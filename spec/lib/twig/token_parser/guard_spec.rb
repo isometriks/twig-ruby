@@ -12,11 +12,13 @@ RSpec.describe Twig::TokenParser::Guard do
         {% guard function importmap %}{{ fake_function()|fake_filter is fake_test }}{% else %}OK{% endguard %}
         {% guard function include %}OK{% else %}{{ fake_function()|fake_filter is fake_test }}{% endguard %}
         {% guard function include %}{% else %}{% block discarded %}{% endblock %}{% endguard %}{{ block('discarded') is defined ? 'KO' : 'OK' }}
+        {% guard function include %}{% else %}{% macro m() %}KO{% endmacro %}{% endguard %}{% macro m() %}OK{% endmacro %}{{ _self.m() }}
       INPUTS
     end
 
     let(:outputs) do
       <<~OUTPUTS
+        OK
         OK
         OK
         OK

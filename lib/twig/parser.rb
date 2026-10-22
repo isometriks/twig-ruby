@@ -327,6 +327,14 @@ module Twig
     # @param [String] name
     # @param [Node::Macro] node
     def set_macro(name, node)
+      if @macros.key?(name)
+        raise Error::Syntax.new(
+          "Macro \"#{name}\" is defined twice (first definition at line #{@macros[name].lineno}).",
+          node.lineno,
+          node.source_context || stream.source
+        )
+      end
+
       @macros[name] = node
     end
 
