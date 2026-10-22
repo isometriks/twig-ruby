@@ -151,7 +151,7 @@ module TwigParity
         end
       rescue ::Twig::Error::Base => e
         if exception
-          message_only = exception.match(/Twig\\Error\\\w+: (.*)/)&.captures&.[](0)
+          class_name, message_only = exception.match(/Twig\\Error\\(\w+)Error: (.*)/)&.captures
           message_only = replace(message_only, replacements[:exception]) if message_only
           exception_matches = if message_only&.match?(/%[sd]/)
                                 # Mirrors PHPUnit's assertStringMatchesFormat for %s and %d
@@ -160,7 +160,14 @@ module TwigParity
                               else
                                 message_only == e.message
                               end
-          error = ::RSpec::Support::Differ.new.diff_as_string(e.message, message_only)
+          # Like PHP's IntegrationTestCase, the error class has to match as well as the message
+          expected_class = ::Twig::Error.const_get(class_name, false) if class_name
+          error = if exception_matches && !e.is_a?(expected_class)
+                    exception_matches = false
+                    "Expected #{expected_class} but got #{e.class}: #{e.message}"
+                  else
+                    ::RSpec::Support::Differ.new.diff_as_string(e.message, message_only)
+                  end
           # error = "#{Color.red("- #{message_only}")}\n#{Color.green("+ #{e.message}")}"
         else
           error = Color.red(e.message)
