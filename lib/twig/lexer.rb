@@ -22,7 +22,7 @@ module Twig
     REGEX_SYMBOL = /:#{REGEX_NAME}/
     REGEX_CVAR = /@#{REGEX_NAME}/
     REGEX_STRING = /\G(?:"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')/mu
-    REGEX_DQ_STRING_PART = /\G[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/mu
+    REGEX_DQ_STRING_PART = /\G[^#"\\]*(?:(?:\\.|#(?!\{))[^#"\\]*)*/mu
     REGEX_INLINE_COMMENT = /\G#[^\r\n]*/
     REGEX_DQ_STRING_DELIM = /\G"/
     REGEX_INTERP_START = /\G#\{[[:space:]]*/

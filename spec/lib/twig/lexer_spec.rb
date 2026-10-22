@@ -368,6 +368,19 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  describe 'escape sequences in interpolated strings' do
+    def stream(code)
+      described_class.new(environment).tokenize(Twig::Source.new(code, 'index')).debug
+    end
+
+    it 'unescapes them around an interpolation' do
+      expect(stream("{{ \"a\\n\\\"\#{x}\\\#{y}\" }}")).to eq([
+        'var_start()', "string(a\n\")", 'interpolation_start()', 'name(x)', 'interpolation_end()',
+        "string(\#{y})", 'var_end()', 'eof()'
+      ])
+    end
+  end
+
   describe 'lexer errors' do
     def lexer_error(code)
       described_class.new(environment).tokenize(Twig::Source.new(code, 'index'))
