@@ -86,7 +86,9 @@ module Twig
         @message = @raw_message.dup
         last = @message[-1]
 
-        if (punctuation = %w[. ?].include?(last) ? last : '')
+        punctuation = %w[. ?].include?(last) ? last : nil
+
+        if punctuation
           @message = @message[0...-1]
         end
 
@@ -98,7 +100,7 @@ module Twig
           @message += " at line #{lineno}"
         end
 
-        unless punctuation.empty?
+        if punctuation
           @message += punctuation
         end
       end
