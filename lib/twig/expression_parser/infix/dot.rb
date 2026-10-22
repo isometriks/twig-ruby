@@ -41,13 +41,16 @@ module Twig
           end
 
           if macro_target
-            return Node::Expression::MacroReference.new(
+            reference = Node::Expression::MacroReference.new(
               Node::Expression::Variable::Template.new(left.attributes[:name], left.lineno),
               # macros.(name)() calls the macro named by the value of name
               attribute.is_a?(Node::Expression::Constant) ? attribute.attributes[:value].to_s : attribute,
               arguments,
               left.lineno
             )
+            reference.call_parentheses = type == Template::METHOD_CALL
+
+            return reference
           end
 
           Node::Expression::GetAttribute.new(left, attribute, arguments, type, token.lineno)

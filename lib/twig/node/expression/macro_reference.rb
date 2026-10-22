@@ -14,10 +14,20 @@ module Twig
         # @param [Integer] lineno
         def initialize(template, name, arguments, lineno)
           if name.is_a?(String)
-            super({ template:, arguments: }, { name: }, lineno)
+            super({ template:, arguments: }, { name:, has_call_parentheses: true }, lineno)
           else
-            super({ template:, arguments:, name: }, { name: nil }, lineno)
+            super({ template:, arguments:, name: }, { name: nil, has_call_parentheses: true }, lineno)
           end
+        end
+
+        # Whether the macro name was followed by parentheses, as in macros.hello()
+        def call_parentheses?
+          attributes[:has_call_parentheses]
+        end
+
+        # @param [Boolean] value
+        def call_parentheses=(value)
+          attributes[:has_call_parentheses] = value
         end
 
         # @param [Compiler] compiler
