@@ -21,9 +21,9 @@ module Twig
     REGEX_NAME = /[a-zA-Z_\u{007f}-\u{00ff}][a-zA-Z0-9_\u{007f}-\u{00ff}]*/u
     REGEX_SYMBOL = /:#{REGEX_NAME}/
     REGEX_CVAR = /@#{REGEX_NAME}/
-    REGEX_STRING = /\G"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/mu
+    REGEX_STRING = /\G(?:"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)')/mu
     REGEX_DQ_STRING_PART = /\G[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/mu
-    REGEX_INLINE_COMMENT = /#[^\r\n]*/
+    REGEX_INLINE_COMMENT = /\G#[^\r\n]*/
     REGEX_DQ_STRING_DELIM = /\G"/
     REGEX_INTERP_START = /\G#\{[[:space:]]*/
     REGEX_INTERP_END = /\G[[:space:]]*\}/
@@ -80,6 +80,12 @@ module Twig
       end
 
       push_token(Token::EOF_TYPE)
+
+      unless @brackets.empty?
+        expect, lineno = @brackets.pop
+
+        raise Error::Syntax.new("Unclosed \"#{expect}\".", lineno, @source)
+      end
 
       TokenStream.new(@tokens, @source)
     end
@@ -156,7 +162,7 @@ module Twig
 
     def lex_raw_data
       unless (match = @code.match(lex_raw_data_regex, @cursor))
-        raise Error::Syntax.new("Uexpected end of file. Unclosed 'verbatim' block.", @lineno, @source)
+        raise Error::Syntax.new('Unexpected end of file: Unclosed "verbatim" block.', @lineno, @source)
       end
 
       offset = @cursor
@@ -202,7 +208,7 @@ module Twig
         if @cursor >= @end
           raise Error::Syntax.new(
             "Unclosed \"#{@state == STATE_BLOCK ? 'block' : 'variable'}\".",
-            @lineno,
+            @current_var_block_line,
             @source
           )
         end
@@ -254,12 +260,7 @@ module Twig
       elsif (match = @code.match(REGEX_INLINE_COMMENT, @cursor))
         move_cursor(match.to_s)
       else
-        raise Error::Syntax.new(
-          "Unexpected character '#{code_at}'",
-          @lineno,
-          @source,
-          column: @source.column(@cursor)
-        )
+        raise_unexpected_character
       end
     end
 
@@ -359,14 +360,23 @@ module Twig
         expect, lineno = @brackets.pop
 
         unless code_at?(0, '"')
-          raise Error::Syntax.new("Unclosed '#{expect}'.", lineno, @source)
+          raise Error::Syntax.new("Unclosed \"#{expect}\".", lineno, @source)
         end
 
         pop_state
         move_cursor('"')
       else
-        Error::Syntax.new("Unexpected character '#{code_at}'.", @lineno, @source)
+        raise_unexpected_character
       end
+    end
+
+    def raise_unexpected_character
+      raise Error::Syntax.new(
+        "Unexpected character \"#{code_at}\".",
+        @lineno,
+        @source,
+        column: @source.column(@cursor)
+      )
     end
 
     # @return [String]

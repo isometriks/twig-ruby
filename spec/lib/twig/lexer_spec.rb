@@ -368,6 +368,59 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  describe 'lexer errors' do
+    def lexer_error(code)
+      described_class.new(environment).tokenize(Twig::Source.new(code, 'index'))
+    rescue Twig::Error::Syntax => e
+      e.message
+    else
+      raise 'A syntax error should have been raised.'
+    end
+
+    it 'reports an unexpected character' do
+      expect(lexer_error('{{ 1 ; }}')).to eq('Unexpected character ";" in "index" at line 1 column 6.')
+    end
+
+    it 'reports an unexpected character before a later comment' do
+      expect(lexer_error('{{ 1 ; }}{# c #}')).to eq('Unexpected character ";" in "index" at line 1 column 6.')
+    end
+
+    it 'reports an unexpected character before a later single-quoted string' do
+      expect(lexer_error("{{ 1 ; 'a' }}")).to eq('Unexpected character ";" in "index" at line 1 column 6.')
+      expect(lexer_error("{{ 1 ; }}{{ 'a' }}")).to eq('Unexpected character ";" in "index" at line 1 column 6.')
+      expect(lexer_error("{{ 'A' ~ ;b~'' }}")).to eq('Unexpected character ";" in "index" at line 1 column 10.')
+    end
+
+    it 'reports an unexpected character in an interpolation' do
+      expect(lexer_error("{{ \"\#{1 ; }\" }}")).to eq('Unexpected character ";" in "index" at line 1 column 9.')
+    end
+
+    it 'reports an unexpected character in an interpolated string' do
+      expect(lexer_error("{{ \"\#{a}\\")).to eq('Unexpected character "\\" in "index" at line 1 column 9.')
+    end
+
+    it 'reports an unclosed variable at its opening line' do
+      expect(lexer_error("{{ 1 +\n\n  ")).to eq('Unclosed "variable" in "index" at line 1.')
+    end
+
+    it 'reports an unclosed block at its opening line' do
+      expect(lexer_error("a\n{% if x\n\n  ")).to eq('Unclosed "block" in "index" at line 2.')
+    end
+
+    it 'reports an unclosed bracket at the end of the template' do
+      expect(lexer_error("{{ (\n1")).to eq('Unclosed "(" in "index" at line 1.')
+    end
+
+    it 'reports an unclosed string at the end of the template' do
+      expect(lexer_error("{{ \"a\#{b}")).to eq('Unclosed """ in "index" at line 1.')
+    end
+
+    it 'reports an unclosed verbatim block' do
+      expect(lexer_error('{% verbatim %}x')).
+        to eq('Unexpected end of file: Unclosed "verbatim" block in "index" at line 1.')
+    end
+  end
+
   it_behaves_like 'render_and_assert' do
     let(:input) do
       <<~INPUT.chomp
