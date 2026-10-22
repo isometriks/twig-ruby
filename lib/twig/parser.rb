@@ -209,7 +209,7 @@ module Twig
 
     # @return [TwigFilter]
     def filter(name, lineno)
-      unless (filter = environment.filter(name))
+      unless (filter = lookup_callable(:filter, name))
         unless ignore_unknown_twig_callables?
           raise Error::Syntax.new("Unknown '#{name}' filter.", lineno, stream.source)
         end
@@ -222,7 +222,7 @@ module Twig
 
     # @return [TwigFunction, Node::Expression::HelperMethod]
     def function(name, args, lineno)
-      unless (function = environment.function(name))
+      unless (function = lookup_callable(:function, name))
         if ignore_unknown_twig_callables?
           return TwigFunction.new(name, -> {})
         elsif environment.allow_helper_methods?
@@ -244,10 +244,10 @@ module Twig
         # try 2 word tests
         name = "#{name} #{current_token.value}"
 
-        test = environment.test(name)
+        test = lookup_callable(:test, name)
         stream.next
       else
-        test = environment.test(name)
+        test = lookup_callable(:test, name)
       end
 
       if test.nil? && ignore_unknown_twig_callables?
@@ -380,6 +380,19 @@ module Twig
 
     # @return [ExpressionParser::ExpressionParsers]
     attr_reader :parsers
+
+    # An undefined callable callback may raise a syntax error for a name it
+    # knows is missing; while unknown callables are ignored (in a guard tag's
+    # discarded branch) treat that the same as an unknown name.
+    #
+    # @param [Symbol] kind :filter, :function or :test
+    def lookup_callable(kind, name)
+      environment.public_send(kind, name)
+    rescue Error::Syntax
+      raise unless ignore_unknown_twig_callables?
+
+      nil
+    end
 
     # The correctness node visitor checks that a child template only has
     # content inside blocks; drop what is left that would never be output.

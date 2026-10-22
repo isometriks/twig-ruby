@@ -272,6 +272,31 @@ module Twig
       extension_set.token_parser(name)
     end
 
+    # Each of these registers a callable that gets the name of a filter,
+    # function, test or tag no extension defines, and returns the TwigFilter,
+    # TwigFunction, TwigTest or token parser to use for it, or false or nil
+    # when it has none.
+    #
+    # @param [#call, nil] callable
+    def register_undefined_filter_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:filter, callable || block)
+    end
+
+    # @see #register_undefined_filter_callback
+    def register_undefined_function_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:function, callable || block)
+    end
+
+    # @see #register_undefined_filter_callback
+    def register_undefined_test_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:test, callable || block)
+    end
+
+    # @see #register_undefined_filter_callback
+    def register_undefined_token_parser_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:token_parser, callable || block)
+    end
+
     # @return [Array<NodeVisitor::Base>]
     def node_visitors
       extension_set.node_visitors

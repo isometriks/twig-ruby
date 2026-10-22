@@ -11,6 +11,7 @@ module Twig
       @extensions.default_proc = lambda { |_hash, key|
         raise "Extension '#{key}' does not exist"
       }
+      @undefined_callbacks = { filter: [], function: [], test: [], token_parser: [] }
     end
 
     # @param [Extension::Base] extension
@@ -77,7 +78,7 @@ module Twig
         end
       end
 
-      nil
+      undefined(:filter, name)
     end
 
     # @return [TwigFunction, nil]
@@ -90,7 +91,7 @@ module Twig
         end
       end
 
-      nil
+      undefined(:function, name)
     end
 
     # @return [TwigTest, nil]
@@ -103,7 +104,7 @@ module Twig
         end
       end
 
-      nil
+      undefined(:test, name)
     end
 
     # @return [Array<TokenParser::Base>]
@@ -115,7 +116,22 @@ module Twig
 
     # @return [TokenParser::Base, nil]
     def token_parser(name)
-      token_parsers[name.to_sym]
+      token_parsers[name.to_sym] || undefined(:token_parser, name.to_s)
+    end
+
+    # Registers a callable asked for a filter, function, test or token parser
+    # that no extension defines, tried in the order they were registered. It
+    # gets the name and returns what to use for it, or false or nil to let
+    # the next one answer.
+    #
+    # @param [Symbol] kind :filter, :function, :test or :token_parser
+    # @param [#call] callable
+    def register_undefined_callback(kind, callable)
+      unless callable.respond_to?(:call)
+        raise ArgumentError, "An undefined #{kind} callback needs a callable or a block."
+      end
+
+      @undefined_callbacks.fetch(kind) << callable
     end
 
     # @return [Array<NodeVisitor::Base>]
@@ -148,6 +164,16 @@ module Twig
     end
 
     private
+
+    def undefined(kind, name)
+      @undefined_callbacks[kind].each do |callback|
+        if (callable = callback.call(name))
+          return callable
+        end
+      end
+
+      nil
+    end
 
     def dynamic_filters
       @dynamic_filters ||= filters.

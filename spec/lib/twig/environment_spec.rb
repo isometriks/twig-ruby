@@ -394,4 +394,112 @@ RSpec.describe Twig::Environment do
       expect { environment.dup }.to raise_error(Twig::Error::Logic, /Cloning a Twig environment is not supported/)
     end
   end
+
+  context 'with undefined callable callbacks' do
+    let(:templates) do
+      {
+        'undefined_callbacks/filter.twig' => '{{ "x"|shout }}',
+        'undefined_callbacks/function.twig' => '{{ greet("you") }}',
+        'undefined_callbacks/test.twig' => '{{ 3 is odd_number ? "odd" : "even" }}',
+        'undefined_callbacks/tag.twig' => '{% say "hey" %}',
+        'undefined_callbacks/guard.twig' => '{% guard function boom %}yes{% else %}no{% endguard %}',
+      }
+    end
+    let(:environment) { described_class.new(Twig::Loader::Hash.new(templates)) }
+
+    let(:say_tag) do
+      Class.new(Twig::TokenParser::Base) do
+        def parse(token)
+          expr = parser.parse_expression
+          parser.stream.expect(Twig::Token::BLOCK_END_TYPE)
+
+          Twig::Node::Print.new(expr, token.lineno)
+        end
+
+        def tag
+          'say'
+        end
+      end
+    end
+
+    before do
+      environment.register_undefined_filter_callback do |name|
+        name == 'shout' && Twig::TwigFilter.new('shout', ->(value) { "#{value.upcase}!" })
+      end
+      environment.register_undefined_function_callback(lambda { |name|
+        Twig::TwigFunction.new('greet', ->(who) { "hello #{who}" }) if name == 'greet'
+      })
+      environment.register_undefined_test_callback do |name|
+        name == 'odd_number' && Twig::TwigTest.new('odd_number', lambda(&:odd?))
+      end
+      tag = say_tag
+      environment.register_undefined_token_parser_callback { |name| tag.new if name == 'say' }
+    end
+
+    it 'asks the callbacks for names no extension defines' do
+      expect(environment.filter('shout')).to be_a(Twig::TwigFilter)
+      expect(environment.function('greet').name).to eq('greet')
+      expect(environment.test('odd_number').name).to eq('odd_number')
+      expect(environment.token_parser('say').tag).to eq('say')
+    end
+
+    it 'returns nil when no callback knows the name' do
+      expect(environment.filter('does_not_exist')).to be_nil
+      expect(environment.function('does_not_exist')).to be_nil
+      expect(environment.test('does_not_exist')).to be_nil
+      expect(environment.token_parser('does_not_exist')).to be_nil
+    end
+
+    it 'prefers what the extensions define' do
+      environment.register_undefined_filter_callback { |name| Twig::TwigFilter.new(name, ->(_) { 'callback' }) }
+
+      expect(environment.filter('upper').name).to eq('upper')
+      expect(environment.filter('other').name).to eq('other')
+    end
+
+    it 'renders templates using them' do
+      expect(environment.load('undefined_callbacks/filter.twig').render).to eq('X!')
+      expect(environment.load('undefined_callbacks/function.twig').render).to eq('hello you')
+      expect(environment.load('undefined_callbacks/test.twig').render).to eq('odd')
+      expect(environment.load('undefined_callbacks/tag.twig').render).to eq('hey')
+    end
+
+    it 'treats a syntax error from a callback as undefined in a guard' do
+      environment.register_undefined_function_callback { |_name| raise Twig::Error::Syntax, 'boom.' }
+
+      expect(environment.load('undefined_callbacks/guard.twig').render).to eq('no')
+    end
+
+    it 'ignores a syntax error from a callback in the guarded body' do
+      environment.register_undefined_filter_callback { |name| raise Twig::Error::Syntax, "nope #{name}." }
+      environment.register_undefined_function_callback { |name| raise Twig::Error::Syntax, "nope #{name}." }
+      environment.register_undefined_test_callback { |name| raise Twig::Error::Syntax, "nope #{name}." }
+      templates = {
+        'function' => '{% guard function boom %}{{ boom() }}{% else %}no{% endguard %}',
+        'filter' => '{% guard filter boomf %}{{ 1|boomf }}{% else %}no{% endguard %}',
+        'test' => '{% guard test boomt %}{{ 1 is boomt }}{% else %}no{% endguard %}',
+        'two_word_test' => '{% guard test boom t %}{{ 1 is boom t }}{% else %}no{% endguard %}',
+      }
+
+      templates.each do |name, source|
+        expect(environment.create_template(source, name).render).to eq('no')
+      end
+    end
+
+    it 'raises a syntax error from a callback outside a guard' do
+      environment.register_undefined_function_callback { |name| raise Twig::Error::Syntax, "nope #{name}." }
+
+      expect { environment.create_template('{{ boom() }}').render }.
+        to raise_error(Twig::Error::Syntax, /nope boom/)
+    end
+
+    it 'requires a callable or a block' do
+      expect { environment.register_undefined_filter_callback }.
+        to raise_error(ArgumentError, /undefined filter callback needs a callable or a block/)
+      expect { environment.register_undefined_function_callback('nope') }.
+        to raise_error(ArgumentError, /undefined function callback/)
+      expect { environment.register_undefined_test_callback }.to raise_error(ArgumentError)
+      expect { environment.register_undefined_token_parser_callback }.to raise_error(ArgumentError)
+    end
+  end
 end
