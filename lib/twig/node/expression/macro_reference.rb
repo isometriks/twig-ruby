@@ -7,7 +7,7 @@ module Twig
       class MacroReference < Expression::Base
         include SupportDefinedTest
 
-        # @param [Variable::Template] template
+        # @param [Variable::Macro] template
         # @param [String, Expression::Base] name The bare macro name or, for a dynamic call, an
         #   expression that gives it
         # @param [Expression::Base] arguments

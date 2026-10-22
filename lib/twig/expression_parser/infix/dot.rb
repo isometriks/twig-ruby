@@ -42,7 +42,7 @@ module Twig
 
           if macro_target
             reference = Node::Expression::MacroReference.new(
-              Node::Expression::Variable::Template.new(left.attributes[:name], left.lineno),
+              Node::Expression::Variable::Macro.new(left.attributes[:name], left.lineno),
               # macros.(name)() calls the macro named by the value of name
               attribute.is_a?(Node::Expression::Constant) ? attribute.attributes[:value].to_s : attribute,
               arguments,

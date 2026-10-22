@@ -35,8 +35,8 @@ module Twig
 
         stream.expect(Token::BLOCK_END_TYPE)
 
-        internal_ref = Node::Expression::Variable::AssignTemplate.new(
-          Node::Expression::Variable::Template.new(nil, token.lineno),
+        internal_ref = Node::Expression::Variable::AssignMacro.new(
+          Node::Expression::Variable::Macro.new(nil, token.lineno),
           global: parser.main_scope?
         )
 

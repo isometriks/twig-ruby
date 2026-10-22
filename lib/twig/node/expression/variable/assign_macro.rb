@@ -4,15 +4,15 @@ module Twig
   module Node
     module Expression
       module Variable
-        class AssignTemplate < Expression::Base
-          # @param [Variable::Template] var
+        class AssignMacro < Expression::Base
+          # @param [Variable::Macro] var
           # @param [Boolean] global
           def initialize(var, global: true)
             super({ var: }, { global: }, var.lineno)
           end
 
           def compile(compiler)
-            # @var [Template] var
+            # @var [Macro] var
             var = nodes[:var]
 
             compiler.

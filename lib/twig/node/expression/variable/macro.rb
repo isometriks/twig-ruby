@@ -4,7 +4,7 @@ module Twig
   module Node
     module Expression
       module Variable
-        class Template < Expression::Base
+        class Macro < Expression::Base
           RESERVED_NAMES = %w[varargs context macros blocks self].freeze
 
           # @param [String, Integer, nil] name

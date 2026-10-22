@@ -4,7 +4,7 @@ module Twig
   module Node
     class Import < Node::Base
       # @param [Expression::Base] expr
-      # @param [Expression::Base, Expression::Variable::AssignTemplate] var
+      # @param [Expression::Base, Expression::Variable::AssignMacro] var
       # @param [Integer] lineno
       def initialize(expr, var, lineno)
         super({ expr:, var: }, {}, lineno)
