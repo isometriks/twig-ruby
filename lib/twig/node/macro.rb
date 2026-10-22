@@ -67,7 +67,7 @@ module Twig
           string(VARARGS_NAME).
           raw(' => ').
           raw("varargs,\n").
-          write("  }.merge(env.globals), call_context:)\n\n").
+          write("  }, call_context:).merge!(env.globals, overwrite: false)\n\n").
           write("  blocks = {}\n\n").
           write('  ').
           subcompile(capture_node).

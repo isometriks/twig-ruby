@@ -77,4 +77,27 @@ RSpec.describe Twig::TokenParser::Macro do
       }
     end
   end
+
+  context 'when a macro argument has the same name as a global' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{% macro foo(g) %}{{ g }}{% endmacro %}{{ _self.foo('arg') }}",
+          "{% macro foo(g = 'default') %}{{ g }}{% endmacro %}{{ _self.foo() }}",
+          '{% macro foo() %}{{ g }}{% endmacro %}{{ _self.foo() }}',
+          "{% macro foo(a, g) %}{{ _context|keys|join(',') }}{% endmacro %}{{ _self.foo(1, 2) }}",
+        ]
+      end
+      let(:outputs) { %w[arg default GLOBAL a,g,varargs] }
+      let(:extensions) do
+        [
+          Class.new(Twig::Extension::Base) do
+            def globals
+              { 'g' => 'GLOBAL' }
+            end
+          end.new,
+        ]
+      end
+    end
+  end
 end
