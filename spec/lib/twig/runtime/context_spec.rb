@@ -20,6 +20,13 @@ RSpec.describe Twig::Runtime::Context do
     expect('d').to eq(context[:c])
   end
 
+  it 'keeps existing keys when merging string keys without overwriting' do
+    context = described_class.new({ a: 'kept' })
+    context.merge!({ 'a' => 'ignored', 'b' => 'added' }, overwrite: false)
+
+    expect(context).to eq({ a: 'kept', b: 'added' })
+  end
+
   it 'removes context variables after popping state' do
     context = described_class.new({ initial: 'state' })
     context.push_stack

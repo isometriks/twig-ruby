@@ -28,7 +28,7 @@ module Twig
         end
 
         other.each do |k, v|
-          if overwrite || !key?(k)
+          if overwrite || !key?(k.to_sym)
             self[k] = v
           end
         end

@@ -21,7 +21,8 @@ module Twig
     end
 
     def block?(name, context = {})
-      context = Runtime::Context.from(context)
+      # Globals are needed to resolve a dynamic parent, e.g. {% extends layout %}
+      context = Runtime::Context.from(context).merge(environment.globals, overwrite: false)
 
       template.block?(name, context)
     end
