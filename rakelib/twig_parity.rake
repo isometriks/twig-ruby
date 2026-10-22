@@ -6,6 +6,9 @@
 # inside TwigParity for the same reason.
 module TwigParity
   GIT_LOCATION = File.expand_path('../tmp/twig-php', __dir__).freeze
+  # Fixtures skipped because they test PHP-only features, or Twig behaviour Twig Ruby
+  # changes on purpose: colon_not_supported_as_default_separator, because a macro
+  # default can be written name: value as well as name = value (see the README).
   WONT_IMPLEMENT = %w[
     tags/macro/super_globals.test
     tags/for/non_countable.test
@@ -33,6 +36,7 @@ module TwigParity
     filters/date_modify.test
     operators/not_precedence.test
     operators/concat_vs_add_sub.test
+    tags/macro/colon_not_supported_as_default_separator.test
   ].freeze
 
   class Color
@@ -120,6 +124,13 @@ module TwigParity
       begin
         output = environment.load('index.twig').render(data).gsub(/\A[\n ]*/, '').gsub(/[\n ]*\z/, '')
         output = replace(output, replacements[:output])
+
+        # PHP's IntegrationTestCase fails a fixture whose expected exception never comes
+        if exception
+          return { message:, file: @file, status: false,
+                   error: "Expected exception #{exception.strip} but the template rendered #{output.inspect}" }
+        end
+
         expected = expected.gsub(/\A[\n ]*/, '').gsub(/[\n ]*\z/, '')
         expected = replace(expected, replacements[:result])
 
