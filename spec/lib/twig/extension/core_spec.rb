@@ -418,6 +418,19 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'include_only' do
+    it 'keeps globals but not the current context' do
+      loader = Twig::Loader::Hash.new({
+        'index.twig' => '{{ include_only("other.twig") }}',
+        'other.twig' => '[{{ site }}|{{ foo ?? "none" }}]',
+      })
+      environment = Twig::Environment.new(loader)
+      environment.add_global('site', 'Twig')
+
+      expect(environment.load('index.twig').render({ 'foo' => 'bar' }).to_s).to eq('[Twig|none]')
+    end
+  end
+
   describe '#self.compare' do
     it 'can compare strings' do
       expect(described_class.compare('a', 'b')).to eq(-1)

@@ -179,6 +179,9 @@ module Twig
           TwigFunction.new('include', static(:include), {
             needs_environment: true, needs_context: true, is_safe: [:all]
           }),
+          TwigFunction.new('include_only', static(:include_only), {
+            needs_environment: true, needs_context: true, is_safe: [:all]
+          }),
           TwigFunction.new('source', static(:source), {
             needs_environment: true, is_safe: [:all]
           }),
@@ -1087,6 +1090,15 @@ module Twig
         end.to_s
 
         rendered.empty? ? '' : rendered.html_safe
+      end
+
+      # Unlike PHP, this needs the context: Context#only keeps the call context
+      # (Rails view helpers) and the output buffer of the including template.
+      #
+      # @param [Environment] environment
+      # @param [Context] context
+      def self.include_only(environment, context, template, variables = {}, ignore_missing: false)
+        include(environment, context, template, variables, with_context: false, ignore_missing:)
       end
 
       # @param [Environment] environment
