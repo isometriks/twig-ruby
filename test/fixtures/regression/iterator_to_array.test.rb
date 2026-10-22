@@ -4,7 +4,7 @@ class Data
   def self.examples
     [
       {
-        data: {},
+        data: [],
         config: {},
       },
     ]

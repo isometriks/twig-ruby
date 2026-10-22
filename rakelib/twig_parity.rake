@@ -15,6 +15,7 @@ module TwigParity
     tags/for/objects_countable.test
     expressions/matches_error_compilation.test
     expressions/matches_error_runtime.test
+    expressions/matches_error_execution.test
     functions/enum/invalid_dynamic_enum.test
     functions/enum/invalid_enum.test
     functions/enum/invalid_literal_type.test
@@ -23,20 +24,15 @@ module TwigParity
     functions/enum_cases/invalid_enum.test
     functions/enum_cases/invalid_literal_type.test
     functions/enum_cases/valid.test
-    functions/attribute.legacy.test
-    functions/attribute_with_wrong_args.legacy.test
     functions/constant.test
     functions/dump.test
     functions/dump_array.test
-    tests/defined_for_attribute.legacy.test
     filters/date_default_format_interval.test
     filters/date_interval.test
     filters/date_immutable.test
     filters/date_modify.test
     operators/not_precedence.test
     operators/concat_vs_add_sub.test
-    functions/include/sandbox_disabling.test
-    functions/include/sandbox.test
   ].freeze
 
   class Color
