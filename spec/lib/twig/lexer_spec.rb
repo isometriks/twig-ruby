@@ -230,6 +230,23 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  describe 'CRLF line endings' do
+    def render(code, **options)
+      loader = Twig::Loader::Hash.new({ 'index.twig' => code })
+
+      Twig::Environment.new(loader, options).load('index.twig').render({})
+    end
+
+    it 'counts each CRLF as one line' do
+      expect { render("a\r\nb\r\n{{ x }}", strict_variables: true) }.
+        to raise_error(Twig::Error::Runtime, /at line 3\.\z/)
+    end
+
+    it 'renders CRLF as a single newline' do
+      expect(render("a\r\nb")).to eq("a\nb")
+    end
+  end
+
   it_behaves_like 'render_and_assert' do
     let(:input) do
       <<~INPUT.chomp

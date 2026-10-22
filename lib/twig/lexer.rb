@@ -51,7 +51,7 @@ module Twig
     # @param [Twig::Source] source
     def tokenize(source)
       @source = source
-      @code = source.code.tr("\r\n", "\n")
+      @code = source.code.gsub(/\r\n?/, "\n")
       @cursor = 0
       @lineno = 1
       @end = @code.length
