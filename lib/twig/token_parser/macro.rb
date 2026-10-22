@@ -36,7 +36,7 @@ module Twig
 
         parser.set_macro(name, Node::Macro.new(name, Node::Body.new({ 0 => body }), arguments, lineno, variadic_name))
 
-        Node::Empty.new(lineno)
+        Node::MacroDeclaration.new(name, lineno)
       end
 
       def decide_block_end(token)
