@@ -335,7 +335,7 @@ module Twig
     # @param [Node::Base] parent
     def parent=(parent)
       if @parent
-        raise Error::Syntax.new('Cannot extends twice', parent.lineno, parent.source_context)
+        raise Error::Syntax.new('Multiple extends tags are forbidden.', parent.lineno, parent.source_context)
       end
 
       @parent = parent

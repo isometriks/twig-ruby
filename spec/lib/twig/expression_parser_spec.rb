@@ -406,6 +406,16 @@ module Twig
       end
     end
 
+    context 'when an expression is missing' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ 1 + }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) do
+          'Unexpected token "end of print statement" of value "" in "template.twig" at line 1.'
+        end
+      end
+    end
+
     context 'when arguments are not separated by a comma' do
       it_behaves_like 'render_and_raise' do
         let(:template) { '{{ range(1 2) }}' }

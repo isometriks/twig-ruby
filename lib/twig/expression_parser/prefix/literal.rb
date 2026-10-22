@@ -74,7 +74,7 @@ module Twig
           end
 
           raise Error::Syntax.new(
-            "Unexpected token \"#{token.type}\" of value \"#{token.value}\".",
+            "Unexpected token \"#{token.to_english}\" of value \"#{token.value}\".",
             token.lineno,
             parser.stream.source
           )
