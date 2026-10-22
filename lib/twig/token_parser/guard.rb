@@ -45,7 +45,11 @@ module Twig
 
         if stream.next.value == 'else'
           stream.expect(Token::BLOCK_END_TYPE)
-          else_node = parser.subparse(method(:decide_guard_end), drop_needle: true)
+          if exists
+            parser.subparse_ignore_unknown_twig_callables(method(:decide_guard_end), drop_needle: true)
+          else
+            else_node = parser.subparse(method(:decide_guard_end), drop_needle: true)
+          end
         end
 
         stream.expect(Token::BLOCK_END_TYPE)

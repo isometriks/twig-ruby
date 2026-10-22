@@ -158,14 +158,26 @@ module Twig
       Node::Nodes.new(rv)
     end
 
+    # Parses a discarded part of the template: what it registers (parent,
+    # blocks, macros, ...) is discarded as well.
     def subparse_ignore_unknown_twig_callables(test, drop_needle: false)
       previous = @ignore_unknown_twig_callables
+      # Ruby hashes are mutated in place, so copy what the subparse can register into
+      state = [
+        @parent,
+        @blocks.dup,
+        @macros.dup,
+        @imported_symbols.map { |scope| scope.transform_values(&:dup) },
+        @traits.dup,
+        @embedded_templates.dup,
+      ]
       @ignore_unknown_twig_callables = true
 
       begin
         subparse(test, drop_needle:)
       ensure
         @ignore_unknown_twig_callables = previous
+        @parent, @blocks, @macros, @imported_symbols, @traits, @embedded_templates = state
       end
     end
 
