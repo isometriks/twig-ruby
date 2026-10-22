@@ -32,7 +32,7 @@ module Twig
             write("\n").
             write("unless #{var_name}.is_a?(::Hash) || #{var_name} == []\n").
             indent.
-            write("raise ::Twig::Error::Syntax.new('Variables passed to the \"with\" tag must be a mapping.',").
+            write("raise ::Twig::Error::Runtime.new('Variables passed to the \"with\" tag must be a mapping.',").
             repr(nodes[:variables].lineno).
             raw(", source_context)\n").
             outdent.
