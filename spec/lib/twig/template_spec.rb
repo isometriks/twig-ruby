@@ -14,6 +14,36 @@ RSpec.describe Twig::Template do
     end
   end
 
+  context 'when block() renders a block of another template that calls parent()' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { "{{ block('block1', 'theme') }}" }
+      let(:templates) do
+        {
+          theme: "{% extends 'base' %}" \
+                 '{% block block1 %}{{ parent() }}THEME1/{% endblock %}' \
+                 '{% block block2 %}THEME2/{% endblock %}',
+          base: "{% block block1 %}BASE1/{{ block('block2') }}{% endblock %}" \
+                '{% block block2 %}BASE2/{% endblock %}',
+        }
+      end
+      let(:output) { 'BASE1/THEME2/THEME1/' }
+    end
+  end
+
+  context 'when block() renders a block whose nested block is not overridden' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { "{{ block('block1', 'theme') }}" }
+      let(:templates) do
+        {
+          theme: "{% extends 'base' %}{% block block1 %}{{ parent() }}THEME1/{% endblock %}",
+          base: "{% block block1 %}BASE1/{{ block('block2') }}{% endblock %}" \
+                '{% block block2 %}BASE2/{% endblock %}',
+        }
+      end
+      let(:output) { 'BASE1/BASE2/THEME1/' }
+    end
+  end
+
   context do
     before do
       allow(template).to receive(:source_context).and_return(

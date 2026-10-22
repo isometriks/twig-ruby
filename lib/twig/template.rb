@@ -60,6 +60,9 @@ module Twig
       template = if use_blocks && blocks.key?(name)
                    blocks[name]
                  elsif self.blocks.key?(name)
+                   # expose this template's own blocks so nested block() calls resolve
+                   # against them when the block is rendered directly (e.g. block(name, template))
+                   blocks = self.blocks.merge(blocks)
                    self.blocks[name]
                  end
 
