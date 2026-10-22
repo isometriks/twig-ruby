@@ -50,10 +50,7 @@ module Twig
 
       begin
         body = subparse(test, drop_needle:)
-
-        if !@parent.nil? && (body = filter_body_nodes(body)).nil?
-          body = Node::Empty.new
-        end
+        body = cleanup_body_for_child_templates(body) if @parent
       rescue Error::Syntax => e
         unless e.source_context
           e.source_context = stream.source
@@ -370,54 +367,21 @@ module Twig
     # @return [ExpressionParser::ExpressionParsers]
     attr_reader :parsers
 
-    def filter_body_nodes(node, nested: false)
-      # check that the body does not contain non-empty output nodes
-      if (node.is_a?(Node::Text) && !node.attributes[:data].match?(/\A[[:space:]]*\z/)) ||
-         (!node.is_a?(Node::Text) && !node.is_a?(Node::BlockReference) && node.is_a?(Node::Output))
-        if node.to_s.include?("\xEF\xBB\xBF")
-          t = node.attributes[:data][3..]
-          # bypass empty nodes starting with a BOM
-          if t == '' || t.match?(/\A[[:space:]]*\z/)
-            return nil
-          end
-        end
-
-        raise Error::Syntax.new(
-          'A template that extends another one cannot include content outside Twig blocks. Did you forget ' \
-          'to put the content inside a {% block %} tag?',
-          node.lineno,
-          stream.source
-        )
+    # The correctness node visitor checks that a child template only has
+    # content inside blocks; drop what is left that would never be output.
+    def cleanup_body_for_child_templates(body)
+      if body.is_a?(Node::BlockReference) || (body.is_a?(Node::Text) && body.blank?)
+        return Node::Empty.new
       end
 
-      # Bypass nodes that "capture" the output
-      if node.is_a?(Node::Set)
-        return node
+      body.nodes.delete_if do |_k, node|
+        # as it has a parent, the block reference won't be used
+        node.is_a?(Node::BlockReference) ||
+          # remove nodes considered as "empty"
+          (node.is_a?(Node::Text) && node.blank?)
       end
 
-      # "block" tags that are not captured (see above) are only used for defining
-      # the content of the block. In such a case, nesting it does not work as
-      # expected as the definition is not part of the default template code flow.
-      if nested && node.is_a?(Node::BlockReference)
-        raise Error::Syntax.new(
-          'A block definition cannot be nested under non-capturing nodes.',
-          node.lineno,
-          stream.source
-        )
-      end
-
-      if node.is_a?(Node::Output)
-        return nil
-      end
-
-      nested ||= !node.is_a?(Node::Nodes)
-      node.nodes.each do |k, n|
-        if filter_body_nodes(n, nested: nested).nil?
-          node.nodes.delete(k)
-        end
-      end
-
-      node
+      body
     end
   end
 end

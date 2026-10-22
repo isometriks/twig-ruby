@@ -3,6 +3,8 @@
 module Twig
   module Node
     class Set < Node::Base
+      include Capturing
+
       # @param [Boolean] capture
       # @param [Node::Base] names
       # @param [Node::Base] values

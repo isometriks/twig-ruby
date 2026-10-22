@@ -239,6 +239,7 @@ module Twig
       def node_visitors
         [
           NodeVisitor::Spreader.new,
+          NodeVisitor::Correctness.new,
         ]
       end
 

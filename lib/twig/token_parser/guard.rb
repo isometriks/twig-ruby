@@ -54,7 +54,7 @@ module Twig
 
         stream.expect(Token::BLOCK_END_TYPE)
 
-        Node::Nodes.new(AutoHash.new.add(exists ? body : else_node))
+        Node::Nodes.new(AutoHash.new.add(exists ? body : else_node), token.lineno)
       end
 
       def tag
