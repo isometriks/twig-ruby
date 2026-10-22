@@ -314,14 +314,16 @@ module Twig
         rounded&.zero? ? 0 : rounded
       end
 
-      def self.max(*args)
-        args = args[0] if args&.length&.== 1
+      def self.max(value, *values)
+        args = [value, *values]
+        args = args[0] if args.length == 1
         args = args.values if args.is_a?(Hash)
         args.max
       end
 
-      def self.min(*args)
-        args = args[0] if args&.length&.== 1
+      def self.min(value, *values)
+        args = [value, *values]
+        args = args[0] if args.length == 1
         args = args.values if args.is_a?(Hash)
         args.min
       end

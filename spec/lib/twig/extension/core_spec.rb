@@ -399,6 +399,16 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  %w[max min].each do |function|
+    context "when #{function} is called without arguments" do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { "{{ #{function}() }}" }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /Value for argument "value" is required for function "#{function}"/ }
+      end
+    end
+  end
+
   describe '#self.compare' do
     it 'can compare strings' do
       expect(described_class.compare('a', 'b')).to eq(-1)
