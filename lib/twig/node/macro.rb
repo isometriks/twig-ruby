@@ -11,15 +11,28 @@ module Twig
       # @param [Expression::Hash] arguments
       # @param [Integer] lineno
       def initialize(name, body, arguments, lineno)
+        seen = {}
         arguments.key_value_pairs.each do |key, value|
-          next unless "\u035C#{VARARGS_NAME}" == key.attributes[:name]
+          arg_name = key.attributes[:name]
 
-          raise Error::Syntax.new(
-            "The argument \"#{VARARGS_NAME}\" in macro \"#{name}\" cannot be defined because the variable " \
-            "\"#{VARARGS_NAME}\" is reserved for arbitrary arguments.",
-            value.lineno,
-            value.source_context
-          )
+          if "\u035C#{VARARGS_NAME}" == arg_name
+            raise Error::Syntax.new(
+              "The argument \"#{VARARGS_NAME}\" in macro \"#{name}\" cannot be defined because the variable " \
+              "\"#{VARARGS_NAME}\" is reserved for arbitrary arguments.",
+              value.lineno,
+              value.source_context
+            )
+          end
+
+          if seen.key?(arg_name)
+            raise Error::Syntax.new(
+              "Argument \"#{strip_reserved_prefix(arg_name)}\" is defined twice for macro \"#{name}\".",
+              value.lineno,
+              value.source_context
+            )
+          end
+
+          seen[arg_name] = true
         end
 
         super({ body: body, arguments: arguments }, { name: name }, lineno)
@@ -48,10 +61,7 @@ module Twig
 
         arguments.key_value_pairs.each do |pair|
           key = pair[0]
-          var = key.attributes[:name]
-          if var.start_with?("\u035C")
-            var = var[("\u035C".length)..]
-          end
+          var = strip_reserved_prefix(key.attributes[:name])
           compiler.
             write('    ').
             string(var).
@@ -73,6 +83,14 @@ module Twig
           subcompile(capture_node).
           raw("\n").
           write("end\n\n")
+      end
+
+      private
+
+      # Reserved names (context, macros, ...) carry a prefix so they cannot clash
+      # with the variables of the compiled method
+      def strip_reserved_prefix(name)
+        name.delete_prefix("\u035C")
       end
     end
   end
