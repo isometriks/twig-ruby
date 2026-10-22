@@ -27,9 +27,29 @@ RSpec.describe 'the ?. null-safe operator' do
     ['{{ foo?.bar is defined ? "yes" : "no" }}', { foo: nil }, 'no'],
     ['{{ foo[0]?.bar }}', { foo: [nil] }, ''],
     ['{{ (foo.empty?)?.to_s }}', { foo: [] }, 'true'],
+    # A nil short-circuits the rest of the chain
+    ['{{ foo?.bar.baz }}', { foo: nil }, ''],
+    ['{{ foo?.bar.baz?.qux.corge }}', { foo: nil }, ''],
+    ['{{ foo?.bar.baz?.qux.corge }}', { foo: { bar: { baz: nil } } }, ''],
+    ['{{ foo?.bar.baz?.qux.corge }}', { foo: { bar: { baz: { qux: { corge: 1 } } } } }, '1'],
+    ['{{ foo?.bar.upcase() }}', { foo: nil }, ''],
+    ['{{ foo?.bar.baz ?? "x" }}', { foo: nil }, 'x'],
   ].each do |source, context, expected|
     it "renders #{source} with #{context.inspect} as #{expected.inspect}" do
       expect(render(source, context)).to eq(expected)
+    end
+  end
+
+  # Ported from Twig PHP's ExpressionParserTest::getTestForInvalidNullSafeOperatorShortCircuiting
+  [
+    ['{{ foo?.bar.baz }}', { foo: { bar: nil } }, 'baz'],
+    ['{{ foo?.bar.baz?.qux.corge }}', { foo: { bar: { baz: { qux: nil } } } }, 'corge'],
+  ].each do |source, context, attribute|
+    it "only short-circuits on the object of a ?. in #{source}" do
+      expect { render(source, context) }.to raise_error(
+        Twig::Error::Runtime,
+        /Impossible to access an attribute \("#{attribute}"\) on a null variable/
+      )
     end
   end
 
