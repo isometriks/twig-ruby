@@ -18,7 +18,7 @@ module Twig
 
           # determine if we are parsing arrow function arguments
           unless stream.test(Token::PUNCTUATION_TYPE, ',')
-            stream.expect(Token::PUNCTUATION_TYPE, ')', 'An opened parenthesis is not properly closed.')
+            stream.expect(Token::PUNCTUATION_TYPE, ')', 'An opened parenthesis is not properly closed')
           end
 
           names = AutoHash.new.add(expr)

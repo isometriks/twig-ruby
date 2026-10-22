@@ -405,5 +405,27 @@ module Twig
         let(:message) { /Unexpected token "punctuation" of value ","/ }
       end
     end
+
+    context 'when arguments are not separated by a comma' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ range(1 2) }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) do
+          'Arguments must be separated by a comma. Unexpected token "number" of value "2" ' \
+            '("punctuation" expected with value ",") in "template.twig" at line 1 column 12.'
+        end
+      end
+    end
+
+    context 'when a parenthesis is not closed' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ (1 2) }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) do
+          'An opened parenthesis is not properly closed. Unexpected token "number" of value "2" ' \
+            '("punctuation" expected with value ")") in "template.twig" at line 1 column 7.'
+        end
+      end
+    end
   end
 end

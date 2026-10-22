@@ -43,7 +43,7 @@ module Twig
         unexpected = Token.type_to_english(token.type)
         token_value = token.value.to_s.empty? ? '' : " of value \"#{token.value}\""
         value = " with value \"#{value}\"" if value
-        message = "#{message} " if message
+        message = "#{message}. " if message
 
         raise Error::Syntax.new(
           "#{message}Unexpected token \"#{unexpected}\"#{token_value} (\"#{expected}\" expected#{value}).",
