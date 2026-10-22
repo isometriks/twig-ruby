@@ -42,9 +42,11 @@ module Twig
               compiler.raw('macro_namespace')
             else
               compiler.
-                raw('macros[').
+                raw('(macros[').
                 string(name_value).
-                raw(']')
+                raw('] || throw_uninitialized_macro_namespace(').
+                repr(lineno).
+                raw('))')
             end
           end
         end

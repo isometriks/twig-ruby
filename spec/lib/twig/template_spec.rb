@@ -44,6 +44,38 @@ RSpec.describe Twig::Template do
     end
   end
 
+  context 'when macros are imported in a template body that was not rendered' do
+    let(:message) do
+      'Macros imported in the body of template "index" are not available because the body was not rendered; ' \
+        'move the "import" or "from" tag inside the block or the macro that uses it in "index" at line 1.'
+    end
+
+    def load(source)
+      loader = Twig::Loader::Hash.new({ 'index' => source, 'macros' => '{% macro label() %}label{% endmacro %}' })
+      Twig::Environment.new(loader).load('index')
+    end
+
+    it 'reports them when a block is rendered on its own' do
+      template = load('{% import "macros" as helpers %}{% block field %}{{ helpers.label() }}{% endblock %}')
+
+      expect { template.render_block('field') }.to raise_error(Twig::Error::Runtime, message)
+    end
+
+    it 'uses macros imported in the block itself' do
+      template = load('{% block field %}{% import "macros" as helpers %}{{ helpers.label() }}{% endblock %}')
+
+      expect(template.render_block('field')).to eq('label')
+    end
+
+    it 'reports them when a macro is called on its own' do
+      template = load('{% from "macros" import label %}{% macro row() %}{{ label() }}{% endmacro %}')
+
+      expect do
+        template.unwrap.macro_namespace.call('row', {}, Twig::Runtime::Context.new, 1, template.unwrap.source_context)
+      end.to raise_error(Twig::Error::Runtime, /Macros imported in the body of template "index" are not available/)
+    end
+  end
+
   context do
     before do
       allow(template).to receive(:source_context).and_return(

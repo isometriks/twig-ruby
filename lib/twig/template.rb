@@ -241,6 +241,17 @@ module Twig
       false
     end
 
+    # An import in the template body only runs when the body is rendered, so a block or a
+    # macro rendered on its own can't see it
+    def throw_uninitialized_macro_namespace(line)
+      raise Error::Runtime.new(
+        "Macros imported in the body of template \"#{template_name}\" are not available because the body was " \
+        'not rendered; move the "import" or "from" tag inside the block or the macro that uses it.',
+        line,
+        source_context
+      )
+    end
+
     # Overloaded by children that declare macros
     #
     # @return [Hash{String => Runtime::Macro}]
