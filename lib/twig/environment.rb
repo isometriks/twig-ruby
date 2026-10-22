@@ -47,9 +47,28 @@ module Twig
     end
 
     def template_class(name, index = nil)
-      key = loader.get_cache_key(name)
+      key = loader.get_cache_key(name) + options_hash
 
       "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{"___#{index}" if index}"
+    end
+
+    # A digest of the gem's own Ruby source. Twig::VERSION only changes with a
+    # release, but the shape of compiled templates changes with the compiler,
+    # so a gem used from a path or a git branch must not load cache entries
+    # an earlier checkout of it compiled.
+    #
+    # @return [String]
+    def self.source_signature
+      @source_signature ||= begin
+        lib = File.expand_path('..', __dir__)
+        digest = ::Digest::SHA256.new
+
+        Dir.glob('**/*.rb', base: lib).sort.each do |file|
+          digest << file << "\0" << File.binread(File.join(lib, file))
+        end
+
+        digest.hexdigest
+      end
     end
 
     # @param [String, Twig::TemplateWrapper] name
@@ -196,6 +215,7 @@ module Twig
     # @param [Extension::Base] extension
     def add_extension(extension)
       extension_set.add(extension)
+      @options_hash = nil
     end
 
     def runtime(klass)
@@ -332,6 +352,39 @@ module Twig
 
     # @return [Hash{String => Object}]
     attr_reader :runtimes
+
+    # Everything besides the template that changes the code it compiles to,
+    # so environments with different options never share a compiled class or
+    # a cache entry
+    #
+    # @return [String]
+    def options_hash
+      @options_hash ||= [
+        extension_set.signature,
+        *RUBY_VERSION.split('.').first(2),
+        VERSION,
+        self.class.source_signature,
+        debug? ? 1 : 0,
+        strict_variables? ? 1 : 0,
+        allow_helper_methods? ? 1 : 0,
+        autoescape_signature,
+      ].join(':')
+    end
+
+    # The autoescape option picks each template's escaping when it compiles.
+    # A lambda is named by where it's defined, since its inspect holds an
+    # address that changes with every process and no entry would be reused.
+    #
+    # @return [String]
+    def autoescape_signature
+      strategy = @options[:autoescape]
+
+      if strategy.is_a?(Proc)
+        strategy.source_location.to_a.join(':')
+      else
+        strategy.inspect
+      end
+    end
 
     def render_ruby(name)
       compile_source(

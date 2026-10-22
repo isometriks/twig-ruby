@@ -186,6 +186,75 @@ RSpec.describe Twig::Environment do
     end
   end
 
+  context 'when environments with different options share a cache' do
+    let(:cache_directory) { Dir.mktmpdir }
+
+    before { write_template('options.twig', '') }
+
+    def environment(**)
+      described_class.new(loader, cache: cache_directory, auto_reload: true, **)
+    end
+
+    it 'compiles the template separately for each' do
+      write_template('shared_options.twig', '[{{ missing }}]', mtime: Time.now - 60)
+      lenient = environment(strict_variables: false)
+      strict = environment(strict_variables: true)
+
+      expect(lenient.load('shared_options.twig').render({})).to eq('[]')
+      expect(strict.template_class('shared_options.twig')).not_to eq(lenient.template_class('shared_options.twig'))
+      expect { strict.load('shared_options.twig').render({}) }.to raise_error(Twig::Error::Runtime, /missing/)
+    end
+
+    it 'names the class after every option that changes the compiled code' do
+      names = [
+        environment, environment(debug: true), environment(strict_variables: true),
+        environment(allow_helper_methods: true), environment(autoescape: false),
+        environment(autoescape: ->(_name) { :html })
+      ].map { |env| env.template_class('options.twig') }
+
+      expect(names.uniq.length).to eq(6)
+    end
+
+    it 'escapes the template for each by its own autoescape option' do
+      write_template('shared_autoescape.twig', '{{ v }}', mtime: Time.now - 60)
+      html = environment(autoescape: :html)
+      text = environment(autoescape: false)
+
+      expect(html.load('shared_autoescape.twig').render({ v: '<b>' })).to eq('&lt;b&gt;')
+      expect(text.load('shared_autoescape.twig').render({ v: '<b>' })).to eq('<b>')
+      expect(html.load('shared_autoescape.twig').render({ v: '<b>' })).to eq('&lt;b&gt;')
+    end
+
+    it 'names an autoescape lambda after where it is defined' do
+      strategy = -> { ->(name) { Twig::FileExtensionEscapingStrategy.guess(name) } }
+
+      expect(environment(autoescape: strategy.call).template_class('options.twig')).
+        to eq(environment(autoescape: strategy.call).template_class('options.twig'))
+    end
+
+    it 'names the class after the extensions' do
+      env = environment
+      before = env.template_class('options.twig')
+      env.add_extension(Twig::Extension::Debug.new)
+
+      expect(env.template_class('options.twig')).not_to eq(before)
+    end
+
+    it 'names the class after the gem version' do
+      before = environment.template_class('options.twig')
+      stub_const('Twig::VERSION', "#{Twig::VERSION}.1")
+
+      expect(environment.template_class('options.twig')).not_to eq(before)
+    end
+
+    it 'names the class after the gem source' do
+      before = environment.template_class('options.twig')
+      allow(described_class).to receive(:source_signature).and_return('a different checkout')
+
+      expect(environment.template_class('options.twig')).not_to eq(before)
+    end
+  end
+
   context 'when another environment recompiles a template this one loaded' do
     def environment
       described_class.new(loader, cache: false, auto_reload: true)

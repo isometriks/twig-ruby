@@ -128,6 +128,14 @@ module Twig
         values.map(&:globals).reduce({}, :merge)
     end
 
+    # The extensions in the order they were added, which goes into the name of
+    # every template class compiled with them
+    #
+    # @return [String]
+    def signature
+      extensions.keys.to_json
+    end
+
     private
 
     def dynamic_filters
