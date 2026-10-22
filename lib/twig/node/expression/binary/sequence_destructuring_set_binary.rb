@@ -15,7 +15,7 @@ module Twig
                 @variables << value.attributes[:name]
               else
                 raise Error::Syntax.new(
-                  "Cannot assign to \"#{value.class}\", only variables can be assigned in destructuring.",
+                  "Cannot assign to \"#{value.class}\", only variables can be assigned in sequence destructuring.",
                   lineno
                 )
               end

@@ -122,7 +122,29 @@ RSpec.describe Twig::Node::Expression::Binary::SequenceDestructuringSetBinary do
     it_behaves_like 'render_and_raise' do
       let(:template) { '{% do [1, b] = [1, 2] %}' }
       let(:error) { Twig::Error::Syntax }
-      let(:message) { /only variables can be assigned in destructuring/ }
+      let(:message) { /only variables can be assigned in sequence destructuring/ }
+    end
+  end
+
+  context 'when destructuring to an empty list of variables' do
+    ['{% do [] = values %}', '{% do {} = values %}', '{% do [,] = values %}', '{% do [,,] = values %}'].each do |source|
+      it "rejects #{source}" do
+        environment = Twig::Environment.new(Twig::Loader::Hash.new({ 'index' => source }))
+
+        expect { environment.load('index') }.to raise_error(
+          Twig::Error::Syntax,
+          'Cannot destructure to an empty list of variables in "index" at line 1.'
+        )
+      end
+    end
+
+    it 'parses the right-hand side before rejecting the list' do
+      environment = Twig::Environment.new(Twig::Loader::Hash.new({ 'index' => '{% do [] = %}' }))
+
+      expect { environment.load('index') }.to raise_error(
+        Twig::Error::Syntax,
+        /Unexpected token "end of statement block"/
+      )
     end
   end
 end
