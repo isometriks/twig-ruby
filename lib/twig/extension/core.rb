@@ -886,7 +886,14 @@ module Twig
           regex = /#{regex}/
         end
 
-        string.to_s.match?(regex)
+        begin
+          string.to_s.match?(regex)
+        rescue ArgumentError, Encoding::CompatibilityError
+          raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: " \
+                                'Malformed UTF-8 characters, possibly incorrectly encoded.'
+        rescue Regexp::TimeoutError
+          raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: Backtrack limit exhausted."
+        end
       rescue RegexpError => e
         raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
       end
