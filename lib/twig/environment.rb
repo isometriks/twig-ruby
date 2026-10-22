@@ -113,9 +113,16 @@ module Twig
         # by the cache entry: another process sharing the cache may have
         # recompiled the template since, leaving an entry newer than the edit
         # while this process still holds the code from before it.
-        if @loaded_templates.key?(cls) && @loaded_at.key?(main_cls) &&
-           (!@auto_reload || template_fresh?(name, @loaded_at[main_cls]))
-          return @loaded_templates[cls]
+        if @loaded_templates.key?(cls) && @loaded_at.key?(main_cls)
+          return @loaded_templates[cls] unless @auto_reload
+
+          # A new instance each time, since the constructor loads the templates
+          # this one uses as traits and they get no freshness check otherwise.
+          # It comes from the class this environment loaded, not the constant,
+          # which another environment's compile may have replaced since.
+          if template_fresh?(name, @loaded_at[main_cls])
+            return @loaded_templates[cls] = @loaded_templates[cls].class.new(self)
+          end
         end
 
         cache_key = cache.generate_key(name, main_cls)

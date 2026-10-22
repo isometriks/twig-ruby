@@ -173,6 +173,37 @@ RSpec.describe Twig::Environment do
     end
   end
 
+  context 'when only a template used as a trait changes' do
+    let(:environment) { described_class.new(loader, cache: Dir.mktmpdir, auto_reload: true) }
+
+    it 'renders the new trait' do
+      write_template('edited_trait.twig', '{% block title %}Trait one{% endblock %}', mtime: Time.now - 60)
+      write_template('trait_user.twig', "{% use 'edited_trait.twig' %}{{ block('title') }}", mtime: Time.now - 60)
+      expect(environment.load('trait_user.twig').render({})).to eq('Trait one')
+
+      write_template('edited_trait.twig', '{% block title %}Trait two{% endblock %}')
+      expect(environment.load('trait_user.twig').render({})).to eq('Trait two')
+    end
+  end
+
+  context 'when another environment recompiles a template this one loaded' do
+    def environment
+      described_class.new(loader, cache: false, auto_reload: true)
+    end
+
+    it 'keeps rendering the code it compiled' do
+      write_template('other_environment.twig', '{{ v }}', mtime: Time.now - 60)
+      html = environment
+      # Configured differently without changing its options, so both still
+      # compile the template to the same class name
+      text = environment.tap { |env| env.extension(Twig::Extension::Escaper).default_strategy = false }
+
+      expect(html.load('other_environment.twig').render({ v: '<b>' })).to eq('&lt;b&gt;')
+      expect(text.load('other_environment.twig').render({ v: '<b>' })).to eq('<b>')
+      expect(html.load('other_environment.twig').render({ v: '<b>' })).to eq('&lt;b&gt;')
+    end
+  end
+
   context 'with a cache whose write takes only key and content' do
     let(:cache) do
       Class.new(Twig::Cache::Base) do
