@@ -134,4 +134,68 @@ RSpec.describe Twig::NodeVisitor::Correctness do
       end
     end
   end
+  describe 'a config tag' do
+    let(:templates) do
+      {
+        'base.twig' => '{% block content %}base{% endblock %}',
+        'blocks.twig' => '{% block content %}used{% endblock %}',
+        'child.twig' => template,
+      }
+    end
+    let(:environment) { Twig::Environment.new(Twig::Loader::Hash.new(templates)) }
+
+    def render
+      environment.load('child.twig').render
+    end
+
+    {
+      "{% for i in 1..2 %}\n{% extends 'base.twig' %}{% endfor %}" =>
+        'The "extends" tag can only be used at the root of a template in "child.twig" at line 2.',
+      "{% block content %}\n{% use 'blocks.twig' %}{% endblock %}" =>
+        'The "use" tag can only be used at the root of a template in "child.twig" at line 2.',
+      "{% extends 'base.twig' %}{% if true %}\n{% extends 'base.twig' %}{% endif %}" =>
+        'Multiple extends tags are forbidden in "child.twig" at line 2.',
+      "{% block content %}{% if true %}\n{% extends 'base.twig' %}{% endif %}{% endblock %}" =>
+        'Cannot use "extend" in a block in "child.twig" at line 2.',
+    }.each do |source, message|
+      context "with #{source.inspect}" do
+        let(:template) { source }
+
+        it 'raises' do
+          expect { render }.to raise_error(Twig::Error::Syntax, message)
+        end
+      end
+    end
+
+    context 'when used at the root' do
+      let(:template) { "{% extends 'base.twig' %}{% use 'blocks.twig' %}" }
+
+      it 'is allowed' do
+        expect(render).to eq('used')
+      end
+    end
+
+    context 'when only in the discarded branch of a guard tag' do
+      let(:template) do
+        "{% guard function include %}OK{% else %}{% extends 'base.twig' %}{% endguard %}"
+      end
+
+      it 'is ignored' do
+        expect(render).to eq('OK')
+      end
+    end
+
+    {
+      'the kept branch' => "{% guard function include %}{% extends 'base.twig' %}{% endguard %}",
+      'the else branch' => "{% guard function nope %}{% else %}{% extends 'base.twig' %}{% endguard %}",
+    }.each do |branch, source|
+      context "when in #{branch} of a guard tag that is the whole template" do
+        let(:template) { source }
+
+        it 'is at the root' do
+          expect(render).to eq('base')
+        end
+      end
+    end
+  end
 end

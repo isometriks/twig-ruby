@@ -19,6 +19,10 @@ module Twig
 
         enter_scope(node)
 
+        if node.is_a?(Node::Config)
+          check_config_tag(node)
+        end
+
         if node.is_a?(Node::BlockReference)
           check_block_definition_nesting(node)
         end
@@ -72,6 +76,7 @@ module Twig
         @block_depth = 0
         @macro_depth = 0
         @capturing_depth = 0
+        @has_extends = false
       end
 
       # @param [Node::Module] node
@@ -111,6 +116,39 @@ module Twig
         elsif node.tag && !node.is_a?(Node::BlockReference)
           @tag_stack.pop
         end
+      end
+
+      # @param [Node::Config] node
+      def check_config_tag(node)
+        if node.tag == 'extends'
+          check_extends_tag(node)
+        end
+
+        unless @root_nodes.key?(node)
+          raise Error::Syntax.new(
+            "The \"#{node.tag}\" tag can only be used at the root of a template.",
+            node.lineno,
+            node.source_context
+          )
+        end
+      end
+
+      # @param [Node::Config] node
+      def check_extends_tag(node)
+        # "extends" inside a "block" or a "macro" has always been a hard error; keep it
+        if @block_depth.positive?
+          raise Error::Syntax.new('Cannot use "extend" in a block.', node.lineno, node.source_context)
+        end
+
+        if @macro_depth.positive?
+          raise Error::Syntax.new('Cannot use "extend" in a macro.', node.lineno, node.source_context)
+        end
+
+        if @has_extends
+          raise Error::Syntax.new('Multiple extends tags are forbidden.', node.lineno, node.source_context)
+        end
+
+        @has_extends = true
       end
 
       # A "block" definition nested under an output-wrapping tag is registered globally

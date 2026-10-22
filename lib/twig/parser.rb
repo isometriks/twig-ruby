@@ -152,6 +152,8 @@ module Twig
         end
       end
 
+      return rv.values.first if rv.length == 1
+
       Node::Nodes.new(rv)
     end
 
@@ -350,12 +352,24 @@ module Twig
     end
 
     # @param [Node::Base] parent
-    def parent=(parent)
+    # @param [Boolean] throw_on_multiple
+    def set_parent(parent, throw_on_multiple: true)
       if @parent
-        raise Error::Syntax.new('Multiple extends tags are forbidden.', parent.lineno, parent.source_context)
+        return unless throw_on_multiple
+
+        raise Error::Syntax.new(
+          'Multiple extends tags are forbidden.',
+          parent.lineno,
+          parent.source_context || stream.source
+        )
       end
 
       @parent = parent
+    end
+
+    # @param [Node::Base] parent
+    def parent=(parent)
+      set_parent(parent)
     end
 
     def ignore_unknown_twig_callables?

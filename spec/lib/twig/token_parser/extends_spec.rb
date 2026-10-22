@@ -40,4 +40,15 @@ RSpec.describe Twig::TokenParser::Extends do
     let(:error) { Twig::Error::Syntax }
     let(:message) { /cannot use "extend" in a macro/i }
   end
+  it_behaves_like 'render_and_raise' do
+    let(:template) { '{% if true %}{% extends "whatever.twig" %}{% endif %}' }
+    let(:error) { Twig::Error::Syntax }
+    let(:message) { 'The "extends" tag can only be used at the root of a template in "template.twig" at line 1.' }
+  end
+
+  it_behaves_like 'render_and_raise' do
+    let(:template) { "{% extends 'a.twig' %}\n{% extends 'b.twig' %}" }
+    let(:error) { Twig::Error::Syntax }
+    let(:message) { 'Multiple extends tags are forbidden in "template.twig" at line 2.' }
+  end
 end
