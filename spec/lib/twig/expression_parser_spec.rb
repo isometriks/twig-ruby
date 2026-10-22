@@ -427,6 +427,51 @@ module Twig
       end
     end
 
+    context 'with the spread operator' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{% set a = [1, 2] %}{{ [...a, 3]|join(",") }}',
+            '{% set m = { a: 1 } %}{{ { ...m, b: 2 }|keys|join(",") }}',
+            '{{ max(...[1, 5, 3]) }}',
+            '{% macro m(a, b) %}{{ a }}{{ b }}{% endmacro %}{% set args = [1, 2] %}{{ _self.m(...args) }}',
+            '{{ [...[1]] ? "yes" : "no" }}',
+          ]
+        end
+        let(:outputs) { ['1,2,3', 'a,b', '5', '12', 'yes'] }
+      end
+    end
+
+    # Ported from Twig PHP's ExpressionParserTest::getMisplacedSpreadTests
+    [
+      '{{ ...foo }}',
+      '{{ (...foo) }}',
+      '{{ -...foo }}',
+      '{{ 1 + ...foo }}',
+      '{% set bar = ...foo %}',
+      '{% do ...foo %}',
+      '{% with ...foo %}{% endwith %}',
+      '{{ (bar => ...foo)(1) }}',
+      '{{ [(...foo)] }}',
+      '{{ [1, -...foo] }}',
+      '{{ {a: ...foo} }}',
+      '{{ {(...foo): 1} }}',
+      '{{ bar(-...foo) }}',
+      '{{ bar(a: ...foo) }}',
+      '{{ bar(a = ...foo) }}',
+    ].each do |source|
+      context "with a misplaced spread operator in #{source}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { source }
+          let(:error) { Twig::Error::Syntax }
+          let(:message) do
+            'The spread operator can only be used on sequence elements, mapping elements, and call arguments ' \
+              'in "template.twig" at line 1.'
+          end
+        end
+      end
+    end
+
     context 'when a parenthesis is not closed' do
       it_behaves_like 'render_and_raise' do
         let(:template) { '{{ (1 2) }}' }

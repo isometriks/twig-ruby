@@ -29,7 +29,7 @@ module Twig
         [
           # Unary operators
           unary.new(Node::Expression::Unary::Not, 'not', 70),
-          unary.new(Node::Expression::Unary::Spread, '...', 512, description: 'Spread Operator', operand_precedence: 0),
+          ExpressionParser::Prefix::Spread.new,
           unary.new(Node::Expression::Unary::Neg, '-', 500),
           unary.new(Node::Expression::Unary::Pos, '+', 500),
 
