@@ -81,6 +81,8 @@ module Twig
     # @return [Twig::TemplateWrapper]
     def load(name)
       if name.is_a?(Twig::TemplateWrapper)
+        name.unwrap(self)
+
         return name
       end
 
@@ -101,7 +103,7 @@ module Twig
 
       names.each do |name|
         if name.is_a?(Twig::TemplateWrapper)
-          return name
+          return load(name)
         end
 
         unless count == 1 || loader.exists?(name)

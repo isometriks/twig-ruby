@@ -50,9 +50,13 @@ RSpec.describe Twig::Template do
         'move the "import" or "from" tag inside the block or the macro that uses it in "index" at line 1.'
     end
 
-    def load(source)
+    def environment_for(source)
       loader = Twig::Loader::Hash.new({ 'index' => source, 'macros' => '{% macro label() %}label{% endmacro %}' })
-      Twig::Environment.new(loader).load('index')
+      Twig::Environment.new(loader)
+    end
+
+    def load(source)
+      environment_for(source).load('index')
     end
 
     it 'reports them when a block is rendered on its own' do
@@ -68,10 +72,11 @@ RSpec.describe Twig::Template do
     end
 
     it 'reports them when a macro is called on its own' do
-      template = load('{% from "macros" import label %}{% macro row() %}{{ label() }}{% endmacro %}')
+      environment = environment_for('{% from "macros" import label %}{% macro row() %}{{ label() }}{% endmacro %}')
+      template = environment.load('index').unwrap(environment)
 
       expect do
-        template.unwrap.macro_namespace.call('row', {}, Twig::Runtime::Context.new, 1, template.unwrap.source_context)
+        template.macro_namespace.call('row', {}, Twig::Runtime::Context.new, 1, template.source_context)
       end.to raise_error(Twig::Error::Runtime, /Macros imported in the body of template "index" are not available/)
     end
   end

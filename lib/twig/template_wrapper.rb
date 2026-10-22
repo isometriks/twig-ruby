@@ -27,8 +27,21 @@ module Twig
       template.block?(name, context)
     end
 
+    # @param [Environment] environment
+    def owned_by?(environment)
+      self.environment.equal?(environment) && template.owned_by?(environment)
+    end
+
+    # A wrapper only works with the environment that loaded it, whose
+    # extensions, globals and sandboxing its template was compiled for
+    #
+    # @param [Environment] environment
     # @return [Template]
-    def unwrap
+    def unwrap(environment)
+      unless owned_by?(environment)
+        raise Error::Runtime, "A \"#{self.class}\" can only be used with the \"#{Environment}\" that created it."
+      end
+
       template
     end
 

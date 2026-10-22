@@ -194,17 +194,22 @@ module Twig
       self
     end
 
+    # @param [Environment] environment
+    def owned_by?(environment)
+      env.equal?(environment)
+    end
+
     private
 
     # @param [String, TemplateWrapper] template
     # @return [Template]
     def load(template, line, index = nil)
       if template.is_a?(Array)
-        return env.resolve_template(template).unwrap
+        return env.resolve_template(template).unwrap(env)
       end
 
       if template.is_a?(TemplateWrapper)
-        return template.unwrap
+        return template.unwrap(env)
       end
 
       if template == template_name
