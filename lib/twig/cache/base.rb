@@ -18,6 +18,9 @@ module Twig
         raise NotImplementedError
       end
 
+      # Evaluates the entry, defining its template class. The environment
+      # checks for the class afterwards, so the return value isn't relied on.
+      #
       # @param [String] key
       # @return [Boolean]
       def load(key)

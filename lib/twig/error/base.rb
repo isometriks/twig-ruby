@@ -52,7 +52,12 @@ module Twig
           next unless location.label&.start_with?('Twig::Compiled::')
 
           klass, _method = location.label.split('#')
-          klass = Twig::Compiled.const_get(klass)
+          klass = begin
+            Twig::Compiled.const_get(klass)
+          rescue NameError
+            # A recompile replaced the class since this frame ran
+            next
+          end
 
           next unless source.name == klass.source_context.name
 

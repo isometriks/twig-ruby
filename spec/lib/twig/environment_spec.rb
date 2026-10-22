@@ -133,6 +133,46 @@ RSpec.describe Twig::Environment do
     end
   end
 
+  { 'a filesystem cache' => 'dropped_cached', 'no cache' => 'dropped_uncached' }.each do |description, prefix|
+    context "when a recompile with #{description} drops code" do
+      let(:cache) { prefix == 'dropped_cached' && Dir.mktmpdir }
+      let(:environment) { described_class.new(loader, cache:, auto_reload: true) }
+
+      it 'no longer finds a deleted macro' do
+        write_template("#{prefix}_macros.twig", '{% macro old() %}OLD{% endmacro %}', mtime: Time.now - 60)
+        write_template("#{prefix}_page.twig", "{% import '#{prefix}_macros.twig' as m %}[{{ m.old() }}]")
+        expect(environment.load("#{prefix}_page.twig").render({})).to eq('[OLD]')
+
+        write_template("#{prefix}_macros.twig", '{% macro new() %}NEW{% endmacro %}')
+        expect { environment.load("#{prefix}_page.twig").render({}) }.
+          to raise_error(Twig::Error::Runtime, /"old"/)
+      end
+
+      it 'no longer extends the layout once extends is removed' do
+        write_template("#{prefix}_layout.twig", '{% block title %}Layout title{% endblock %}')
+        write_template("#{prefix}_child.twig", "{% extends '#{prefix}_layout.twig' %}", mtime: Time.now - 60)
+        expect(environment.load("#{prefix}_child.twig").render({})).to eq('Layout title')
+
+        write_template("#{prefix}_child.twig", "[{{ block('title') }}]")
+        expect { environment.load("#{prefix}_child.twig").render({}) }.
+          to raise_error(Twig::Error::Runtime, /"title"/)
+      end
+    end
+  end
+
+  context 'when a recompile replaces a template still rendering' do
+    let(:environment) { described_class.new(loader, cache: false, auto_reload: true) }
+
+    it 'finishes the render with the code it started with' do
+      write_template('replaced_while_rendering.twig', 'Version one', mtime: Time.now - 60)
+      template = environment.load('replaced_while_rendering.twig')
+
+      write_template('replaced_while_rendering.twig', 'Version two')
+      expect(environment.load('replaced_while_rendering.twig').render({})).to eq('Version two')
+      expect(template.render({})).to eq('Version one')
+    end
+  end
+
   context 'with a cache whose write takes only key and content' do
     let(:cache) do
       Class.new(Twig::Cache::Base) do
@@ -158,8 +198,9 @@ RSpec.describe Twig::Environment do
         def load(key)
           return false unless @entries.key?(key)
 
+          # Returns nothing, like PHP's CacheInterface::load
           Twig.module_eval(@entries[key])
-          true
+          nil
         end
 
         def timestamp(key)

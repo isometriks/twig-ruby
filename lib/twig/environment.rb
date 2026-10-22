@@ -2,6 +2,11 @@
 
 module Twig
   class Environment
+    # Compiled template classes are constants shared by every environment, and
+    # a recompile replaces them, so loads are serialised across environments.
+    LOAD_LOCK = Monitor.new
+    private_constant :LOAD_LOCK
+
     # @return [Cache::Base]
     attr_reader :cache, :charset
 
@@ -30,7 +35,6 @@ module Twig
 
       @loaded_templates = {}
       @loaded_at = {}
-      @load_lock = Monitor.new
       @globals = {}
       @runtimes = {}
       @runtime_loaders = []
@@ -104,7 +108,7 @@ module Twig
         return @loaded_templates[cls]
       end
 
-      @load_lock.synchronize do
+      LOAD_LOCK.synchronize do
         # Freshness is judged by when this process evaluated the template, not
         # by the cache entry: another process sharing the cache may have
         # recompiled the template since, leaving an entry newer than the edit
@@ -117,11 +121,18 @@ module Twig
         cache_key = cache.generate_key(name, main_cls)
         cached_at = cache.timestamp(cache_key)
 
-        if (!@auto_reload || template_fresh?(name, cached_at)) &&
-           @cache.load(cache_key) && Twig.const_defined?(cls)
-          @loaded_at[main_cls] = cached_at
+        if !@auto_reload || template_fresh?(name, cached_at)
+          remove_template_class(main_cls)
 
-          return @loaded_templates[cls] = Twig.const_get(cls).new(self)
+          # Whether the class is defined now says if the entry loaded, since
+          # PHP's load returns nothing and a cache ported from it may too
+          @cache.load(cache_key)
+
+          if Twig.const_defined?(cls)
+            @loaded_at[main_cls] = cached_at
+
+            return @loaded_templates[cls] = Twig.const_get(cls).new(self)
+          end
         end
 
         # No caches have fresh template at this point, so write it now. The
@@ -137,6 +148,7 @@ module Twig
         # back, which another process may have replaced in the meantime. This
         # also brings an already defined class up to date when nothing is
         # cached.
+        remove_template_class(main_cls)
         Twig.module_eval(code, cache_key.empty? ? "(twig #{name})" : cache_key, 1)
         @loaded_at[main_cls] = compiled_at
 
@@ -332,6 +344,20 @@ module Twig
       else
         @cache.write(key, code)
       end
+    end
+
+    # Loading or evaluating a template's code reopens its class when it is
+    # already defined, so methods the new source no longer has (a deleted
+    # macro, the get_parent of a removed extends) would survive the recompile.
+    # Only the main class is removed: embedded templates get a new random index
+    # on every compile, and a render running in another thread may still be
+    # looking theirs up. Instances made from the old class keep working.
+    #
+    # @param [String] main_cls
+    def remove_template_class(main_cls)
+      base = main_cls.delete_prefix('Compiled::')
+
+      Twig::Compiled.send(:remove_const, base) if Twig::Compiled.const_defined?(base, false)
     end
 
     def lexer
