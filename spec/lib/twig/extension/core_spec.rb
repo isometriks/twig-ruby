@@ -428,6 +428,12 @@ RSpec.describe Twig::Extension::Core do
       expect(described_class.split('UTF-8', 'héllo', '')).to eq(%w[h é l l o])
     end
 
+    it 'splits into chunks of the limit without a trailing empty chunk' do
+      expect(described_class.split('UTF-8', 'aabbcc', '', limit: 2)).to eq(%w[aa bb cc])
+      expect(described_class.split('UTF-8', 'aabbc', '', limit: 2)).to eq(%w[aa bb c])
+      expect(described_class.split('UTF-8', 'ab', '', limit: 3)).to eq(%w[ab])
+    end
+
     it 'raises a runtime error for a string that is not valid UTF-8' do
       expect { described_class.split('UTF-8', "\xC3\x28abc", '') }.
         to raise_error(Twig::Error::Runtime, /Unable to split the string passed to "split" into characters/)

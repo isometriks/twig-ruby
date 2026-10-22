@@ -500,9 +500,7 @@ module Twig
           return [value]
         end
 
-        [*0..(length / limit).ceil].map do |i|
-          value[i * limit, limit]
-        end
+        (0...length).step(limit).map { |i| value[i, limit] }
       end
 
       # @param [Hash, Array, Enumerable] object
