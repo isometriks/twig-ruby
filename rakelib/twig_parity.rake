@@ -153,7 +153,13 @@ module TwigParity
         if exception
           message_only = exception.match(/Twig\\Error\\\w+: (.*)/)&.captures&.[](0)
           message_only = replace(message_only, replacements[:exception]) if message_only
-          exception_matches = message_only == e.message
+          exception_matches = if message_only&.match?(/%[sd]/)
+                                # Mirrors PHPUnit's assertStringMatchesFormat for %s and %d
+                                format = ::Regexp.escape(message_only).gsub('%s', '[^\r\n]+').gsub('%d', '\d+')
+                                e.message.match?(/\A#{format}\z/)
+                              else
+                                message_only == e.message
+                              end
           error = ::RSpec::Support::Differ.new.diff_as_string(e.message, message_only)
           # error = "#{Color.red("- #{message_only}")}\n#{Color.green("+ #{e.message}")}"
         else
