@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'open3'
+require 'rbconfig'
 require 'tmpdir'
 
 RSpec.describe Twig::Cache::Filesystem do
@@ -28,5 +30,20 @@ RSpec.describe Twig::Cache::Filesystem do
 
     FileUtils.touch(cache_key, mtime: 1_234_567_890)
     expect(cache.timestamp(cache_key)).to eq(1_234_567_890)
+  end
+
+  it 'creates missing directories with nothing but the gem required' do
+    # A fresh process, since the spec run itself may already have loaded
+    # FileUtils through something else.
+    script = <<~RUBY
+      require 'twig_ruby'
+      key = File.join(ARGV[0], 'nested', 'entry.rb')
+      Twig::Cache::Filesystem.new(ARGV[0]).write(key, 'Hello World!')
+      print File.read(key)
+    RUBY
+    lib = File.expand_path('../../../../lib', __dir__)
+    output, status = Open3.capture2e(RbConfig.ruby, '-I', lib, '-e', script, directory)
+
+    expect([output, status.success?]).to eq(['Hello World!', true])
   end
 end
