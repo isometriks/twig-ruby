@@ -6,8 +6,10 @@ module Twig
       class Dot < InfixExpressionParser
         include ParsesArguments
 
-        def parse(parser, left, _token)
+        def parse(parser, left, operator)
           stream = parser.stream
+          # foo?.bar gives null instead of reading bar when foo is null
+          null_safe = operator.value == '?.'
           token = stream.current
           lineno = token.lineno
           arguments = Node::Expression::Array.new(AutoHash.new, lineno)
@@ -53,11 +55,15 @@ module Twig
             return reference
           end
 
-          Node::Expression::GetAttribute.new(left, attribute, arguments, type, token.lineno)
+          Node::Expression::GetAttribute.new(left, attribute, arguments, type, token.lineno, null_safe:)
         end
 
         def name
           '.'
+        end
+
+        def aliases
+          ['?.']
         end
 
         def description

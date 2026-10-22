@@ -223,6 +223,19 @@ RSpec.describe Twig::Lexer do
       '{{ a??b }}' => ['name(a)', 'operator(??)', 'name(b)'],
       '{{ a ?: b }}' => ['name(a)', 'operator(?:)', 'name(b)'],
       '{{ a ?? b }}' => ['name(a)', 'operator(??)', 'name(b)'],
+      # ?. is the null-safe operator, as in Twig PHP, even straight after a name
+      '{{ a?.b }}' => ['name(a)', 'operator(?.)', 'name(b)'],
+      '{{ a ?. b }}' => ['name(a)', 'operator(?.)', 'name(b)'],
+      '{{ user.admin?.x }}' => ['name(user)', 'operator(.)', 'name(admin)', 'operator(?.)', 'name(x)'],
+      '{{ a?.b?.c }}' => ['name(a)', 'operator(?.)', 'name(b)', 'operator(?.)', 'name(c)'],
+      '{{ f()?.b }}' => ['name(f)', 'operator(()', 'punctuation())', 'operator(?.)', 'name(b)'],
+      # Parentheses, or a space between ? and ., keep the ? on a predicate
+      '{{ (user.admin?).x }}' => [
+        'operator(()', 'name(user)', 'operator(.)', 'name(admin?)', 'punctuation())', 'operator(.)', 'name(x)'
+      ],
+      '{{ a? .b }}' => ['name(a?)', 'operator(.)', 'name(b)'],
+      # A ? and a . apart are still a ternary
+      '{{ a ? .5 : 1 }}' => ['name(a)', 'operator(?)', 'operator(.)', 'number(5)', 'punctuation(:)', 'number(1)'],
     }.each do |code, expected|
       it "lexes #{code}" do
         expect(expression_tokens(code)).to eq(expected)

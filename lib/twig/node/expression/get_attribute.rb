@@ -6,11 +6,13 @@ module Twig
       class GetAttribute < Expression::Base
         include SupportDefinedTest
 
-        def initialize(node, attribute, arguments, type, lineno)
+        # @param [Boolean] null_safe Whether the attribute is read with ?., which gives nil
+        #   instead of reading it on nil
+        def initialize(node, attribute, arguments, type, lineno, null_safe: false)
           nodes = { node:, attribute: }
           nodes[:arguments] = arguments if arguments
 
-          super(nodes, { type:, ignore_strict_check: false }, lineno)
+          super(nodes, { type:, ignore_strict_check: false, null_safe: }, lineno)
         end
 
         def enable_defined_test
@@ -19,15 +21,28 @@ module Twig
         end
 
         def compile(compiler)
-          compiler.
-            raw('::Twig::Extension::Core.get_attribute(env, source_context, ')
-
           if attributes[:ignore_strict_check]
             nodes[:node].attributes[:ignore_strict_check] = true
           end
 
+          if (null_safe = attributes[:null_safe])
+            var = compiler.var_name
+
+            compiler.
+              raw("((#{var} = ").
+              subcompile(nodes[:node]).
+              raw(').nil? ? nil : ')
+          end
+
+          compiler.raw('::Twig::Extension::Core.get_attribute(env, source_context, ')
+
+          if null_safe
+            compiler.raw(var)
+          else
+            compiler.subcompile(nodes[:node])
+          end
+
           compiler.
-            subcompile(nodes[:node]).
             raw(', ').
             subcompile(nodes[:attribute]).
             raw(', ').
@@ -53,6 +68,8 @@ module Twig
             raw(', lineno: ').
             repr(lineno).
             raw(')')
+
+          compiler.raw(')') if null_safe
         end
 
         private

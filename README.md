@@ -270,6 +270,11 @@ longer makes `.` match newlines (use `s`), and a `nil` subject is matched as an 
 Matching is always by character, as if `u` were set; a subject that is not valid UTF-8 raises
 only when the pattern has `u`.
 
+**`?.` is the null-safe operator, even straight after a name.** `{{ user?.name }}` prints
+nothing when `user` is `nil` instead of raising, as in Twig PHP. So `user.admin?.label` reads
+`label` on `user.admin`, not on the predicate `admin?`; wrap the predicate to go on from its
+result: `{{ (user.admin?).to_s }}`.
+
 **`strict_variables` raises on missing keys.** The Rails config turns it on, so
 `{{ params[:page] }}` raises when there's no `page` param. `??` and `default` are the way
 to allow for it:
