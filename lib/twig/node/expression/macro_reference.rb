@@ -8,11 +8,16 @@ module Twig
         include SupportDefinedTest
 
         # @param [Variable::Template] template
-        # @param [String] name The bare macro name
+        # @param [String, Expression::Base] name The bare macro name or, for a dynamic call, an
+        #   expression that gives it
         # @param [Expression::Base] arguments
         # @param [Integer] lineno
         def initialize(template, name, arguments, lineno)
-          super({ template:, arguments: }, { name: }, lineno)
+          if name.is_a?(String)
+            super({ template:, arguments: }, { name: }, lineno)
+          else
+            super({ template:, arguments:, name: }, { name: nil }, lineno)
+          end
         end
 
         # @param [Compiler] compiler
@@ -21,16 +26,17 @@ module Twig
 
           if define_test_enabled?
             compiler.
-              raw('.has?(').
-              repr(attributes[:name]).
-              raw(', context)')
+              raw('.has?(')
+
+            compile_name(compiler)
+
+            compiler.raw(', context)')
             return
           end
 
-          compiler.
-            raw('.call(').
-            repr(attributes[:name]).
-            raw(', ')
+          compiler.raw('.call(')
+          compile_name(compiler)
+          compiler.raw(', ')
 
           compile_arguments(compiler)
 
@@ -41,6 +47,20 @@ module Twig
         end
 
         private
+
+        # A dynamic name is converted to a string at runtime, as PHP's (string) cast does
+        #
+        # @param [Compiler] compiler
+        def compile_name(compiler)
+          if nodes.key?(:name)
+            compiler.
+              raw('(').
+              subcompile(nodes[:name]).
+              raw(').to_s')
+          else
+            compiler.repr(attributes[:name])
+          end
+        end
 
         # Positional arguments are keyed by position and named ones by name. A spread is
         # kept whole, for the macro to expand at runtime.

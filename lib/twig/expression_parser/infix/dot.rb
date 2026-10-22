@@ -32,8 +32,7 @@ module Twig
           end
 
           macro_target = left.is_a?(Node::Expression::Name) && (
-            parser.imported_symbol(:template, left.attributes[:name]) ||
-              (left.attributes[:name] == '_self' && attribute.is_a?(Node::Expression::Constant))
+            parser.imported_symbol(:template, left.attributes[:name]) || left.attributes[:name] == '_self'
           )
 
           if stream.test(Token::OPERATOR_TYPE, '(')
@@ -44,7 +43,8 @@ module Twig
           if macro_target
             return Node::Expression::MacroReference.new(
               Node::Expression::Variable::Template.new(left.attributes[:name], left.lineno),
-              attribute.attributes[:value].to_s,
+              # macros.(name)() calls the macro named by the value of name
+              attribute.is_a?(Node::Expression::Constant) ? attribute.attributes[:value].to_s : attribute,
               arguments,
               left.lineno
             )
