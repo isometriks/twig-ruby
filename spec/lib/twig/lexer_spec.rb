@@ -325,6 +325,49 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  describe 'syntax error columns' do
+    def syntax_error(code)
+      env = Twig::Environment.new(Twig::Loader::Hash.new({}))
+      env.parse(env.tokenize(Twig::Source.new(code, 'index')))
+    rescue Twig::Error::Syntax => e
+      e
+    else
+      raise 'A syntax error should have been raised.'
+    end
+
+    it 'reports the column of a lexer error' do
+      error = syntax_error("{{ 1 + 3) }}\n{{ ok }}")
+
+      expect([error.lineno, error.column]).to eq([1, 9])
+      expect(error.message).to end_with('at line 1 column 9.')
+    end
+
+    it 'reports the line and column of a closing delimiter on its own line' do
+      error = syntax_error("{% from 'forms.twig'\n  %}")
+
+      expect([error.lineno, error.column]).to eq([2, 3])
+      expect(error.message).to end_with('at line 2 column 3.')
+    end
+
+    it 'counts the column in the original source' do
+      error = syntax_error("x\r\n{{ 1__2 }}")
+
+      expect([error.lineno, error.column]).to eq([2, 5])
+      expect(error.message).to end_with('at line 2 column 5.')
+    end
+
+    {
+      '{{ 1 + 3) }}' => [')', 9],
+      '{{ obj] }}' => [']', 7],
+      '{{ { a: 1 }}' => ['}', 12],
+      '{{ ([1] + 3)) }}' => [')', 13],
+    }.each do |code, (bracket, column)|
+      it "reports the column of an unexpected #{bracket} in #{code}" do
+        expect(syntax_error(code).message).to eq("Unexpected \"#{bracket}\" in \"index\" at line 1 column #{column}.")
+      end
+    end
+  end
+
   it_behaves_like 'render_and_assert' do
     let(:input) do
       <<~INPUT.chomp

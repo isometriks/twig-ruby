@@ -48,7 +48,8 @@ module Twig
         raise Error::Syntax.new(
           "#{message}Unexpected token \"#{unexpected}\"#{token_value} (\"#{expected}\" expected#{value}).",
           token.lineno,
-          source
+          source,
+          column: source&.column(token.offset)
         )
       end
 

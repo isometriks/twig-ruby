@@ -23,6 +23,25 @@ RSpec.describe Twig::Error::Base do
     expect(error.message).to eq('What in "broken.html" at line 2?')
   end
 
+  it 'reports the column after the line' do
+    error = Twig::Error::Syntax.new('Done.', 2, source, column: 5)
+
+    expect(error.message).to eq('Done in "broken.html" at line 2 column 5.')
+  end
+
+  it 'reports no column without a line' do
+    error = Twig::Error::Syntax.new('Done.', -1, source, column: 5)
+
+    expect(error.message).to eq('Done in "broken.html".')
+  end
+
+  it 'updates the message when the column changes' do
+    error = Twig::Error::Syntax.new('Done.', 2, source)
+    error.column = 3
+
+    expect(error.message).to eq('Done in "broken.html" at line 2 column 3.')
+  end
+
   describe '#guess' do
     it 'skips frames from a template class a recompile has since replaced' do
       error = described_class.new('Oops')

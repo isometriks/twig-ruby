@@ -6,13 +6,18 @@ module Twig
       # @return [Integer]
       attr_reader :lineno
 
+      # @return [Integer, nil] the 1-based column, or nil when unknown
+      attr_reader :column
+
       # @param [String] message
       # @param [Integer] lineno
       # @param [Source] source
-      def initialize(message, lineno = -1, source = nil, previous = nil)
+      # @param [Integer, nil] column
+      def initialize(message, lineno = -1, source = nil, previous = nil, column: nil)
         super('')
 
         @lineno = lineno
+        @column = column
         @source = source
         @raw_message = message
         @previous = previous
@@ -37,6 +42,12 @@ module Twig
 
       def lineno=(lineno)
         @lineno = lineno
+        update_repr
+      end
+
+      # @param [Integer, nil] column
+      def column=(column)
+        @column = column
         update_repr
       end
 
@@ -98,6 +109,7 @@ module Twig
 
         if lineno.positive?
           @message += " at line #{lineno}"
+          @message += " column #{column}" unless column.nil?
         end
 
         if punctuation

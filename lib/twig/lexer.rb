@@ -254,7 +254,12 @@ module Twig
       elsif (match = @code.match(REGEX_INLINE_COMMENT, @cursor))
         move_cursor(match.to_s)
       else
-        raise Error::Syntax.new("Unexpected character '#{code_at}'", @lineno, @source)
+        raise Error::Syntax.new(
+          "Unexpected character '#{code_at}'",
+          @lineno,
+          @source,
+          column: @source.column(@cursor)
+        )
       end
     end
 
@@ -610,7 +615,7 @@ module Twig
         @brackets << [code, @lineno]
       elsif CLOSING_BRACKET.include?(code)
         if @brackets.empty?
-          raise Error::Syntax.new("Unexpected \"#{code}\".", @lineno, @source)
+          raise Error::Syntax.new("Unexpected \"#{code}\".", @lineno, @source, column: @source.column(@cursor))
         end
 
         expect, lineno = @brackets.pop
