@@ -60,6 +60,57 @@ RSpec.describe Twig::Node::Expression::Binary::ObjectDestructuringSetBinary do
     end
   end
 
+  describe 'evaluating the source only once' do
+    let(:calls) { [] }
+    let(:counting_extension) do
+      calls = self.calls
+
+      Class.new(Twig::Extension::Base) do
+        define_method(:functions) do
+          [
+            Twig::TwigFunction.new('next_value', lambda {
+              calls << (calls.length + 1)
+              { 'first' => calls.length, 'second' => calls.length }
+            }),
+          ]
+        end
+      end.new
+    end
+
+    it_behaves_like 'render_and_assert' do
+      let(:extensions) { [counting_extension] }
+      let(:input) do
+        '{% do [result_first, result_second] = ({first, second} = next_value()) %}' \
+          '{{ first }} {{ second }} {{ result_first }} {{ result_second }}'
+      end
+      let(:output) { '1 1 1 1' }
+    end
+
+    it 'calls the source once' do
+      loader = Twig::Loader::Hash.new({ 'template' => '{% do {first, second} = next_value() %}' })
+      environment = Twig::Environment.new(loader)
+      environment.add_extension(counting_extension)
+      environment.load('template').render({})
+
+      expect(calls).to eq([1])
+    end
+  end
+
+  describe 'evaluating a source with side effects only once' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { '{% set c = 0 %}{% do {a, b} = (c = c + 1) ? {a: c, b: 2} : {} %}{{ c }} {{ a }}{{ b }}' }
+      let(:output) { '1 12' }
+    end
+  end
+
+  describe 'returning the extracted values' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { '{{ ({name, email} = user)|join(",") }}' }
+      let(:output) { 'Fabien,fabien@example.com' }
+      let(:locals) { { user: { 'name' => 'Fabien', 'email' => 'fabien@example.com' } } }
+    end
+  end
+
   context 'when destructuring to a non-variable' do
     it_behaves_like 'render_and_raise' do
       let(:template) { '{% do {name: "literal"} = user %}' }

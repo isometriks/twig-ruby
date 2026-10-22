@@ -26,22 +26,23 @@ module Twig
             super
           end
 
+          # Evaluates the right-hand side once into a temporary and returns the
+          # extracted values, as PHP does
           def compile(compiler)
-            compiler.add_debug_info(self)
+            var = compiler.var_name
 
-            @mappings.each_with_index do |mapping, i|
-              compiler.raw(', ') if i.positive?
-              compiler.raw('context[').string(mapping[:variable]).raw(']')
-            end
-
-            compiler.raw(' = ')
+            compiler.
+              add_debug_info(self).
+              raw("(#{var} = ").
+              subcompile(nodes[:right]).
+              raw('; [')
 
             @mappings.each_with_index do |mapping, i|
               compiler.raw(', ') if i.positive?
               compiler.
-                raw('::Twig::Extension::Core.get_attribute(env, source_context, ').
-                subcompile(nodes[:right]).
-                raw(', ').
+                raw('context[').
+                string(mapping[:variable]).
+                raw("] = ::Twig::Extension::Core.get_attribute(env, source_context, #{var}, ").
                 repr(mapping[:property]).
                 raw(', ').
                 repr(Template::ANY_CALL).
@@ -49,6 +50,8 @@ module Twig
                 repr(nodes[:right].lineno).
                 raw(')')
             end
+
+            compiler.raw('])')
           end
 
           def operator(compiler)
