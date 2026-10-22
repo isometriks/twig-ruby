@@ -39,7 +39,7 @@ module Twig
             name_value = name(compiler)
 
             if name_value == '_self'
-              compiler.raw('self')
+              compiler.raw('macro_namespace')
             else
               compiler.
                 raw('macros[').

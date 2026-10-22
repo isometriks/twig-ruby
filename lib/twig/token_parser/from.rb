@@ -43,7 +43,7 @@ module Twig
         node = Node::Import.new(macro, internal_ref, token.lineno)
 
         targets.each do |name, aliased|
-          parser.add_imported_symbol(:function, aliased.attributes[:name], "macro_#{name}", internal_ref)
+          parser.add_imported_symbol(:function, aliased.attributes[:name], name, internal_ref)
         end
 
         node

@@ -175,68 +175,11 @@ module Twig
       @parents[parent]
     end
 
-    def macro?(name, context)
-      if respond_to?(name.to_sym)
-        return true
-      end
-
-      unless (parent = get_parent(context))
-        return false
-      end
-
-      parent.macro?(name, context)
-    end
-
-    def render_macro(name, context, args, lineno, source)
-      macro_method = macro_template_reference(name, context, lineno, source)
-      macro_arguments = macro_method.parameters.select { |arg| arg[0] == :key }.map { |_, arg| arg }
-      mapped_arguments = AutoHash.new
-      kwarg = false
-
-      args.each do |key, value|
-        if !kwarg && key.is_a?(Integer)
-          if key >= 0 && key < macro_arguments.length
-            mapped_key = macro_arguments[key]
-          else
-            mapped_arguments.add(value)
-
-            next
-          end
-        elsif kwarg && key.is_a?(Integer)
-          raise Error::Runtime.new('Cannot place a positional argument after a keyword argument.', lineno, source)
-        else
-          kwarg = true
-          mapped_key = key.to_sym
-        end
-
-        if mapped_arguments.key?(mapped_key)
-          raise Error::Runtime.new("Argument \"#{mapped_key.inspect}\" passed twice.", lineno, source)
-        end
-
-        mapped_arguments[mapped_key] = value
-      end
-
-      macro_method.call(context.call_context, **mapped_arguments)
-    end
-
-    # @return [Method]
-    def macro_template_reference(name, context, lineno, source)
-      if respond_to?(name.to_sym)
-        return method(name.to_sym)
-      end
-
-      parent = self
-      while (parent = parent.get_parent(context))
-        if parent.respond_to?(name.to_sym)
-          return parent.method(name.to_sym)
-        end
-      end
-
-      raise Error::Runtime.new(
-        "Macro \"#{name.delete_prefix('macro_')}\" is not defined in template \"#{template_name}\".",
-        lineno,
-        source
-      )
+    # The macros this template declares, as imported by `import` or reached through `_self`
+    #
+    # @return [Runtime::MacroNamespace]
+    def macro_namespace
+      @macro_namespace ||= Runtime::MacroNamespace.new(self, load_declared_macros)
     end
 
     def source_context
@@ -296,6 +239,13 @@ module Twig
     # Overloaded by children
     def do_get_parent(context)
       false
+    end
+
+    # Overloaded by children that declare macros
+    #
+    # @return [Hash{String => Runtime::Macro}]
+    def load_declared_macros
+      {}
     end
 
     # @return [Environment]

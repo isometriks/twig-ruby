@@ -10,7 +10,6 @@ module TwigParity
   # changes on purpose: colon_not_supported_as_default_separator, because a macro
   # default can be written name: value as well as name = value (see the README).
   WONT_IMPLEMENT = %w[
-    tags/macro/super_globals.test
     tags/for/non_countable.test
     tags/for/generator.test
     tags/for/objects.test

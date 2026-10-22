@@ -31,18 +31,20 @@ module Twig
             end
           end
 
-          if stream.test(Token::OPERATOR_TYPE, '(')
-            type = Template::METHOD_CALL
-            arguments = parse_callable_arguments(parser, token.lineno)
-          end
-
-          if left.is_a?(Node::Expression::Name) && (
+          macro_target = left.is_a?(Node::Expression::Name) && (
             parser.imported_symbol(:template, left.attributes[:name]) ||
               (left.attributes[:name] == '_self' && attribute.is_a?(Node::Expression::Constant))
           )
+
+          if stream.test(Token::OPERATOR_TYPE, '(')
+            type = Template::METHOD_CALL
+            arguments = parse_callable_arguments(parser, token.lineno, preserve_names: macro_target)
+          end
+
+          if macro_target
             return Node::Expression::MacroReference.new(
               Node::Expression::Variable::Template.new(left.attributes[:name], left.lineno),
-              "macro_#{attribute.attributes[:value]}",
+              attribute.attributes[:value].to_s,
               arguments,
               left.lineno
             )

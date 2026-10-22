@@ -88,10 +88,7 @@ module Twig
         compiler.
           subcompile(nodes[:blocks])
 
-        # Macros
-        compiler.
-          subcompile(nodes[:macros])
-
+        compile_macros(compiler)
         compile_get_template_name(compiler)
         compile_traitable(compiler)
         compile_debug_info(compiler)
@@ -242,6 +239,32 @@ module Twig
 
         compiler.
           raw("\n").
+          outdent.
+          write("end\n\n")
+      end
+
+      # @param [Compiler] compiler
+      def compile_macros(compiler)
+        return if nodes[:macros].empty?
+
+        compiler.
+          write("private def load_declared_macros\n").
+          indent.
+          write("{\n").
+          indent
+
+        nodes[:macros].nodes.each do |name, macro|
+          compiler.
+            write('').
+            string(name).
+            raw(' => ').
+            subcompile(macro).
+            raw(",\n")
+        end
+
+        compiler.
+          outdent.
+          write("}\n").
           outdent.
           write("end\n\n")
       end

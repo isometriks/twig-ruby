@@ -7,11 +7,19 @@ module Twig
 
       # @param [Parser] parser
       # @param [Integer] lineno
-      def parse_callable_arguments(parser, lineno, parse_open_parenthesis: true)
+      # @param [Boolean] preserve_names Key named arguments by their name as written, rather than
+      #   as a variable (which prefixes reserved names such as "blocks"); macro calls need this
+      def parse_callable_arguments(parser, lineno, parse_open_parenthesis: true, preserve_names: false)
         arguments = Node::Expression::Hash.new({}, lineno)
 
         parse_named_arguments(parser, parse_open_parenthesis:).nodes.each do |key, node|
-          arguments.add_element(node, Node::Expression::Variable::Local.new(key, lineno))
+          key = if preserve_names
+                  Node::Expression::Constant.new(key, lineno)
+                else
+                  Node::Expression::Variable::Local.new(key, lineno)
+                end
+
+          arguments.add_element(node, key)
         end
 
         arguments

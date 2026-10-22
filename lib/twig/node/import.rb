@@ -15,14 +15,14 @@ module Twig
         compiler.subcompile(nodes[:var])
 
         if nodes[:expr].is_a?(Expression::Variable::Context) && nodes[:expr].attributes[:name] == '_self'
-          compiler.raw('self')
+          compiler.raw('macro_namespace')
         else
           compiler.
             raw('load(').
             subcompile(nodes[:expr]).
             raw(', ').
             repr(lineno).
-            raw(').unwrap')
+            raw(').unwrap.macro_namespace')
         end
 
         compiler.raw("\n")
