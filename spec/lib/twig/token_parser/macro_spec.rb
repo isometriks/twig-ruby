@@ -88,6 +88,34 @@ RSpec.describe Twig::TokenParser::Macro do
       )
   end
 
+  # Ruby extension: like a Rails helper, a macro called without arguments needs no
+  # parentheses. Twig PHP 4 raises a SyntaxError for these.
+  context 'when a macro is called without parentheses' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          '{% import "forms.twig" as forms %}{{ forms.button }}',
+          '{% macro hello() %}Hello{% endmacro %}{{ _self.hello }}',
+          '{% import _self as macros %}{% macro hello() %}Hello{% endmacro %}{% set name = "hello" %}' \
+          '{{ macros.(name) }}',
+          '{% macro hello(name = "World") %}Hello {{ name }}{% endmacro %}{{ _self.hello }}',
+          '{% import "forms.twig" as forms %}{{ forms.button is defined ? "OK" : "KO" }}',
+        ]
+      end
+      let(:outputs) { ['<button>OK</button>', 'Hello', 'Hello', 'Hello World', 'OK'] }
+      let(:templates) do
+        { 'forms.twig' => '{% macro button(label = "OK") %}<button>{{ label }}</button>{% endmacro %}' }
+      end
+    end
+
+    it 'still requires the arguments that have no default value' do
+      loader = Twig::Loader::Hash.new({ 'index.twig' => '{% macro m(a) %}{% endmacro %}{{ _self.m }}' })
+
+      expect { Twig::Environment.new(loader).load('index.twig').render }.
+        to raise_error(Twig::Error::Runtime, /Value for argument "a" is required for macro "m"/)
+    end
+  end
+
   context 'when a macro argument has the same name as a global' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do

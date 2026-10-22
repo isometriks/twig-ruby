@@ -196,6 +196,9 @@ Rails helpers can also be called. Parenthesis is only required when passing argu
 {{ javascript_importmap_tags }}
 ```
 
+Macros work the same way, so `{{ forms.button }}` and `{{ _self.hello }}` call the macro
+with no arguments, where Twig PHP requires `forms.button()`.
+
 Names can end in `?` like Ruby predicates, so these helpers can be called bare too:
 
 ```twig

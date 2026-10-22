@@ -7,8 +7,12 @@
 module TwigParity
   GIT_LOCATION = File.expand_path('../tmp/twig-php', __dir__).freeze
   # Fixtures skipped because they test PHP-only features, or Twig behaviour Twig Ruby
-  # changes on purpose: colon_not_supported_as_default_separator, because a macro
-  # default can be written name: value as well as name = value (see the README).
+  # changes on purpose (see "Advanced Features" in the README):
+  # - colon_not_supported_as_default_separator, because a macro default can be written
+  #   name: value as well as name = value;
+  # - call_without_parentheses and dynamic_call_without_parentheses, because a macro
+  #   called without arguments needs no parentheses, like a Rails helper
+  #   ({{ forms.button }}, {{ _self.hello }}).
   WONT_IMPLEMENT = %w[
     tags/for/non_countable.test
     tags/for/generator.test
@@ -34,6 +38,8 @@ module TwigParity
     operators/not_precedence.test
     operators/concat_vs_add_sub.test
     tags/macro/colon_not_supported_as_default_separator.test
+    macros/call_without_parentheses.test
+    macros/dynamic_call_without_parentheses.test
   ].freeze
 
   class Color
