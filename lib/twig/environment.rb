@@ -46,6 +46,12 @@ module Twig
       add_extension(Extension::Escaper.new(@options[:autoescape]))
     end
 
+    # A copy would share the extension set, loaded templates and runtimes of
+    # this environment while its templates still point back to the original.
+    def initialize_copy(_source)
+      raise Error::Logic, 'Cloning a Twig environment is not supported; build a new environment instead.'
+    end
+
     def template_class(name, index = nil)
       key = loader.get_cache_key(name) + options_hash
 

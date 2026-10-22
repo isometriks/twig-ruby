@@ -379,4 +379,19 @@ RSpec.describe Twig::Environment do
       expect(environment.load('no_reload.twig').render({})).to eq('Version one')
     end
   end
+
+  context 'when copying an environment' do
+    let(:environment) { described_class.new(Twig::Loader::Hash.new({})) }
+
+    it 'rejects clone' do
+      expect { environment.clone }.to raise_error(
+        Twig::Error::Logic,
+        'Cloning a Twig environment is not supported; build a new environment instead.'
+      )
+    end
+
+    it 'rejects dup' do
+      expect { environment.dup }.to raise_error(Twig::Error::Logic, /Cloning a Twig environment is not supported/)
+    end
+  end
 end
