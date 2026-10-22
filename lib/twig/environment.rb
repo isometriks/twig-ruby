@@ -115,14 +115,12 @@ module Twig
 
       # No caches have fresh template at this point, so write it now
       code = render_ruby(name)
-
-      # File cache loader won't rely on eval
       @cache.write(cache_key, code)
-      @cache.load(cache_key)
 
-      # Finally just eval the generated code if cache doesn't
-      # create the class
-      Twig.module_eval(code) unless Twig.const_defined?(cls)
+      # Evaluate what was just compiled rather than loading the cache entry
+      # back, which another process may have replaced in the meantime. This
+      # also brings an already defined class up to date when nothing is cached.
+      Twig.module_eval(code, cache_key.empty? ? "(twig #{name})" : cache_key, 1)
 
       @loaded_templates[cls] = Twig.const_get(cls).new(self)
     end
