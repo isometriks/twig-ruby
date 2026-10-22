@@ -13,7 +13,13 @@ module Twig
       def initialize
         super
 
-        @data = {}
+        reset
+      end
+
+      # Forgets every analyzed node. The analysis is shared by every template
+      # compiled by an environment, so it must not hold on to their nodes.
+      def reset
+        @data = {}.compare_by_identity
         @safe_vars = []
       end
 
@@ -62,28 +68,18 @@ module Twig
 
       # @param [Node::Base] node
       def safe(node)
-        hash = node.object_id
+        safe = data.fetch(node, []).dup
 
-        unless data.key?(hash)
-          return []
+        if safe.include?(:html_attr)
+          safe << :html
+          safe << :html_attr_relaxed
         end
 
-        data[hash].each do |bucket|
-          next unless bucket[:key] == node
-
-          if bucket[:value].include?(:html_attr)
-            bucket[:value] << :html
-            bucket[:value] << :html_attr_relaxed
-          end
-
-          if bucket[:value].include?(:html_attr_relaxed)
-            bucket[:value] << :html
-          end
-
-          return bucket[:value]
+        if safe.include?(:html_attr_relaxed)
+          safe << :html
         end
 
-        []
+        safe
       end
 
       # @param [Array<String>] safe_vars
@@ -93,7 +89,7 @@ module Twig
 
       private
 
-      # @return [Hash{Integer => Array}]
+      # @return [Hash{Node::Base => Array}]
       attr_reader :data
 
       # @return [Array<String>]
@@ -102,20 +98,7 @@ module Twig
       # @param [Node::Base] node
       # @param [Array] safe
       def set_safe(node, safe)
-        hash = node.object_id
-        found = data.fetch(hash, []).detect { |bucket| bucket[:key] == node }
-
-        if found
-          found[:value] = safe
-
-          return
-        end
-
-        @data[hash] ||= []
-        @data[hash] << {
-          key: node,
-          value: safe,
-        }
+        data[node] = safe
       end
 
       # @param [Array<String>] a

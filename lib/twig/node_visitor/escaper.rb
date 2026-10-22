@@ -22,6 +22,7 @@ module Twig
           # leave_node runs, so start every template from a clean state
           @default_strategy = false
           @status_stack = []
+          safe_analysis.reset
 
           if env.extension?(Extension::Escaper)
             default_strategy = env.extension(Extension::Escaper).default_strategy(node.template_name)
@@ -46,6 +47,7 @@ module Twig
           @default_strategy = false
           @safe_vars = []
           @blocks = {}
+          safe_analysis.reset
         elsif node.is_a?(Node::Expression::Filter)
           return pre_escape_filter_node(node, env)
         elsif node.is_a?(Node::Print) && (type = need_escaping) != false
