@@ -22,6 +22,9 @@ module Twig
         @arguments = arguments
         @variadic = variadic
         @argument_indexes = arguments.each_key.with_index.to_h
+        @required_names = arguments.reject { |_, has_default| has_default }.keys
+        # Positional arguments up to the last required one are needed to skip naming any
+        @required_count = @required_names.empty? ? 0 : @argument_indexes[@required_names.last] + 1
       end
 
       # @param [Hash{Integer, String => Object}] arguments Positional arguments keyed by their
@@ -31,6 +34,13 @@ module Twig
       # @param [Integer] lineno
       def call(arguments, call_context, source, lineno)
         positional, named = split_arguments(arguments, source, lineno)
+
+        if (duplicate = named.each_key.find { |key| @argument_indexes.fetch(key, Float::INFINITY) < positional.length })
+          raise Error::Runtime.new("Argument \"#{duplicate}\" is defined twice for macro \"#{@name}\".", lineno, source)
+        end
+
+        validate_required_arguments(positional.length, named, source, lineno)
+
         names = @arguments.keys
         bound = {}
         extra = []
@@ -45,12 +55,10 @@ module Twig
         end
 
         named.each do |key, value|
-          if (index = @argument_indexes[key]).nil?
-            extra_named[key] = value
-          elsif index < positional.length
-            raise Error::Runtime.new("Argument \"#{key}\" is defined twice for macro \"#{@name}\".", lineno, source)
-          else
+          if @argument_indexes.key?(key)
             bound[key] = value
+          else
+            extra_named[key] = value
           end
         end
 
@@ -99,6 +107,16 @@ module Twig
         end
 
         [positional, named]
+      end
+
+      def validate_required_arguments(positional_count, named, source, lineno)
+        return if positional_count >= @required_count
+
+        @required_names.each do |name|
+          next if @argument_indexes[name] < positional_count || named.key?(name)
+
+          raise Error::Runtime.new("Value for argument \"#{name}\" is required for macro \"#{@name}\".", lineno, source)
+        end
       end
 
       def check_positional(named, source, lineno)

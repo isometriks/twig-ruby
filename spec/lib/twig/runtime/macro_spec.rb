@@ -62,6 +62,14 @@ RSpec.describe Twig::Runtime::Macro do
       to raise_error(Twig::Error::Runtime, 'Argument "a" is defined twice for macro "test" in "index.twig" at line 3.')
   end
 
+  it 'requires the arguments that have no default value' do
+    expect { macro.call({ 'b' => 1 }, nil, source, 3) }.
+      to raise_error(
+        Twig::Error::Runtime,
+        'Value for argument "a" is required for macro "test" in "index.twig" at line 3.'
+      )
+  end
+
   it 'rejects a positional argument after a named one' do
     expect { macro.call({ 'b' => 1, 0 => 2 }, nil, source, 3) }.
       to raise_error(
@@ -80,7 +88,7 @@ RSpec.describe Twig::Runtime::Macro do
           # Named arguments keep their name, even a reserved one
           '{% macro m(blocks, context) %}{{ blocks }}{{ context }}{% endmacro %}{{ _self.m(context: 2, blocks: 1) }}',
           '{% from _self import m %}{% macro m(blocks) %}{{ blocks }}{% endmacro %}{{ m(blocks: 1) }}',
-          '{% macro m(a, b = 2) %}{{ a }}{{ b }}{% endmacro %}{{ _self.m(...[1]) }}{{ _self.m(...{ b: 3 }) }}',
+          '{% macro m(a = null, b = 2) %}{{ a }}{{ b }}{% endmacro %}{{ _self.m(...[1]) }}{{ _self.m(...{ b: 3 }) }}',
           # Integer keys of a spread mapping are positional, as with PHP's array unpacking
           '{% macro m(a, b = 2) %}{{ a }}{{ b }}{% endmacro %}' \
           '{{ _self.m(...{ 0: "z" }) }}{{ _self.m(...{ 1: "z", 0: "y" }) }}',
