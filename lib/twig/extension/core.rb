@@ -1004,6 +1004,11 @@ module Twig
         string = attribute.to_s if attribute.respond_to?(:to_s)
         return string if !string.nil? && object.key?(string)
 
+        # PHP stores a decimal string key such as "5" as the integer 5, so
+        # h["5"] finds the key that {5: ...} or {(n): ...} created
+        integer = attribute.to_i if attribute.is_a?(String) && attribute.match?(/\A(?:0|-?[1-9]\d*)\z/)
+        return integer if !integer.nil? && object.key?(integer)
+
         KEY_NOT_FOUND
       end
 

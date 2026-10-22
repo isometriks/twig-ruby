@@ -43,18 +43,19 @@ module Twig
 
             unless value.is_a?(Expression::Unary::HashSpread)
               case key
-              when Variable::Context
-                key = Unary::StringCast.new(key, key.lineno)
-              when Variable::Local
-                key_value = key.attributes[:name]
-                key = Constant.new(key_value, key.lineno)
               when Constant
-                key.attributes[:value]
+                compiler.subcompile(key)
+              when Variable::Local
+                compiler.subcompile(Constant.new(key.attributes[:name], key.lineno))
+              else
+                # Any other key is computed at runtime
+                compiler.
+                  raw('::Twig::Runtime::MappingKey.coerce(').
+                  subcompile(key).
+                  raw(')')
               end
 
-              compiler.
-                subcompile(key).
-                raw(' => ')
+              compiler.raw(' => ')
             end
 
             compiler.
