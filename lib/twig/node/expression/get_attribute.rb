@@ -80,7 +80,14 @@ module Twig
             repr(lineno).
             raw(')')
 
-          compiler.raw(')') if short_circuited
+          return unless short_circuited
+
+          compiler.raw(')')
+
+          # The default filter and ?? compile the same node more than once (a dup shares its
+          # attributes), so each compilation gets its own temporary and its own nil test
+          null_safe_node.attributes[:is_short_circuited] = false
+          null_safe_node.attributes[:var_name] = nil
         end
 
         # The temporary that holds the object of a null-safe access

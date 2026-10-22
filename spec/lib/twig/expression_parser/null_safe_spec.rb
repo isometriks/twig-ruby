@@ -34,6 +34,19 @@ RSpec.describe 'the ?. null-safe operator' do
     ['{{ foo?.bar.baz?.qux.corge }}', { foo: { bar: { baz: { qux: { corge: 1 } } } } }, '1'],
     ['{{ foo?.bar.upcase() }}', { foo: nil }, ''],
     ['{{ foo?.bar.baz ?? "x" }}', { foo: nil }, 'x'],
+    # The default filter compiles its operand and its fallback twice
+    ['{{ foo?.bar|default(foo?.baz) }}', { foo: nil }, ''],
+    ['{{ foo?.bar|default(foo?.baz.qux) }}', { foo: nil }, ''],
+    ['{{ foo?.bar|default(foo?.baz) }}', { foo: { bar: nil, baz: 'qux' } }, 'qux'],
+    ['{{ foo?.bar|default(foo?.baz) }}', { foo: { bar: 'corge', baz: 'qux' } }, 'corge'],
+    [
+      '{% for foo in foos %}[{{ foo?.bar|default(foo?.baz) }}]{% endfor %}',
+      { foos: [{ bar: 'corge', baz: 'grault' }, { baz: 'qux' }] },
+      '[corge][qux]',
+    ],
+    ['{{ foo?.bar|default("x") }}', { foo: nil }, 'x'],
+    ['{{ foo?.bar?.baz|default("z") }}', { foo: { bar: nil } }, 'z'],
+    ['{{ foo?.bar?.baz|default("z") }}', { foo: { bar: { baz: 'y' } } }, 'y'],
   ].each do |source, context, expected|
     it "renders #{source} with #{context.inspect} as #{expected.inspect}" do
       expect(render(source, context)).to eq(expected)
