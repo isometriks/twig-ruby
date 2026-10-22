@@ -23,7 +23,7 @@ module Twig
     REGEX_CVAR = /@#{REGEX_NAME}/
     REGEX_STRING = /\G"([^#"\\]*(?:\\.[^#"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'/mu
     REGEX_DQ_STRING_PART = /\G[^#"\\]*(?:(?:\.|#(?!\{))[^#"\\]*)*/mu
-    REGEX_INLINE_COMMENT = /#[^\n]*/
+    REGEX_INLINE_COMMENT = /#[^\r\n]*/
     REGEX_DQ_STRING_DELIM = /\G"/
     REGEX_INTERP_START = /\G#\{[[:space:]]*/
     REGEX_INTERP_END = /\G[[:space:]]*\}/
@@ -51,7 +51,7 @@ module Twig
     # @param [Twig::Source] source
     def tokenize(source)
       @source = source
-      @code = source.code.gsub(/\r\n?/, "\n")
+      @code = source.code
       @cursor = 0
       @lineno = 1
       @end = @code.length
@@ -89,8 +89,9 @@ module Twig
     def lex_data
       # If no matches are left we return the rest of the template as simple text token
       if @position == @positions.length - 1
-        push_token(Token::TEXT_TYPE, @code[@cursor..])
-        @cursor = @end
+        text = @code[@cursor..]
+        push_token(Token::TEXT_TYPE, normalize_newlines(text))
+        move_cursor(text)
 
         return
       end
@@ -118,13 +119,18 @@ module Twig
         text = text.gsub(/[ \t\0\x0B]*\z/, '')
       end
 
-      push_token(Token::TEXT_TYPE, text)
-      move_cursor(text_content + position.to_s)
+      push_token(Token::TEXT_TYPE, normalize_newlines(text))
+      move_cursor(text_content)
 
       case @positions[@position][1]
       when TAG_COMMENT[0]
+        move_cursor(position.to_s)
         lex_comment
       when TAG_BLOCK[0]
+        lineno = @lineno
+        cursor = @cursor
+        move_cursor(position.to_s)
+
         if (match = @code.match(lex_block_raw_regex, @cursor))
           move_cursor(match.to_s)
           lex_raw_data
@@ -132,12 +138,15 @@ module Twig
           move_cursor(match[0].to_s)
           @lineno = match[1].to_i
         else
-          push_token(Token::BLOCK_START_TYPE)
+          push_token(Token::BLOCK_START_TYPE, '', cursor, lineno)
           push_state(STATE_BLOCK)
           @current_var_block_line = @lineno
         end
       when TAG_VARIABLE[0]
-        push_token(Token::VAR_START_TYPE)
+        lineno = @lineno
+        cursor = @cursor
+        move_cursor(position.to_s)
+        push_token(Token::VAR_START_TYPE, '', cursor, lineno)
         push_state(STATE_VAR)
         @current_var_block_line = @lineno
       else
@@ -150,6 +159,7 @@ module Twig
         raise Error::Syntax.new("Uexpected end of file. Unclosed 'verbatim' block.", @lineno, @source)
       end
 
+      offset = @cursor
       text = @code[@cursor, match.begin(0) - @cursor]
       move_cursor(@code[@cursor, (text.length + match.to_s.length)])
 
@@ -162,13 +172,12 @@ module Twig
                end
       end
 
-      push_token(Token::TEXT_TYPE, text)
+      push_token(Token::TEXT_TYPE, normalize_newlines(text), offset)
     end
 
     def lex_block
       if @brackets.empty? && (match = @code.match(lex_block_regex, @cursor))
-        push_token(Token::BLOCK_END_TYPE)
-        move_cursor(match.to_s)
+        push_closing_token(Token::BLOCK_END_TYPE, match.to_s)
         pop_state
       else
         lex_expression
@@ -179,8 +188,7 @@ module Twig
       match = @code.match(lex_var_regex, @cursor)
 
       if @brackets.empty? && match
-        push_token(Token::VAR_END_TYPE)
-        move_cursor(match.to_s)
+        push_closing_token(Token::VAR_END_TYPE, match.to_s)
         pop_state
       else
         lex_expression
@@ -235,9 +243,9 @@ module Twig
       elsif code_at?(0, PUNCTUATION)
         check_brackets(code_at)
         push_token(Token::PUNCTUATION_TYPE, code_at)
-        @cursor += 1
+        move_cursor(code_at)
       elsif (match = @code.match(REGEX_STRING, @cursor))
-        push_token(Token::STRING_TYPE, stripcslashes(match.to_s[1...-1], match.to_s[0]))
+        push_token(Token::STRING_TYPE, stripcslashes(normalize_newlines(match.to_s[1...-1]), match.to_s[0]))
         move_cursor(match.to_s)
       elsif (match = @code.match(REGEX_DQ_STRING_DELIM, @cursor))
         @brackets << ['"', @lineno]
@@ -340,7 +348,7 @@ module Twig
         move_cursor(match.to_s)
         push_state(STATE_INTERPOLATION)
       elsif (match = @code.match(REGEX_DQ_STRING_PART, @cursor)) && match.to_s != ''
-        push_token(Token::STRING_TYPE, stripcslashes(match.to_s, '"'))
+        push_token(Token::STRING_TYPE, stripcslashes(normalize_newlines(match.to_s), '"'))
         move_cursor(match.to_s)
       elsif @code.match(REGEX_DQ_STRING_DELIM, @cursor)
         expect, lineno = @brackets.pop
@@ -350,7 +358,7 @@ module Twig
         end
 
         pop_state
-        @cursor += 1
+        move_cursor('"')
       else
         Error::Syntax.new("Unexpected character '#{code_at}'.", @lineno, @source)
       end
@@ -412,18 +420,29 @@ module Twig
       result
     end
 
-    def push_token(type, value = '')
+    # A token starts at the cursor unless the caller passes the offset (and
+    # line) of a token it already moved past.
+    def push_token(type, value = '', offset = nil, lineno = nil)
       return if type == Token::TEXT_TYPE && value.empty?
 
-      @tokens << Token.new(type, value, @lineno)
+      @tokens << Token.new(type, value, lineno || @lineno, offset || @cursor)
+    end
+
+    # Pushes a closing delimiter token at the delimiter itself, not at the
+    # whitespace its regex matched before it.
+    def push_closing_token(type, match)
+      leading_whitespace = match.length - match.lstrip.length
+      move_cursor(match[0, leading_whitespace]) if leading_whitespace.positive?
+
+      push_token(type)
+      move_cursor(match[leading_whitespace..])
     end
 
     def lex_interpolation
       bracket = @brackets.last
       if bracket[0] == '#{' && (match = @code.match(REGEX_INTERP_END, @cursor))
         @brackets.pop
-        push_token(Token::INTERPOLATION_END_TYPE)
-        move_cursor(match.to_s)
+        push_closing_token(Token::INTERPOLATION_END_TYPE, match.to_s)
         pop_state
       else
         lex_expression
@@ -443,9 +462,17 @@ module Twig
       @state = @states.pop
     end
 
+    # The cursor is a character offset into the original code, which keeps
+    # its line endings, so "\r\n" and "\r" each count as one line.
     def move_cursor(text)
       @cursor += text.length
-      @lineno += text.scan("\n").count
+      @lineno += (text.include?("\r") ? normalize_newlines(text) : text).count("\n")
+    end
+
+    # @param [String] text
+    # @return [String]
+    def normalize_newlines(text)
+      text.gsub(/\r\n?/, "\n")
     end
 
     # @param [Integer] seek
@@ -494,7 +521,7 @@ module Twig
           (?:#{Regexp.union(
             /#{WHITESPACE_TRIM}#{TAG_COMMENT[1]}[[:space:]]*\n?/,
             /#{WHITESPACE_LINE_TRIM}#{TAG_COMMENT[1]}[#{WHITESPACE_LINE_CHARS}]*/,
-            /#{TAG_COMMENT[1]}\n?/
+            /#{TAG_COMMENT[1]}(?:\r\n?|\n)?/
           )})
         /mxu
     end
@@ -520,7 +547,7 @@ module Twig
           #{Regexp.union(
             /#{WHITESPACE_TRIM}#{TAG_BLOCK[1]}[[:space:]]*\n?/,
             /#{WHITESPACE_LINE_TRIM}#{TAG_BLOCK[1]}[#{WHITESPACE_LINE_CHARS}]*/,
-            /#{TAG_BLOCK[1]}\n?/
+            /#{TAG_BLOCK[1]}(?:\r\n?|\n)?/
           )}
         )/x
     end

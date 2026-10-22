@@ -247,6 +247,84 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  describe 'token offsets' do
+    def stream(code)
+      described_class.new(environment).tokenize(Twig::Source.new(code, 'index'))
+    end
+
+    it 'points each token at the start of its lexeme in the source' do
+      tokens = stream('Hello {{ name }}!').tokens
+
+      expect(tokens.map { |token| [token.type, token.offset] }).to eq([
+        [Twig::Token::TEXT_TYPE, 0],
+        [Twig::Token::VAR_START_TYPE, 6],
+        [Twig::Token::NAME_TYPE, 9],
+        [Twig::Token::VAR_END_TYPE, 14],
+        [Twig::Token::TEXT_TYPE, 16],
+        [Twig::Token::EOF_TYPE, 17],
+      ])
+    end
+
+    it 'allows recovering the raw expression source' do
+      template = "Hello {{ name|upper ~ '!' }}"
+      tokens = stream(template).tokens
+      start = tokens.find { |token| token.type == Twig::Token::VAR_START_TYPE }.offset
+      finish = tokens.find { |token| token.type == Twig::Token::VAR_END_TYPE }.offset
+
+      expect(template[(start + 2)...finish].strip).to eq("name|upper ~ '!'")
+    end
+
+    it 'refers to the original source when line endings are normalized' do
+      template = "Hello\r\n{{ name }}"
+      tokens = stream(template).tokens
+
+      expect(tokens.map { |token| [token.value, template[token.offset, 2]] }).to eq([
+        ["Hello\n", 'He'],
+        ['', '{{'],
+        %w[name na],
+        ['', '}}'],
+        ['', ''],
+      ])
+    end
+
+    it 'points block tag delimiters at the markers' do
+      template = '{% set x = 1 %}'
+      tokens = stream(template).tokens
+
+      expect(template[tokens.first.offset, 2]).to eq('{%')
+      expect(template[tokens.find { |token| token.type == Twig::Token::BLOCK_END_TYPE }.offset, 2]).to eq('%}')
+    end
+
+    it 'counts the offset in characters' do
+      tokens = stream("\u00e9{{ x }}").tokens
+
+      expect(tokens.map(&:offset)).to eq([0, 1, 4, 6, 8])
+    end
+
+    it 'gives synthetic tokens no offset' do
+      expect(Twig::Token.new(Twig::Token::NAME_TYPE, 'foo', 1).offset).to be_nil
+    end
+  end
+
+  describe 'CRLF line endings in tags' do
+    def stream(code)
+      described_class.new(environment).tokenize(Twig::Source.new(code, 'index')).debug
+    end
+
+    it 'swallows a CRLF after a block tag' do
+      expect(stream("{% if x %}\r\na{% endif %}")).to eq([
+        'block_start()', 'name(if)', 'name(x)', 'block_end()', 'text(a)',
+        'block_start()', 'name(endif)', 'block_end()', 'eof()'
+      ])
+    end
+
+    it 'normalizes newlines in strings and verbatim text' do
+      expect(stream("{{ 'a\r\nb' ~ \"c\r\nd\" }}{% verbatim %}e\r\nf{% endverbatim %}")).to eq([
+        'var_start()', "string(a\nb)", 'operator(~)', "string(c\nd)", 'var_end()', "text(e\nf)", 'eof()'
+      ])
+    end
+  end
+
   it_behaves_like 'render_and_assert' do
     let(:input) do
       <<~INPUT.chomp
