@@ -169,6 +169,9 @@ module Twig
           TwigFunction.new('loop', nil, {
             parser_callable: static(:parse_loop_function),
           }),
+          TwigFunction.new('attribute', nil, {
+            parser_callable: static(:parse_attribute_function),
+          }),
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
@@ -976,6 +979,11 @@ module Twig
             return true
           end
 
+          # attribute() passes its arguments as a sequence, not as the keyed
+          # hash a method call compiles to
+          arguments = arguments.each_with_index.to_h { |v, i| [i, v] } if arguments.is_a?(::Array)
+          arguments ||= {}
+
           positional = []
           arguments.each do |k, v|
             if !v.is_a?(Runtime::Spread) && k.is_a?(Integer)
@@ -1155,6 +1163,17 @@ module Twig
           extract_arguments(args)
 
         Node::Expression::BlockReference.new(positional[0], positional[1], line)
+      end
+
+      # @param [Parser] parser
+      # @param [Node::Base] fake_node
+      def self.parse_attribute_function(parser, fake_node, args, line)
+        fake_function = TwigFunction.new('attribute', ->(variable, attribute, arguments = nil) {})
+        positional, = Util::CallableArgumentsExtractor.
+          new(fake_node, fake_function, parser.environment).
+          extract_arguments(args)
+
+        Node::Expression::GetAttribute.new(positional[0], positional[1], positional[2], Template::ANY_CALL, line)
       end
 
       # @param [Parser] parser

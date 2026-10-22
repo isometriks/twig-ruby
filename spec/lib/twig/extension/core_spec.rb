@@ -434,6 +434,30 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  context 'with the attribute function' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ attribute(obj, 'bar', ['a', 'b']) }}",
+          "{{ attribute(obj, 'bar') }}",
+          '{{ attribute(obj, name) }}',
+          "{{ attribute({ key: 'value' }, 'key') }}",
+          "{{ attribute(obj, 'missing') is defined ? 'KO' : 'OK' }}",
+        ]
+      end
+      let(:outputs) { ['bar_a-b', 'bar_-', 'bar_-', 'value', 'OK'] }
+      let(:locals) do
+        obj = Class.new do
+          def bar(first = nil, second = nil)
+            "bar_#{first}-#{second}"
+          end
+        end.new
+
+        { obj:, name: 'bar' }
+      end
+    end
+  end
+
   describe 'include_only' do
     it 'keeps globals but not the current context' do
       loader = Twig::Loader::Hash.new({
