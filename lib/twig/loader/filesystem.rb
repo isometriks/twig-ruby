@@ -36,27 +36,23 @@ module Twig
         end
       end
 
-      def add_path(path, namespace = MAIN_NAMESPACE)
+      # @param [Boolean] check Whether to check that the directory exists;
+      #   pass false when the caller already checked it
+      def add_path(path, namespace = MAIN_NAMESPACE, check: true)
         @cache = {}
         @error_cache = {}
-        check_path = path[0] == '/' ? path : File.join(@root_path, path)
-
-        unless File.directory?(check_path)
-          raise Error::Loader, "The \"#{path}\" directory does not exist (#{check_path})."
-        end
+        path = normalize_path(path, check)
 
         @paths[namespace] ||= []
         @paths[namespace] << path
       end
 
-      def prepend_path(path, namespace = MAIN_NAMESPACE)
+      # @param [Boolean] check Whether to check that the directory exists;
+      #   pass false when the caller already checked it
+      def prepend_path(path, namespace = MAIN_NAMESPACE, check: true)
         @cache = {}
         @error_cache = {}
-        check_path = path[0] == '/' ? path : File.join(@root_path, path)
-
-        unless File.directory?(check_path)
-          raise Error::Loader, "The \"#{path}\" directory does not exist (#{check_path})."
-        end
+        path = normalize_path(path, check)
 
         @paths[namespace] ||= []
         @paths[namespace].unshift(path)
@@ -85,6 +81,21 @@ module Twig
       end
 
       private
+
+      # Checks that the directory exists and strips trailing separators,
+      # keeping a bare root path intact
+      def normalize_path(path, check)
+        if check
+          check_path = path[0] == '/' ? path : File.join(@root_path, path)
+
+          unless File.directory?(check_path)
+            raise Error::Loader, "The \"#{path}\" directory does not exist (#{check_path})."
+          end
+        end
+
+        trimmed = path.sub(%r{[/\\]+\z}, '')
+        trimmed.empty? ? path[0, 1] : trimmed
+      end
 
       def find_template(name, throw: true)
         return @cache[name] if @cache.key?(name)
