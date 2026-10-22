@@ -310,8 +310,7 @@ module Twig
     # @param [String] name
     # @param [Integer] time
     def template_fresh?(name, time)
-      # @todo check extension set last modified
-      loader.fresh?(name, time)
+      extension_set.last_modified <= time && loader.fresh?(name, time)
     end
 
     def cache=(cache)

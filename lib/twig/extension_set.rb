@@ -18,6 +18,7 @@ module Twig
       raise "Extension #{extension.class} already added" if has?(extension)
 
       @extensions[key(extension)] = extension
+      @last_modified = nil
     end
 
     # @param [Object, String] extension
@@ -126,6 +127,16 @@ module Twig
     def globals
       @globals ||= extensions.
         values.map(&:globals).reduce({}, :merge)
+    end
+
+    # The latest time any extension's code changed, read once like PHP's
+    # ExtensionSet::getLastModified
+    #
+    # @return [Integer]
+    def last_modified
+      @last_modified ||= extensions.each_value.map do |extension|
+        extension.respond_to?(:last_modified) ? extension.last_modified : 0
+      end.max || 0
     end
 
     # The extensions in the order they were added, which goes into the name of

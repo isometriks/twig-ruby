@@ -329,6 +329,45 @@ RSpec.describe Twig::Environment do
     end
   end
 
+  context 'when an extension changed after a template was compiled' do
+    let(:cache_directory) { Dir.mktmpdir }
+
+    before do
+      stub_const('ChangingExtension', Class.new(Twig::Extension::Base) do
+        def initialize(last_modified)
+          super()
+          @last_modified = last_modified
+        end
+
+        attr_reader :last_modified
+      end)
+    end
+
+    def environment(extension_last_modified)
+      described_class.new(loader, cache: cache_directory, auto_reload: true).tap do |env|
+        env.add_extension(ChangingExtension.new(extension_last_modified))
+      end
+    end
+
+    it 'compiles the template again' do
+      write_template('extension_changed.twig', 'Compiled', mtime: Time.now - 60)
+      expect(environment(0).load('extension_changed.twig').render({})).to eq('Compiled')
+
+      changed = environment(Time.now.to_i + 60)
+      expect(changed).to receive(:render_ruby).once.and_call_original
+      expect(changed.load('extension_changed.twig').render({})).to eq('Compiled')
+    end
+
+    it 'loads the cache entry while the extension is older' do
+      write_template('extension_unchanged.twig', 'Compiled', mtime: Time.now - 60)
+      expect(environment(0).load('extension_unchanged.twig').render({})).to eq('Compiled')
+
+      unchanged = environment(Time.now.to_i - 60)
+      expect(unchanged).not_to receive(:render_ruby)
+      expect(unchanged.load('extension_unchanged.twig').render({})).to eq('Compiled')
+    end
+  end
+
   context 'when not auto reloading' do
     let(:environment) { described_class.new(loader, cache: false, auto_reload: false) }
 
