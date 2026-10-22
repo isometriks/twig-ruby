@@ -70,6 +70,13 @@ RSpec.describe Twig::Runtime::Macro do
       )
   end
 
+  it 'rejects extra arguments without a variadic argument' do
+    expect { macro.call({ 0 => 1, 1 => 2, 2 => 3 }, nil, source, 3) }.
+      to raise_error(Twig::Error::Runtime, 'Too many arguments for macro "test" in "index.twig" at line 3.')
+    expect { macro.call({ 0 => 1, 'c' => 2 }, nil, source, 3) }.
+      to raise_error(Twig::Error::Runtime, 'Unknown argument "c" for macro "test" in "index.twig" at line 3.')
+  end
+
   it 'rejects a positional argument after a named one' do
     expect { macro.call({ 'b' => 1, 0 => 2 }, nil, source, 3) }.
       to raise_error(

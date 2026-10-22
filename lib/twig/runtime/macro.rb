@@ -40,6 +40,7 @@ module Twig
         end
 
         validate_required_arguments(positional.length, named, source, lineno)
+        validate_extra_arguments(positional.length, named, source, lineno) unless @variadic
 
         names = @arguments.keys
         bound = {}
@@ -117,6 +118,17 @@ module Twig
 
           raise Error::Runtime.new("Value for argument \"#{name}\" is required for macro \"#{@name}\".", lineno, source)
         end
+      end
+
+      # Without a variadic argument there is nowhere to put arguments the macro doesn't declare
+      def validate_extra_arguments(positional_count, named, source, lineno)
+        if positional_count > @arguments.length
+          raise Error::Runtime.new("Too many arguments for macro \"#{@name}\".", lineno, source)
+        end
+
+        return unless (unknown = named.each_key.find { |key| !@argument_indexes.key?(key) })
+
+        raise Error::Runtime.new("Unknown argument \"#{unknown}\" for macro \"#{@name}\".", lineno, source)
       end
 
       def check_positional(named, source, lineno)
