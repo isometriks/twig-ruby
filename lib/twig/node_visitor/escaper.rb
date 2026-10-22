@@ -18,6 +18,11 @@ module Twig
       def enter_node(node, env)
         case node
         when Node::Module
+          # A compilation error can abort the previous template before
+          # leave_node runs, so start every template from a clean state
+          @default_strategy = false
+          @status_stack = []
+
           if env.extension?(Extension::Escaper)
             default_strategy = env.extension(Extension::Escaper).default_strategy(node.template_name)
             @default_strategy = default_strategy if default_strategy
