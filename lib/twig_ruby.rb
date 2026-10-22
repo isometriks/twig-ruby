@@ -12,6 +12,7 @@ require 'fileutils'
 require 'cgi'
 require 'sanitize'
 require 'json'
+require 'securerandom'
 
 %w[
   .

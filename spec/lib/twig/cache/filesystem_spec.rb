@@ -24,6 +24,40 @@ RSpec.describe Twig::Cache::Filesystem do
     expect(Twig.const_defined?(class_name)).to be_truthy
   end
 
+  it 'reports a missing entry as not loaded' do
+    expect(cache.load(cache_key)).to be(false)
+  end
+
+  it 'keeps the old entry readable while a new one is written' do
+    cache.write(cache_key, 'Version one')
+    seen_while_writing = nil
+
+    allow(File).to receive(:write).and_wrap_original do |original, *args|
+      original.call(*args).tap { seen_while_writing = File.read(cache_key) }
+    end
+    cache.write(cache_key, 'Version two')
+
+    expect(seen_while_writing).to eq('Version one')
+    expect(File.read(cache_key)).to eq('Version two')
+  end
+
+  it 'leaves no temporary files behind' do
+    cache.write(cache_key, 'Version one')
+    cache.write(cache_key, 'Version two')
+
+    expect(Dir.children(File.dirname(cache_key))).to eq([File.basename(cache_key)])
+  end
+
+  it 'leaves the entry untouched when the new one cannot be put in place' do
+    cache.write(cache_key, 'Version one')
+
+    allow(File).to receive(:rename).and_raise(Errno::EACCES)
+    expect { cache.write(cache_key, 'Version two') }.to raise_error(Errno::EACCES)
+
+    expect(File.read(cache_key)).to eq('Version one')
+    expect(Dir.children(File.dirname(cache_key))).to eq([File.basename(cache_key)])
+  end
+
   it 'gets last modified time from cache from' do
     cache.write(cache_key, 'Hello World!')
     expect(cache.timestamp(cache_key)).to be > 0
