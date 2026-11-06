@@ -4,9 +4,70 @@ require 'spec_helper'
 
 RSpec.describe Twig::Runtime::Escaper do
   let(:escaper) { described_class.new('UTF-8') }
+  let(:strategies) { %i[html js url css html_attr html_attr_relaxed] }
 
   it 'returns the same string if no matching escaper' do
     expect(escaper.escape('<"alert{}">', :unknown)).to eq('<"alert{}">')
+  end
+
+  it 'returns an html_safe string as is when autoescaping for html' do
+    string = '<b>'.html_safe
+
+    expect(escaper.escape(string, :html, nil, true)).to be(string)
+  end
+
+  # Like Twig, which returns a Markup as is under autoescape
+  it 'returns an html_safe string as is when autoescaping for any strategy' do
+    string = '<b c>'.html_safe
+
+    strategies.each do |strategy|
+      expect(escaper.escape(string, strategy, nil, true)).to be(string)
+    end
+  end
+
+  it 'escapes an html_safe string when not autoescaping' do
+    expect(escaper.escape('a b'.html_safe, :html_attr)).to eq('a&#x20;b')
+  end
+
+  it 'returns what it escapes as Escaped for the strategy' do
+    strategies.each do |strategy|
+      escaped = escaper.escape('a b', strategy)
+
+      expect(escaped).to be_a(Twig::Runtime::Escaped).and(be_html_safe)
+      expect(escaped.strategy).to eq(strategy)
+    end
+
+    expect(escaper.escape('a', 'js').strategy).to eq(:js)
+  end
+
+  # Twig's escape returns a plain string, which autoescaping escapes again
+  it 'escapes output escaped for html again when autoescaping for another strategy' do
+    expect(escaper.escape(escaper.escape('a b'), :html_attr, nil, true)).to eq('a&#x20;b')
+    expect(escaper.escape(escaper.escape('<'), :js, nil, true)).to eq('\u0026lt\u003B')
+    expect(escaper.escape(escaper.escape('<', :js), :html_attr, nil, true)).to eq('&#x5C;u003C')
+  end
+
+  it 'returns escaped output as is when autoescaping for a strategy it is safe for' do
+    {
+      html: %i[html],
+      js: %i[js],
+      css: %i[css],
+      url: %i[url],
+      html_attr: %i[html_attr html html_attr_relaxed],
+      html_attr_relaxed: %i[html_attr_relaxed html],
+    }.each do |strategy, safe_for|
+      escaped = escaper.escape('a b<', strategy)
+
+      strategies.each do |autoescape|
+        result = escaper.escape(escaped, autoescape, nil, true)
+
+        if safe_for.include?(autoescape)
+          expect(result).to be(escaped)
+        else
+          expect(result).to eq(escaper.escape(escaped.to_str, autoescape))
+        end
+      end
+    end
   end
 
   it 'escapes javascript' do

@@ -18,12 +18,24 @@ module Twig
       }.freeze
 
       def escape(string, strategy = :html, charset = nil, autoescape = false)
-        # Allow strings marked as html_safe to get through without escaping
-        if string.html_safe? && autoescape
+        strategy = strategy.to_sym
+
+        # Markup (an html_safe string such as a capture, a macro result or a
+        # Rails SafeBuffer) gets through without escaping, whatever the
+        # strategy, like in Twig. The output of an escaping strategy only gets
+        # through for a strategy it is safe for: Twig's escape filter returns a
+        # plain string, which is escaped again.
+        if autoescape && string.html_safe? && (!string.is_a?(Escaped) || string.safe_for?(strategy))
           return string
         end
 
-        case strategy.to_sym
+        Escaped.new(escape_string(string, strategy, charset), strategy)
+      end
+
+      private
+
+      def escape_string(string, strategy, charset)
+        case strategy
         when :html
           CGI.escapeHTML(string.to_s)
         when :html_attr
@@ -40,8 +52,6 @@ module Twig
           string.to_s
         end.html_safe
       end
-
-      private
 
       def escape_html_attr(string, charset)
         # Convert encoding if needed

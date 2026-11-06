@@ -436,6 +436,7 @@ module Twig
         return if string.nil?
 
         side = side.to_sym
+        original = string
         safe = string.html_safe?
 
         unless %i[left right both].include?(side)
@@ -450,7 +451,10 @@ module Twig
           string = string.gsub(/[#{Regexp.escape(character_mask)}]*\z/, '')
         end
 
-        safe && character_mask == DEFAULT_TRIM_CHARS ? string.html_safe : string
+        return string unless safe && character_mask == DEFAULT_TRIM_CHARS
+
+        # Trimmed escaped output is still only safe for its strategy
+        original.is_a?(Runtime::Escaped) ? Runtime::Escaped.new(string, original.strategy) : string.html_safe
       end
 
       def self.nl2br(string)

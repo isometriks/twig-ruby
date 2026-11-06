@@ -68,18 +68,7 @@ module Twig
 
       # @param [Node::Base] node
       def safe(node)
-        safe = data.fetch(node, []).dup
-
-        if safe.include?(:html_attr)
-          safe << :html
-          safe << :html_attr_relaxed
-        end
-
-        if safe.include?(:html_attr_relaxed)
-          safe << :html
-        end
-
-        safe
+        Runtime::Escaped.with_implied(data.fetch(node, []))
       end
 
       # @param [Array<String>] safe_vars
