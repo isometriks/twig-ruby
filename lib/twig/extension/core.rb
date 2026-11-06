@@ -47,7 +47,7 @@ module Twig
           binary.new(Node::Expression::Binary::And, 'and', 15),
           binary.new(Node::Expression::Binary::BitwiseOr, 'b-or', 16),
           binary.new(Node::Expression::Binary::BitwiseXor, 'b-xor', 17),
-          binary.new(Node::Expression::Binary::BitwiseAnd, 'b-and', 16),
+          binary.new(Node::Expression::Binary::BitwiseAnd, 'b-and', 18),
           binary.new(Node::Expression::Binary::Equal, '==', 20),
           binary.new(Node::Expression::Binary::NotEqual, '!=', 20),
           binary.new(Node::Expression::Binary::SameAs, '===', 20),
