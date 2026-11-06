@@ -9,7 +9,7 @@ module Twig
 
       def compile(compiler)
         if attributes[:else_expr]
-          compiler.write("context[:_iterated] = true\n")
+          compiler.write("#{attributes[:iterated_var]} = true\n")
         end
       end
     end
