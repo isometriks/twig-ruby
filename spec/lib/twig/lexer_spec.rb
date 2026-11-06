@@ -512,6 +512,81 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  describe 'hex and octal escapes in strings' do
+    def values(code)
+      described_class.new(environment).tokenize(Twig::Source.new(code, 'index')).tokens.
+        select { |token| token.type == Twig::Token::STRING_TYPE }.map(&:value)
+    end
+
+    it 'gives bytes in the encoding of the source' do
+      expect(values('{{ "\xc3\xa9" }}{{ \'\303\251\' }}{{ "é\x41" }}')).to eq(%w[é é éA])
+      expect(values('{{ "\xc3\xa9" }}').first.encoding).to eq(Encoding::UTF_8)
+    end
+
+    it 'gives bytes in an interpolated string' do
+      expect(values('{{ "é#{x}\xc3\xa9\303\251" }}')).to eq(%w[é éé])
+    end
+
+    it 'keeps a byte that is not valid in the encoding' do
+      value = values('{{ "é\xff" }}').first
+
+      expect(value.encoding).to eq(Encoding::UTF_8)
+      expect(value.bytes).to eq([0xc3, 0xa9, 0xff])
+    end
+
+    it_behaves_like 'render_and_assert' do
+      let(:locals) { { x: 1 } }
+      let(:inputs) do
+        [
+          '{{ "\xc3\xa9" }}',
+          '{{ "\303\251" ~ "é" }}',
+          '{{ "é#{x}\xc3\xa9" }}',
+          '{{ "\xc3\xa9"|upper }}',
+          '{{ "é\xff"|raw }}',
+        ]
+      end
+      let(:outputs) { ['é', 'éé', 'é1é', 'É', "é\xff"] }
+    end
+
+    # PHP reads such a string as bytes, so these give what Twig PHP gives
+    context 'with a byte that is not valid in the encoding' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            %q({{ "\xff" in "a\xffb" ? 'y' : 'n' }}),
+            %q({{ "\xff" not in "a\xffb" ? 'y' : 'n' }}),
+            %q({{ "\xff" in "é\xff" ? 'y' : 'n' }}),
+            %q({{ "é" in "é\xff" ? 'y' : 'n' }}),
+            %q({{ "a\xffb"|replace({"\xff": "-"}) }}),
+            %q({{ "a\xffb"|replace({"b": "é"})|raw }}),
+            %q({{ "\xffa\xff"|trim("\xff") }}),
+            %q({{ "é\xff"|trim|raw }}),
+            %q({{ "a\xffb" matches '/\xff/' ? 'y' : 'n' }}),
+            %q({{ "a\xffb" matches '/A\xff/i' ? 'y' : 'n' }}),
+            %q({{ "é" matches '/\xc3/' ? 'y' : 'n' }}),
+          ]
+        end
+        let(:outputs) { ['y', 'n', 'y', 'y', 'a-b', "a\xffé", 'a', "é\xff", 'y', 'y', 'y'] }
+      end
+
+      # PHP's mb_strtoupper differs here; the byte is kept, as it was
+      # before such a string got the encoding of the source
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ "a\xffé"|upper|raw }}',
+            '{{ "é\xffB"|lower|raw }}',
+            '{{ "é\xffB"|capitalize|raw }}',
+            '{{ "\xffaB"|capitalize|raw }}',
+            '{{ "a\xffb"|plural|raw }}',
+            '{{ "a\xffb"|striptags }}',
+          ]
+        end
+        let(:outputs) { ["A\xffÉ", "é\xffb", "É\xffb", "\xffab", "a\xffbs", "a\u{fffd}b"] }
+      end
+    end
+  end
+
   describe 'lexer errors' do
     def lexer_error(code)
       described_class.new(environment).tokenize(Twig::Source.new(code, 'index'))

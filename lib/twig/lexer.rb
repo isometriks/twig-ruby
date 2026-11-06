@@ -383,9 +383,13 @@ module Twig
       )
     end
 
+    # Unescapes a string literal as Twig does. A \x or octal escape gives a
+    # byte, which may be part of a multibyte character ("\xc3\xa9" is é), so
+    # the result is built as bytes and then given the encoding of str.
+    #
     # @return [String]
     def stripcslashes(str, quote_type)
-      result = ''
+      result = String.new(encoding: Encoding::BINARY)
       length = str.length
 
       i = 0
@@ -393,26 +397,26 @@ module Twig
         pos = str.index('\\', i)
 
         unless pos
-          result += str[i..]
+          result << str[i..].b
           break
         end
 
-        result += str[i...pos]
+        result << str[i...pos].b
         i = pos + 1
 
         if i >= length
-          result += '\\'
+          result << '\\'
           break
         end
 
         next_char = str[i]
 
         if SPECIAL_CHARS.key?(next_char)
-          result += SPECIAL_CHARS[next_char]
+          result << SPECIAL_CHARS[next_char]
         elsif next_char == '\\' || next_char == quote_type
-          result += next_char
+          result << next_char
         elsif next_char == '#' && i + 1 < length && str[i + 1] == '{'
-          result += '#{'
+          result << '#{'
           i += 1
         elsif next_char == 'x' && i + 1 < length && str[i + 1].match?(/[0-9a-fA-F]/)
           hex = str[i + 1]
@@ -421,22 +425,22 @@ module Twig
             hex += str[i + 1]
             i += 1
           end
-          result += [hex.to_i(16)].pack('C')
+          result << hex.to_i(16)
         elsif next_char.match?(/[0-7]/) # octal
           octal = next_char
           while i + 1 < length && str[i + 1].match?(/[0-7]/) && octal.length < 3
             octal += str[i + 1]
             i += 1
           end
-          result += [octal.to_i(8)].pack('C')
+          result << (octal.to_i(8) % 256)
         else
-          result += "\\#{next_char}"
+          result << "\\#{next_char}".b
         end
 
         i += 1
       end
 
-      result
+      result.force_encoding(str.encoding)
     end
 
     # A token starts at the cursor unless the caller passes the offset (and

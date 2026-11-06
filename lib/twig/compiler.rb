@@ -50,7 +50,13 @@ module Twig
     # @param [String] value
     # @return [Compiler]
     def string(value)
-      @source << "%q[#{value.to_s.gsub(/[\[\]\\]/, '[' => '\[', ']' => '\]', '\\' => '\\\\')}]"
+      value = value.to_s
+
+      # a string with bytes its encoding doesn't allow, such as "\xff" in a
+      # template, can't be written as is
+      return raw(value.inspect) unless value.valid_encoding?
+
+      @source << "%q[#{value.gsub(/[\[\]\\]/, '[' => '\[', ']' => '\]', '\\' => '\\\\')}]"
 
       self
     end

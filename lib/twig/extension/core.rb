@@ -276,12 +276,13 @@ module Twig
           raise Error::Runtime, "The \"replace\" filter expects a sequence or a mapping, got \"#{from.class}\"."
         end
 
-        from = ensure_hash(from)
-        regex = Regexp.union(
-          *from.keys.map(&:to_s)
-        )
+        from = ensure_hash(from).to_h { |key, value| [key.to_s, value.to_s] }
 
-        string.gsub(regex, from.transform_keys(&:to_s))
+        bytewise(string, *from.keys, *from.values) do |subject, *pairs|
+          keys = pairs.first(from.length)
+
+          subject.gsub(Regexp.union(*keys), keys.zip(pairs.drop(from.length)).to_h)
+        end
       end
 
       def number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
@@ -416,18 +417,31 @@ module Twig
       end
 
       def self.capitalize(string)
-        string&.capitalize
+        return string&.capitalize unless invalid_string?(string)
+
+        change_case(string[0], &:upcase) + change_case(string[1..], &:downcase)
       end
 
       def self.upper(string)
-        string&.upcase
+        change_case(string, &:upcase)
       end
 
       def self.lower(string)
-        string&.downcase
+        change_case(string, &:downcase)
       end
 
+      # Changes the case of each character, keeping a byte that isn't valid in
+      # the encoding of the string as it is, where String#upcase raises.
+      def self.change_case(string, &)
+        return string&.then(&) unless invalid_string?(string)
+
+        string.chars.chunk(&:valid_encoding?).map { |valid, chars| valid ? yield(chars.join) : chars.join }.join
+      end
+
+      # Sanitize reads characters, so a byte that isn't one becomes U+FFFD.
       def self.strip_tags(string, tags: [])
+        string = string.scrub if invalid_string?(string)
+
         Sanitize.fragment(string || '', elements: tags)
       end
 
@@ -443,12 +457,11 @@ module Twig
           raise Error::Runtime, 'Trimming side must be "left", "right" or "both".'
         end
 
-        if %i[left both].include?(side)
-          string = string.gsub(/\A[#{Regexp.escape(character_mask)}]*/, '')
-        end
+        string = bytewise(string, character_mask) do |subject, mask|
+          subject = subject.gsub(/\A[#{Regexp.escape(mask)}]*/, '') if %i[left both].include?(side)
+          subject = subject.gsub(/[#{Regexp.escape(mask)}]*\z/, '') if %i[right both].include?(side)
 
-        if %i[right both].include?(side)
-          string = string.gsub(/[#{Regexp.escape(character_mask)}]*\z/, '')
+          subject
         end
 
         return string unless safe && character_mask == DEFAULT_TRIM_CHARS
@@ -466,7 +479,7 @@ module Twig
       end
 
       def self.pluralize(string, count = nil)
-        string.pluralize(count)
+        bytewise(string) { |word| word.pluralize(count) }
       end
 
       def self.slug(string, separator: '-', locale: 'en')
@@ -781,6 +794,36 @@ module Twig
         characters.empty? ? [''] : characters
       end
 
+      # PHP's string functions read bytes, so a byte that isn't valid in the
+      # encoding of the string, as in "a\xffb" from a template, is one like any
+      # other to str_contains, explode, strtr or trim, where Ruby's String
+      # methods raise or don't find it. Yields the strings as they are when
+      # they are all valid, as bytes then give the same result, or else as
+      # bytes, and gives any string the block returns the encoding of the
+      # first one back.
+      def self.bytewise(*strings)
+        return yield(*strings) if strings.none? { |string| invalid_string?(string) }
+
+        encoding = strings.find { |string| string.is_a?(String) }.encoding
+        result = yield(*strings.map { |string| string.is_a?(String) ? string.b : string })
+
+        with_encoding(result, encoding)
+      end
+
+      # @param [String, Array] value
+      def self.with_encoding(value, encoding)
+        case value
+        when String then value.dup.force_encoding(encoding)
+        when Array then value.map { |item| with_encoding(item, encoding) }
+        else value
+        end
+      end
+
+      # Whether value is a string with a byte its encoding doesn't allow.
+      def self.invalid_string?(value)
+        value.is_a?(String) && !value.valid_encoding?
+      end
+
       def self.ensure_hash(value)
         return value.to_h if value.is_a?(Hash)
 
@@ -863,7 +906,7 @@ module Twig
         return false unless object.respond_to?(:include?)
 
         if object.is_a?(String)
-          return object.include?(value.to_s)
+          return bytewise(object, value.to_s) { |haystack, needle| haystack.include?(needle) }
         end
 
         unless object.respond_to?(:any?)
@@ -903,6 +946,9 @@ module Twig
             raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: " \
                                   'Malformed UTF-8 characters, possibly incorrectly encoded.'
           end
+
+          # A pattern of bytes, as in "/\xff/", matches the bytes of the subject
+          return subject.b.match?(regex) if regex.encoding == Encoding::BINARY
 
           subject.dup.force_encoding(Encoding::UTF_8).scrub.match?(regex)
         end
@@ -973,6 +1019,9 @@ module Twig
         body = pattern[1...position]
         # A newline ends a trailing comment in extended mode before the group closes
         body = "\\A(?:#{body}#{"\n" if options.anybits?(Regexp::EXTENDED)})" if anchored
+        # Without u, PCRE reads the pattern as bytes, so a byte that isn't valid
+        # UTF-8, as in "/\xff/" from a template, matches that byte
+        body = body.b unless utf8 || body.valid_encoding?
 
         [Regexp.new(body, options), utf8]
       end
