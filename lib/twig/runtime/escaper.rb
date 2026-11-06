@@ -69,7 +69,9 @@ module Twig
 
         # Escape characters not safe for HTML attributes
         string = string.gsub(/[^a-zA-Z0-9,.\-_]/u) do |char|
-          ord = char.ord
+          # The first byte, as PHP's ord() gives, so C1 controls such as U+0085,
+          # whose first byte is 0xC2, are hex entities like other characters
+          ord = char.getbyte(0)
 
           # Replace characters undefined in HTML with Unicode replacement character
           if (ord <= 0x1F && char != "\t" && char != "\n" && char != "\r") || ord.between?(0x7F, 0x9F)
@@ -111,7 +113,7 @@ module Twig
 
         # Less restrictive than html_attr - also allows :, @, [, and ]
         string = string.gsub(/[^a-zA-Z0-9,.\-_:@\[\]]/u) do |char|
-          ord = char.ord
+          ord = char.getbyte(0)
 
           if (ord <= 0x1F && char != "\t" && char != "\n" && char != "\r") || ord.between?(0x7F, 0x9F)
             '&#xFFFD;'

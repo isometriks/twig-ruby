@@ -81,6 +81,15 @@ RSpec.describe Twig::Runtime::Escaper do
     expect(escaper.escape('onclick:alert(1)', :html_attr)).to eq('onclick&#x3A;alert&#x28;1&#x29;')
   end
 
+  # Twig checks the first byte, so only the one-byte DEL is replaced
+  it 'escapes C1 control characters in html attributes as hex entities' do
+    %i[html_attr html_attr_relaxed].each do |strategy|
+      expect(escaper.escape("a\u0085b", strategy)).to eq('a&#x0085;b')
+      expect(escaper.escape("\u0080\u009F", strategy)).to eq('&#x0080;&#x009F;')
+      expect(escaper.escape("a\u007Fb", strategy)).to eq('a&#xFFFD;b')
+    end
+  end
+
   describe ':html_attr_relaxed strategy' do
     it 'preserves colons, at-signs, and brackets' do
       expect(escaper.escape('v:bind@click[0]', :html_attr_relaxed)).to eq('v:bind@click[0]')
