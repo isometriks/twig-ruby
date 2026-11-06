@@ -46,7 +46,6 @@ module Twig
           Add: '+',
           Sub: '-',
           Mul: '*',
-          Power: '**',
           SameAs: '==',
           NotSameAs: '!=',
         }.freeze
