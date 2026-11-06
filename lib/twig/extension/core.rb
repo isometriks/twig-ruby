@@ -370,37 +370,41 @@ module Twig
       # @param [Object, nil] object
       # @param [Boolean] defined_test
       def self.constant(constant, object = nil, defined_test: false)
-        unless object.nil?
-          if defined_test
-            return object.class.const_defined?(constant)
-          end
-
-          return object.class.const_get(constant)
-        end
-
-        if constant.include?('::')
-          class_name, _, constant = constant.rpartition('::')
+        if object.nil?
+          class_name, _, name = constant.rpartition('::')
+          klass = class_name.empty? ? Kernel : constant_owner(class_name)
         else
-          class_name = Kernel.name
+          return defined_test ? true : object.class.name if constant == 'class'
+
+          klass = object.class
+          name = constant
+          constant = "#{klass.name}::#{constant}"
         end
 
-        unless Object.const_defined?(class_name)
-          return false if defined_test
-
-          raise Error::Runtime, "Class #{class_name} does not exist."
+        defined = begin
+          !klass.nil? && klass.const_defined?(name)
+        rescue NameError
+          false
         end
 
-        klass = Object.const_get(class_name)
+        return defined if defined_test
+        return klass.const_get(name) if defined
 
-        unless klass.const_defined?(constant)
-          return false if defined_test
-
-          raise Error::Runtime, "Class #{class_name} does not have a constant #{constant}."
+        if constant.downcase.end_with?('::class')
+          raise Error::Runtime, "You cannot use the Twig function \"constant\" to access \"#{constant}\". " \
+                                'You could provide an object and call constant("class", $object) or use the ' \
+                                'class name directly as a string.'
         end
 
-        return true if defined_test
+        raise Error::Runtime, "Constant \"#{constant}\" is undefined."
+      end
 
-        klass.const_get(constant)
+      # @return [Module, nil]
+      def self.constant_owner(class_name)
+        owner = Object.const_get(class_name)
+        owner.is_a?(Module) ? owner : nil
+      rescue NameError
+        nil
       end
 
       def self.cycle(values, position)

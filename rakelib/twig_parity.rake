@@ -28,7 +28,6 @@ module TwigParity
     functions/enum_cases/invalid_enum.test
     functions/enum_cases/invalid_literal_type.test
     functions/enum_cases/valid.test
-    functions/constant.test
     functions/dump.test
     functions/dump_array.test
     filters/date_default_format_interval.test

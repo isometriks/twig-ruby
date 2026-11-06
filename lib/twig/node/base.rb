@@ -41,6 +41,17 @@ module Twig
         @tag = nil
       end
 
+      # Like PHP's Node::__clone, a copy gets copies of the child nodes and
+      # its own attributes, so changing the copy (as the defined test does to
+      # the copy ?? and default make of their left side) leaves the original
+      # as it was
+      def initialize_copy(source)
+        super
+
+        @nodes = @nodes.dup.transform_values!(&:dup)
+        @attributes = @attributes.dup
+      end
+
       # @param [String] tag
       def tag=(tag)
         raise 'Cannot only set node tag once' if @tag

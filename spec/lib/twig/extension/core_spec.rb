@@ -316,6 +316,49 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  context 'with the constant function' do
+    before do
+      stub_const('Holder', Class.new)
+      stub_const('Holder::FOO', 'foo')
+    end
+
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ constant('class', object) }}",
+          "{{ constant('class', object) is defined ? 'yes' : 'no' }}",
+          "{{ constant('FOO', object) ?? 'KO' }}",
+          "{{ constant('NOPE', object) ?? 'KO' }}",
+          "{{ constant('Holder::FOO') ?? 'KO' }}",
+        ]
+      end
+
+      let(:outputs) { %w[Holder yes foo KO foo] }
+      let(:locals) { { object: Holder.new } }
+    end
+
+    {
+      "constant('Holder::NOPE')" => 'Constant "Holder::NOPE" is undefined',
+      "constant('NOPE', object)" => 'Constant "Holder::NOPE" is undefined',
+      "constant('Nope::NOPE')" => 'Constant "Nope::NOPE" is undefined',
+      "constant('NOPE')" => 'Constant "NOPE" is undefined',
+      "constant('Holder::class')" => 'You cannot use the Twig function "constant" to access "Holder::class". ' \
+                                     'You could provide an object and call constant("class", $object) or use ' \
+                                     'the class name directly as a string',
+    }.each do |call, message|
+      context "with {{ #{call} }}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { "{{ #{call} }}" }
+          let(:environment) do
+            Twig::Environment.new(loader).tap { |env| env.add_global('object', Holder.new) }
+          end
+          let(:error) { Twig::Error::Runtime }
+          let(:message) { %(#{message} in "template.twig" at line 1.) }
+        end
+      end
+    end
+  end
+
   describe '#self.compare' do
     it { expect(described_class.compare(:a, 'a')).to eq(0) }
     it { expect(described_class.compare(:a, :b)).to eq(-1) }
