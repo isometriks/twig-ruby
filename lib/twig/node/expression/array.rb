@@ -32,26 +32,30 @@ module Twig
             end
           end
 
+          spreads = values.any? { |value| value.is_a?(Unary::ArraySpread) }
+
+          # A spread is added at runtime, which keeps its string keys as PHP
+          # does
           compiler.
-            raw('[').
+            raw(spreads ? '::Twig::Runtime::Spread.sequence(' : '[').
             indent
 
-          first = true
+          values.each_with_index do |value, index|
+            compiler.raw(', ') if index.positive?
 
-          values.each do |value|
-            unless first
-              compiler.raw(', ')
+            if value.is_a?(Unary::ArraySpread)
+              compiler.
+                raw('::Twig::Runtime::Spread.new(').
+                subcompile(value.nodes[:node]).
+                raw(')')
+            else
+              compiler.subcompile(value)
             end
-
-            first = false
-
-            compiler.
-              subcompile(value)
           end
 
           compiler.
             outdent.
-            raw(']')
+            raw(spreads ? ')' : ']')
         end
 
         def values

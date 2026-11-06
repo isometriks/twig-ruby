@@ -24,6 +24,15 @@ module Twig
           value.to_s
         end
       end
+
+      # Whether PHP stores the key as an integer: an Integer, or a String
+      # holding a decimal integer such as "5", which PHP turns into 5
+      #
+      # @param [Object] key
+      # @return [Boolean]
+      def self.integer?(key)
+        key.is_a?(Integer) || (key.is_a?(String) && key.match?(/\A(?:0|-?[1-9]\d*)\z/))
+      end
     end
   end
 end

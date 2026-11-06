@@ -93,7 +93,7 @@ module Twig
         arguments.each do |key, value|
           if !value.is_a?(Spread)
             add.call(key, value)
-          elsif value.value.is_a?(::Hash)
+          elsif value.value.is_a?(::Hash) || value.value.is_a?(EnumerableHash)
             value.value.each { |k, v| add.call(k, v) }
           elsif value.value.is_a?(Enumerable)
             check_positional(named, source, lineno)

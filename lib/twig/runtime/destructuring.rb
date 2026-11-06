@@ -57,16 +57,11 @@ module Twig
       # integer-keyed items are read in order.
       def self.mapping(context, names, value)
         if value.size < names.length
-          items = value.select { |key, _| integer_key?(key) }.values
+          items = value.select { |key, _| MappingKey.integer?(key) }.values
           assign(context, names) { |i| items[i] }
         else
           assign(context, names) { |i| value.key?(i) ? value[i] : value[i.to_s] }
         end
-      end
-
-      # PHP turns a string key holding a decimal integer into an integer
-      def self.integer_key?(key)
-        key.is_a?(Integer) || (key.is_a?(String) && key.match?(/\A(?:0|-?[1-9]\d*)\z/))
       end
 
       # Consumes no more items than there are names, so a lazy or one-shot
@@ -101,7 +96,7 @@ module Twig
         end
       end
 
-      private_class_method :mapping, :integer_key?, :each_item, :each_value, :assign
+      private_class_method :mapping, :each_item, :each_value, :assign
     end
   end
 end
