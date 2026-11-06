@@ -21,7 +21,7 @@ module Twig
       end
 
       def merge!(other, overwrite: true)
-        return if other == []
+        return self if other == []
 
         unless other.is_a?(Hash)
           raise "Must merge! another Hash, given #{other.class.name}"

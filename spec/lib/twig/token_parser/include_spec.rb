@@ -40,3 +40,21 @@ RSpec.describe Twig::TokenParser::Include do
     end
   end
 end
+
+RSpec.describe 'Including a template with an empty sequence of variables' do
+  it_behaves_like 'render_and_assert' do
+    let(:inputs) do
+      [
+        '{{ include("vars", []) }}',
+        '{% include "vars" with [] %}',
+        '{% include "vars" with [] only %}',
+        '{% embed "vars" with [] %}{% endembed %}',
+        '{% embed "vars" with [] only %}{% endembed %}',
+      ]
+    end
+
+    let(:outputs) { %w[Hello Hello none Hello none] }
+    let(:locals) { { var: 'Hello' } }
+    let(:templates) { { vars: '{{ var ?? "none" }}' } }
+  end
+end
