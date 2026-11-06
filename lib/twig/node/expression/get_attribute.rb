@@ -77,7 +77,7 @@ module Twig
 
           compiler.
             raw(', lineno: ').
-            repr(lineno).
+            repr(nodes[:node].lineno).
             raw(')')
 
           return unless short_circuited
