@@ -605,9 +605,10 @@ module Twig
           regex << '(?=[[[:space:]]()\[{])'
         end
 
-        # an operator that begins with a character must not have a dot or pipe before
+        # an operator that begins with a character must not have a dot or
+        # pipe before, even with a whitespace in between ('foo' | and)
         if operator[0].match(/\w/)
-          regex = "(?<![\\.\\|])#{regex}"
+          regex = "(?<![\\.\\|]|[\\.\\|][[:space:]])#{regex}"
         end
 
         # an operator with a space can be any amount of whitespaces

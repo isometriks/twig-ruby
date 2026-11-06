@@ -250,6 +250,51 @@ RSpec.describe Twig::Lexer do
     expect(tokens).to eq(['var_start()', 'name(literal)', 'var_end()', 'eof()'])
   end
 
+  # Ported from Twig PHP's LexerTest::testFilterAndAttributeNamedAfterOperator
+  describe 'a filter or attribute named after an operator' do
+    def stream(code)
+      described_class.new(environment).tokenize(Twig::Source.new(code, 'index')).debug
+    end
+
+    it 'lexes it as a name after a pipe or a dot' do
+      template = "{{ 'foo'|and }}{{ 'bar' | and }}{{ foo.and }}{{ bar . and }}{{ foo and bar }}"
+
+      expect(stream(template)).to eq([
+        'var_start()', 'string(foo)', 'operator(|)', 'name(and)', 'var_end()',
+        'var_start()', 'string(bar)', 'operator(|)', 'name(and)', 'var_end()',
+        'var_start()', 'name(foo)', 'operator(.)', 'name(and)', 'var_end()',
+        'var_start()', 'name(bar)', 'operator(.)', 'name(and)', 'var_end()',
+        'var_start()', 'name(foo)', 'operator(and)', 'name(bar)', 'var_end()',
+        'eof()'
+      ])
+    end
+
+    it_behaves_like 'render_and_assert' do
+      let(:extensions) do
+        extension = Class.new(Twig::Extension::Base) do
+          def filters
+            [Twig::TwigFilter.new('and', ->(value) { "#{value}&" }, is_safe: [:html])]
+          end
+        end
+
+        [extension.new]
+      end
+      let(:locals) { { foo: { 'and' => 'attr' } } }
+      let(:inputs) do
+        [
+          "{{ 'bar'|and }}",
+          "{{ 'bar' | and }}",
+          "{{ 'bar'| and }}",
+          "{{ 'bar' |and }}",
+          '{{ foo.and }}',
+          '{{ foo . and }}',
+          '{{ true and false ? 1 : 2 }}',
+        ]
+      end
+      let(:outputs) { ['bar&', 'bar&', 'bar&', 'bar&', 'attr', 'attr', '2'] }
+    end
+  end
+
   describe 'CRLF line endings' do
     def render(code, **options)
       loader = Twig::Loader::Hash.new({ 'index.twig' => code })
