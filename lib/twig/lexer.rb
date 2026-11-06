@@ -244,8 +244,10 @@ module Twig
         push_token(Token::CLASS_VAR_TYPE, match.to_s)
         move_cursor(match.to_s)
       elsif (match = @code.match(REGEX_NUMBER, @cursor))
+        # digits alone are a decimal integer, even with leading zeros (010 is
+        # 10), as PHP's 0 + '010' gives; a fraction or an exponent is a float
         value = match.to_s.tr('_', '')
-        value = value.to_i.to_s == value ? value.to_i : value.to_f
+        value = value.match?(/\A[0-9]+\z/) ? value.to_i : value.to_f
         push_token(Token::NUMBER_TYPE, value)
         move_cursor(match.to_s)
       elsif code_at?(0, PUNCTUATION)

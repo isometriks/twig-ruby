@@ -295,6 +295,35 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  describe 'number literals' do
+    def number(code)
+      described_class.new(environment).tokenize(Twig::Source.new("{{ #{code} }}", 'index')).tokens[1].value
+    end
+
+    {
+      '10' => 10,
+      '010' => 10,
+      '007' => 7,
+      '00' => 0,
+      '1_000' => 1000,
+      '0_10' => 10,
+      '1.5' => 1.5,
+      '01.50' => 1.5,
+      '1_000.5' => 1000.5,
+      '1e3' => 1000.0,
+      '01e2' => 100.0,
+    }.each do |code, value|
+      it "lexes #{code} as #{value.inspect}" do
+        expect(number(code)).to eql(value)
+      end
+    end
+
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) { ['{{ 007 + 1 }}', '{{ {01: "a"}|keys|first }}{{ {01: "a"}[1] }}', '{{ [1, 2, 3][01] }}'] }
+      let(:outputs) { %w[8 1a 2] }
+    end
+  end
+
   # Twig's byte-based name regex accepts every byte from \x7f, so any
   # multibyte UTF-8 character
   describe 'names with non-ASCII characters' do
