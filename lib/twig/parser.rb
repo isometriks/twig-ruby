@@ -124,7 +124,8 @@ module Twig
 
           unless subparser
             if test.nil?
-              raise Error::Syntax.new("Unknown \"#{token.value}\" tag.", token.lineno, stream.source)
+              e = Error::Syntax.new("Unknown \"#{token.value}\" tag.", token.lineno, stream.source)
+              e.add_suggestions(token.value, environment.token_parsers.keys)
             else
               e = Error::Syntax.new("Unexpected \"#{token.value}\" tag", token.lineno, stream.source)
 
@@ -133,9 +134,9 @@ module Twig
                   " (expecting closing tag for the \"#{receiver.tag}\" tag defined near line #{lineno})."
                 )
               end
-
-              raise e
             end
+
+            raise e
           end
 
           stream.next
@@ -211,7 +212,10 @@ module Twig
     def filter(name, lineno)
       unless (filter = lookup_callable(:filter, name))
         unless ignore_unknown_twig_callables?
-          raise Error::Syntax.new("Unknown '#{name}' filter.", lineno, stream.source)
+          e = Error::Syntax.new("Unknown \"#{name}\" filter.", lineno, stream.source)
+          e.add_suggestions(name, environment.filters.keys)
+
+          raise e
         end
 
         filter = TwigFilter.new(name, -> {})
@@ -228,7 +232,10 @@ module Twig
         elsif environment.allow_helper_methods?
           return Node::Expression::HelperMethod.new(name, args, lineno)
         else
-          raise Error::Syntax.new("Unknown \"#{name}\" function.", lineno, stream.source)
+          e = Error::Syntax.new("Unknown \"#{name}\" function.", lineno, stream.source)
+          e.add_suggestions(name, environment.functions.keys)
+
+          raise e
         end
       end
 
@@ -255,7 +262,10 @@ module Twig
       end
 
       unless test
-        raise Error::Syntax.new("Unknown #{name} test.", line, stream.source)
+        e = Error::Syntax.new("Unknown \"#{name}\" test.", line, stream.source)
+        e.add_suggestions(name, environment.tests.keys)
+
+        raise e
       end
 
       test

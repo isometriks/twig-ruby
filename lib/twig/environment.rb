@@ -252,6 +252,27 @@ module Twig
       extension_set.expression_parsers
     end
 
+    # @return [Hash{String => TwigFilter}] the filters the extensions define,
+    #   by name
+    def filters
+      extension_set.filters
+    end
+
+    # @return [Hash{String => TwigFunction}]
+    def functions
+      extension_set.functions
+    end
+
+    # @return [Hash{String => TwigTest}]
+    def tests
+      extension_set.tests
+    end
+
+    # @return [Hash{Symbol => TokenParser::Base}] the token parsers by tag
+    def token_parsers
+      extension_set.token_parsers
+    end
+
     # @return [TwigFilter, nil]
     def filter(name)
       extension_set.filter(name)

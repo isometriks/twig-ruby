@@ -14,6 +14,21 @@ RSpec.describe Twig::Template do
     end
   end
 
+  context 'when parent() is called in a block no used trait defines' do
+    it_behaves_like 'render_and_raise' do
+      let(:loader) do
+        Twig::Loader::Hash.new({
+          'template.twig' => '{% use "trait" %}{% block x %}{{ parent() }}{% endblock %}',
+          'trait' => '{% block y %}{% endblock %}',
+        })
+      end
+      let(:error) { Twig::Error::Runtime }
+      let(:message) do
+        'The template has no parent and no traits defining the "x" block in "template.twig" at line 1.'
+      end
+    end
+  end
+
   context 'when block() renders a block of another template that calls parent()' do
     it_behaves_like 'render_and_assert' do
       let(:input) { "{{ block('block1', 'theme') }}" }

@@ -147,7 +147,7 @@ module Twig
         parent.render_block(name, context, blocks, use_blocks: false)
       else
         raise Error::Runtime.new(
-          "The template has no parent and no traits defining the #{name} block.",
+          "The template has no parent and no traits defining the \"#{name}\" block.",
           -1,
           source_context
         )
