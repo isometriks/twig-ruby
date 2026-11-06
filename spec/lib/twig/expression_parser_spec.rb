@@ -453,6 +453,17 @@ module Twig
       end
     end
 
+    context 'when a mapping key is not valid' do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { '{{ {[1]: 2} }}' }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) do
+          'A mapping key must be a quoted string, a number, a name, or an expression enclosed in parentheses ' \
+            '(unexpected token "operator" of value "[" in "template.twig" at line 1.'
+        end
+      end
+    end
+
     context 'when an expression is missing' do
       it_behaves_like 'render_and_raise' do
         let(:template) { '{{ 1 + }}' }
