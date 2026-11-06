@@ -46,7 +46,8 @@ module Twig
       @embedded_templates = AutoHash.new
       @block_stack = []
       @imported_symbols = [{}]
-      @ignore_unknown_twig_callables = false
+      # Not reset, as in Twig: an embed inside the discarded branch of a guard
+      # tag still ignores unknown callables. The stack restores it afterwards.
 
       begin
         body = subparse(test, drop_needle:)
