@@ -178,7 +178,13 @@ hash keys, arguments, etc.
 {{ name[:first] }}
 {{ user_func(:first, :second) }}
 {% set hash = { key: :value } %}
+{{ admin ? :yes : :no }}
 ```
+
+A `? :` with a symbol after it is a ternary when a `:` for its other branch follows, as in
+`admin ? :yes : :no`. Without one, `admin ? :yes` is the `? :` alias of `?:`, as in Twig PHP,
+so it reads `admin ?: yes`. A ternary that the `? :` is inside keeps its own `:`, so
+`c ? admin ? :yes : 'z'` reads `c ? (admin ?: yes) : 'z'`.
 
 Since Ruby has the concept of blocks, a new tag is introduced call `yield` it
 can be used with helpers like `form_with`

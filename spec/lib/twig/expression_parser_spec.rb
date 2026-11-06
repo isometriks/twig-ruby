@@ -318,24 +318,71 @@ module Twig
       end
     end
 
-    context 'with a ? straight after a name and then a symbol' do
+    context 'with a ? and then a symbol' do
       it_behaves_like 'render_and_assert' do
         let(:inputs) do
           [
             '{{ x? :y : 2 }}',
             '{{ y? :a : :b }}',
             '{% if x? :y : z %}T{% else %}F{% endif %}',
+            '{{ x ? :y : 2 }}',
+            '{{ y ? :a : :b }}',
+            '{{ h.b ? :yes : :no }}',
+            '{{ y ? :a }}',
+            '{{ y ? :x ? c : d }}',
+            '{{ y ? :x and z ? c : d }}',
+            '{{ y ? :a : x ? :c : :d }}',
           ]
         end
 
         let(:outputs) do
-          %w[y b T]
+          %w[y b T y b yes A C D c]
         end
 
         let(:locals) do
-          { x: true, y: false, z: false }
+          { x: true, y: false, z: false, a: 'A', c: 'C', d: 'D', h: { 'b' => true } }
         end
       end
+    end
+
+    # A ternary open before a spaced ? : keeps its :, so the ? : is the ?:
+    # alias, as in Twig PHP: c ? (a ?: x) : 'z'
+    context 'with a spaced ? : inside a ternary' do
+      sources = [
+        "{{ c ? a ? :x : 'z' }}",
+        '{{ c ? d ? a ? :x : y : z }}',
+        '{{ c ? a ? :x ? d : y : z }}',
+        '{% for i in [1] %}{{ c ? a ? :x : loop.index }}{% endfor %}',
+        "{{ \"\#{c ? a ? :x : z}\" }}",
+      ]
+
+      context 'when the condition is false' do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) { sources }
+          let(:outputs) { %w[z Z Z 1 Z] }
+          let(:locals) { { a: 1, c: false, d: 1, x: 'X', y: 'Y', z: 'Z' } }
+        end
+      end
+
+      context 'when the condition is true' do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) { sources }
+          let(:outputs) { %w[X X 1 X X] }
+          let(:locals) { { a: 0, c: true, d: 1, x: 'X', y: 'Y', z: 'Z' } }
+        end
+      end
+    end
+
+    it 'lexes a long chain of spaced ? : quickly' do
+      environment = Twig::Environment.new(Twig::Loader::Hash.new({}))
+      sources = [' ? :b%d', ' ? :b%d : c%d', ' ? :b%d ? c%d : d'].map do |link|
+        "{{ a#{(1..200).map { |i| format(link, i, i) }.join} }}"
+      end
+
+      started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      sources.each { |source| environment.tokenize(Twig::Source.new(source, 'index')) }
+
+      expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to be < 2
     end
 
     context 'with an attribute ending in ? before an operator that goes on with it' do

@@ -199,6 +199,87 @@ RSpec.describe Twig::Lexer do
       # A symbol after the space keeps it a ternary, not the ? : alias of ?:
       '{{ x? :y : 2 }}' => ['name(x)', 'operator(?)', 'symbol(y)', 'punctuation(:)', 'number(2)'],
       '{{ x? :a : :b }}' => ['name(x)', 'operator(?)', 'symbol(a)', 'punctuation(:)', 'symbol(b)'],
+      '{{ x ? :a : :b }}' => ['name(x)', 'operator(?)', 'symbol(a)', 'punctuation(:)', 'symbol(b)'],
+      '{{ x.y ? :a : 1 }}' => [
+        'name(x)', 'operator(.)', 'name(y)', 'operator(?)', 'symbol(a)', 'punctuation(:)', 'number(1)'
+      ],
+      '{{ x ? :a ~ "b:#{c ? 1 : 2}" : :d }}' => [
+        'name(x)', 'operator(?)', 'symbol(a)', 'operator(~)', 'string(b:)', 'interpolation_start()',
+        'name(c)', 'operator(?)', 'number(1)', 'punctuation(:)', 'number(2)', 'interpolation_end()',
+        'punctuation(:)', 'symbol(d)'
+      ],
+      '{{ x ? :a : y ? :b : :c }}' => [
+        'name(x)', 'operator(?)', 'symbol(a)', 'punctuation(:)', 'name(y)', 'operator(?)', 'symbol(b)',
+        'punctuation(:)', 'symbol(c)'
+      ],
+      '{{ x ? :a ? :b : :c : :d }}' => [
+        'name(x)', 'operator(?)', 'symbol(a)', 'operator(?)', 'symbol(b)', 'punctuation(:)', 'symbol(c)',
+        'punctuation(:)', 'symbol(d)'
+      ],
+      # Without a : of its own expression after it, ? : is the alias of ?:
+      '{{ x ? :a }}' => ['name(x)', 'operator(? :)', 'name(a)'],
+      # A : that closes a ternary after the symbol isn't one
+      '{{ x ? :a ? b : c }}' => [
+        'name(x)', 'operator(? :)', 'name(a)', 'operator(?)', 'name(b)', 'punctuation(:)', 'name(c)'
+      ],
+      '{{ x ? :a ? :b : :c }}' => [
+        'name(x)', 'operator(? :)', 'name(a)', 'operator(?)', 'symbol(b)', 'punctuation(:)', 'symbol(c)'
+      ],
+      '{{ x ? :a and b? ? c : d }}' => [
+        'name(x)', 'operator(? :)', 'name(a)', 'operator(and)', 'name(b?)', 'operator(?)', 'name(c)',
+        'punctuation(:)', 'name(d)'
+      ],
+      '{{ x ? :a ?: b }}' => ['name(x)', 'operator(? :)', 'name(a)', 'operator(?:)', 'name(b)'],
+      '{{ x ? :a ~ "b : c" }}' => ['name(x)', 'operator(? :)', 'name(a)', 'operator(~)', 'string(b : c)'],
+      '{{ [x ? :a, y ? 1 : 2] }}' => [
+        'operator([)', 'name(x)', 'operator(? :)', 'name(a)', 'punctuation(,)',
+        'name(y)', 'operator(?)', 'number(1)', 'punctuation(:)', 'number(2)', 'punctuation(])'
+      ],
+      '{{ (x ? :a) ? 1 : 2 }}' => [
+        'operator(()', 'name(x)', 'operator(? :)', 'name(a)', 'punctuation())',
+        'operator(?)', 'number(1)', 'punctuation(:)', 'number(2)'
+      ],
+      # A ternary still open before the ? : keeps its :, as in Twig PHP
+      '{{ c ? x ? :a : b }}' => [
+        'name(c)', 'operator(?)', 'name(x)', 'operator(? :)', 'name(a)', 'punctuation(:)', 'name(b)'
+      ],
+      '{{ c ? d ? x ? :a : b : e }}' => [
+        'name(c)', 'operator(?)', 'name(d)', 'operator(?)', 'name(x)', 'operator(? :)', 'name(a)',
+        'punctuation(:)', 'name(b)', 'punctuation(:)', 'name(e)'
+      ],
+      '{{ c? x ? :a : b }}' => [
+        'name(c)', 'operator(?)', 'name(x)', 'operator(? :)', 'name(a)', 'punctuation(:)', 'name(b)'
+      ],
+      '{{ c ? x ? :a ? d : b : e }}' => [
+        'name(c)', 'operator(?)', 'name(x)', 'operator(? :)', 'name(a)', 'operator(?)', 'name(d)',
+        'punctuation(:)', 'name(b)', 'punctuation(:)', 'name(e)'
+      ],
+      '{{ c ? d : e ? x ? :a : b }}' => [
+        'name(c)', 'operator(?)', 'name(d)', 'punctuation(:)', 'name(e)', 'operator(?)', 'name(x)',
+        'operator(? :)', 'name(a)', 'punctuation(:)', 'name(b)'
+      ],
+      "{{ \"\#{c ? x ? :a : b}\" }}" => [
+        'interpolation_start()', 'name(c)', 'operator(?)', 'name(x)', 'operator(? :)', 'name(a)',
+        'punctuation(:)', 'name(b)', 'interpolation_end()'
+      ],
+      # and a : over it is the symbol's other branch
+      '{{ c ? x ? :a : :b : :d }}' => [
+        'name(c)', 'operator(?)', 'name(x)', 'operator(?)', 'symbol(a)', 'punctuation(:)', 'symbol(b)',
+        'punctuation(:)', 'symbol(d)'
+      ],
+      # A ternary inside brackets, or closed by its :, is no enclosing one
+      '{{ c ? [x ? :a : :b] : d }}' => [
+        'name(c)', 'operator(?)', 'operator([)', 'name(x)', 'operator(?)', 'symbol(a)', 'punctuation(:)',
+        'symbol(b)', 'punctuation(])', 'punctuation(:)', 'name(d)'
+      ],
+      '{{ (c ? 1 : 2) ~ x ? :a : :b }}' => [
+        'operator(()', 'name(c)', 'operator(?)', 'number(1)', 'punctuation(:)', 'number(2)', 'punctuation())',
+        'operator(~)', 'name(x)', 'operator(?)', 'symbol(a)', 'punctuation(:)', 'symbol(b)'
+      ],
+      '{{ [c ? 1, x ? :a : :b] }}' => [
+        'operator([)', 'name(c)', 'operator(?)', 'number(1)', 'punctuation(,)', 'name(x)', 'operator(?)',
+        'symbol(a)', 'punctuation(:)', 'symbol(b)', 'punctuation(])'
+      ],
       # A mapping key keeps its ? before the colon
       '{{ {visible?: true} }}' => [
         'punctuation({)', 'name(visible?)', 'punctuation(:)', 'name(true)', 'punctuation(})'

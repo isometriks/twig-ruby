@@ -61,6 +61,9 @@ module Twig
       @state = STATE_DATA
       @states = []
       @brackets = []
+      @unclaimed_colons = {}
+      @ternaries = [0]
+      @ternaries_counted = 0
       @position = -1
       @positions = @code.to_enum(:scan, lex_tokens_start).map { Regexp.last_match }
 
@@ -219,6 +222,14 @@ module Twig
       if (match = @code.match(operator_regex, @cursor))
         operator = match.to_s.gsub(/[[:space:]]+/, ' ')
 
+        # a ? :x : :y is a ternary with a symbol, not the ? : alias of ?:
+        if operator == '? :' && symbol_ternary?(match.end(0))
+          push_token(Token::OPERATOR_TYPE, '?')
+          move_cursor('?')
+
+          return
+        end
+
         if OPENING_BRACKET.include?(operator)
           check_brackets(operator)
         end
@@ -281,7 +292,9 @@ module Twig
     # (user.admin? - 1, user.roles?[0]), as it always has.
     #
     # @param [Integer] position
-    def predicate_mark?(position)
+    # @param [Boolean] attribute whether the name is an attribute (after a .)
+    # @param [Boolean] key whether the name is a key of the mapping it's in
+    def predicate_mark?(position, attribute: @tokens.last&.test(Token::OPERATOR_TYPE, '.'), key: mapping_key?)
       return false unless @code[position] == '?'
 
       after = position + 1
@@ -290,7 +303,7 @@ module Twig
       return true if @code[after] == '('
 
       # {visible?: true} is a key followed by its colon, not a?:b
-      return true if @code[after] == ':' && mapping_key?
+      return true if @code[after] == ':' && key
 
       # a??b, a?:b and the like are operators that start with ?
       operator = @code.match(operator_regex, position)&.to_s
@@ -315,8 +328,206 @@ module Twig
         return true unless expression_start_operators.include?(operator)
 
         # user.admin? - 1 and user.roles?[0] go on with the attribute
-        @tokens.last&.test(Token::OPERATOR_TYPE, '.') && infix_operators.include?(operator)
+        attribute && infix_operators.include?(operator)
       end
+    end
+
+    # Whether the : at position - 1, after a spaced ?, starts a symbol that is
+    # the first branch of a ternary, as in a ? :x : :y. It does when the
+    # expression after the symbol has a : left over once the ternaries still
+    # open before the ? have taken theirs. Without one, a ? :x stays a ?: x,
+    # as in Twig PHP, and so does c ? a ? :x : z, which reads
+    # c ? (a ?: x) : z.
+    #
+    # @param [Integer] position
+    def symbol_ternary?(position)
+      name = @code.match(/\G#{REGEX_NAME}/, position)
+      return false unless name
+
+      unclaimed_colons(name.end(0)) > open_ternaries
+    end
+
+    # The ternaries of the expression being lexed, outside brackets, that are
+    # still waiting for their :. Only the tokens pushed since the last call
+    # are counted, with a count for each bracket still open, so each token is
+    # counted once.
+    def open_ternaries
+      while @ternaries_counted < @tokens.length
+        count_ternaries(@tokens[@ternaries_counted])
+        @ternaries_counted += 1
+      end
+
+      @ternaries.last
+    end
+
+    # @param [Token] token
+    def count_ternaries(token)
+      case token.type
+      when Token::VAR_START_TYPE, Token::BLOCK_START_TYPE
+        @ternaries = [0]
+      when Token::INTERPOLATION_START_TYPE
+        @ternaries << 0
+      when Token::INTERPOLATION_END_TYPE
+        @ternaries.pop if @ternaries.length > 1
+      when Token::OPERATOR_TYPE, Token::PUNCTUATION_TYPE
+        case token.value
+        when *OPENING_BRACKET
+          @ternaries << 0
+        when *CLOSING_BRACKET
+          @ternaries.pop if @ternaries.length > 1
+        when ','
+          @ternaries[-1] = 0
+        when '?'
+          @ternaries[-1] += 1
+        when ':'
+          @ternaries[-1] -= 1 if @ternaries.last.positive?
+        end
+      end
+    end
+
+    # The number of : in the expression after position, outside brackets,
+    # that close no ternary started after position, up to a comma, a closing
+    # bracket or the end of the tag. A later ? : with a symbol counts as a
+    # ternary: when it is the alias of ?: instead, it is because it has no :
+    # over, so it has none to leave to the ? : before it either. The count is
+    # kept by position, so a chain of ? : is scanned once.
+    #
+    # @param [Integer] position
+    # @return [Integer]
+    def unclaimed_colons(position)
+      @unclaimed_colons[position] ||= count_unclaimed_colons(position)
+    end
+
+    # @param [Integer] position
+    # @return [Integer]
+    def count_unclaimed_colons(position)
+      depth = 0
+      # the ternaries after position still waiting for their :
+      ternaries = 0
+      unclaimed = 0
+
+      while position < @end
+        break if depth.zero? && (@code.match?(lex_var_regex, position) || @code.match?(lex_block_regex, position))
+
+        char = @code[position]
+
+        case char
+        when '"', "'"
+          position = skip_string(position)
+          next
+        when '#'
+          position = @code.match(REGEX_INLINE_COMMENT, position).end(0)
+          next
+        when *OPENING_BRACKET
+          depth += 1
+        when *CLOSING_BRACKET, ','
+          break if depth.zero?
+
+          depth -= 1 unless char == ','
+        when ':'
+          # :name is another symbol
+          if depth.zero? && !@code.match?(/\G#{REGEX_NAME}/, position + 1)
+            ternaries.zero? ? unclaimed += 1 : ternaries -= 1
+          end
+        else
+          if (name = @code.match(/\G#{REGEX_NAME}/, position))
+            position = name.end(0)
+            next unless @code[position] == '?'
+
+            if predicate_mark?(position, attribute: attribute_name?(name.begin(0)), key: false)
+              # b? is a predicate, its ? no ternary
+              position += 1
+            elsif depth.zero? && @code.match?(/\G\?[[:space:]]+#{REGEX_SYMBOL}/, position)
+              # b? :c : :d is a ternary with a symbol
+              ternaries += 1
+              position += 1
+            end
+
+            next
+          end
+
+          if (operator = @code.match(operator_regex, position))
+            spaced = operator.to_s.gsub(/[[:space:]]+/, ' ')
+
+            if depth.zero? && spaced == '?'
+              ternaries += 1
+            elsif depth.zero? && spaced == '? :' && (name = @code.match(/\G#{REGEX_NAME}/, operator.end(0)))
+              # b ? :c waits for a : too, and the rest after :c has its own
+              # count
+              return unclaimed + [unclaimed_colons(name.end(0)) - ternaries - 1, 0].max
+            end
+
+            # ?: and ? : are operators, not the ? of a ternary
+            position = operator.end(0)
+            next
+          end
+        end
+
+        position += 1
+      end
+
+      unclaimed
+    end
+
+    # Whether the name that starts at position comes after a ., as an
+    # attribute does.
+    #
+    # @param [Integer] position
+    def attribute_name?(position)
+      position -= 1
+      position -= 1 while position >= 0 && @code[position].match?(/[[:space:]]/)
+
+      position >= 0 && @code[position] == '.'
+    end
+
+    # Returns the position after the string literal that starts at position,
+    # with any interpolations in it.
+    #
+    # @param [Integer] position
+    def skip_string(position)
+      quote = @code[position]
+      position += 1
+
+      while position < @end
+        case @code[position]
+        when '\\'
+          position += 1
+        when quote
+          return position + 1
+        when '#'
+          position = skip_interpolation(position + 2) if quote == '"' && @code[position + 1] == '{'
+        end
+
+        position += 1
+      end
+
+      position
+    end
+
+    # Returns the position of the } that closes the interpolation whose code
+    # starts at position.
+    #
+    # @param [Integer] position
+    def skip_interpolation(position)
+      depth = 0
+
+      while position < @end
+        case @code[position]
+        when '"', "'"
+          position = skip_string(position)
+          next
+        when '{'
+          depth += 1
+        when '}'
+          return position if depth.zero?
+
+          depth -= 1
+        end
+
+        position += 1
+      end
+
+      position
     end
 
     # Whether the name being lexed is a key of the mapping it's directly in.
