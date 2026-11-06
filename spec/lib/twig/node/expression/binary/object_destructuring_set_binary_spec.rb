@@ -20,6 +20,20 @@ RSpec.describe Twig::Node::Expression::Binary::ObjectDestructuringSetBinary do
     end
   end
 
+  describe 'destructuring what filter returns for a mapping or a sequence' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          '{% do {a, b} = {a: 1, b: 2}|filter(x => true) %}{{ a }},{{ b }}',
+          '{% do {b: second} = user|filter(x => x != 1) %}{{ second }}',
+          '{% do {0: a, 1: b} = list|filter(x => true) %}{{ a }},{{ b }}',
+        ]
+      end
+      let(:outputs) { ['1,2', '2', '1,2'] }
+      let(:locals) { { user: { 'a' => 1, 'b' => 2 }, list: [1, 2] } }
+    end
+  end
+
   describe 'object destructuring via method access' do
     it_behaves_like 'render_and_assert' do
       let(:input) { '{% do {name} = user %}{{ name }}' }

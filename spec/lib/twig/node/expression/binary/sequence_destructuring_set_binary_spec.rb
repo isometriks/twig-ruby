@@ -84,6 +84,44 @@ RSpec.describe Twig::Node::Expression::Binary::SequenceDestructuringSetBinary do
     end
   end
 
+  describe 'destructuring a filter result reads it by key, as a mapping' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          '{% do [a, b] = [1, 2, 3]|filter(x => x > 1) %}{{ a ?? "null" }},{{ b ?? "null" }}',
+          '{% do [a, b] = {0: 1, 1: 2, 2: 3}|filter(x => x > 1) %}{{ a ?? "null" }},{{ b ?? "null" }}',
+          '{% do [a, b] = {1: 2, 2: 3} %}{{ a ?? "null" }},{{ b ?? "null" }}',
+          '{% do [a, , b] = [5, 6, 7, 8]|filter(x => x != 6) %}{{ a }},{{ b }}',
+          '{% do [a, b] = {a: "y", b: "z"}|filter(x => true) %}{{ a ?? "null" }},{{ b ?? "null" }}',
+          '{% do [a, b] = {a: "y", b: "z"} %}{{ a ?? "null" }},{{ b ?? "null" }}',
+        ]
+      end
+      let(:outputs) { ['null,2', 'null,2', 'null,2', '5,7', 'null,null', 'null,null'] }
+    end
+  end
+
+  describe 'destructuring a shorter mapping renumbers its integer keys, as array_pad does' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          '{% do [a, b, c] = [1, 2, 3]|filter(x => x > 1) %}{{ a }},{{ b }},{{ c ?? "null" }}',
+          '{% do [a, b] = {1: "y"} %}{{ a }},{{ b ?? "null" }}',
+          '{% do [a, b, c, d] = {x: "w", 1: "y", 5: "q"}|filter(x => true) %}{{ a }},{{ b }},{{ c ?? "null" }}',
+          '{% do [a, b, c] = {x: "w", 1: "y", 5: "q"}|filter(x => true) %}{{ a ?? "null" }},{{ b }},{{ c ?? "null" }}',
+        ]
+      end
+      let(:outputs) { ['2,3,null', 'y,null', 'y,q,null', 'null,y,null'] }
+    end
+  end
+
+  describe 'destructuring a filtered enumerable reads it by position' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { '{% do [a, b] = items|filter(x => x > 1) %}{{ a }},{{ b }}' }
+      let(:output) { '2,3' }
+      let(:locals) { { items: (1..3).each } }
+    end
+  end
+
   ['5', '"str"', 'null'].each do |source|
     describe "destructuring from #{source}" do
       it_behaves_like 'render_and_raise' do

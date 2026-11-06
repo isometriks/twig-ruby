@@ -11,16 +11,25 @@ module Twig
 
       def self.from(object)
         if object.is_a?(Array)
-          new(AutoHash.new.add(*object))
+          new(AutoHash.new.add(*object), keyed: true)
         elsif object.is_a?(Hash)
-          new(object.to_h)
+          new(object.to_h, keyed: true)
         else
           new(object)
         end
       end
 
-      def initialize(wrapped)
+      # @param [Object] wrapped
+      # @param [Boolean] keyed whether it came from an Array or a Hash, whose
+      #   keys PHP keeps for an array, rather than from any other enumerable,
+      #   which PHP reads as a Traversable, by position
+      def initialize(wrapped, keyed: false)
         @wrapped = wrapped
+        @keyed = keyed
+      end
+
+      def keyed?
+        @keyed
       end
 
       def each(...)
@@ -44,7 +53,7 @@ module Twig
       end
 
       def filter
-        self.class.new(super)
+        self.class.new(super, keyed: @keyed)
       end
     end
   end

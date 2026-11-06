@@ -20,7 +20,13 @@ module Twig
 
           padded
         when Hash
-          assign(context, names) { |i| value.key?(i) ? value[i] : value[i.to_s] }
+          mapping(context, names, value)
+
+          value
+        when EnumerableHash
+          # PHP's filter keeps the keys of an array, which destructuring then
+          # reads by key, but returns a Traversable for anything else
+          value.keyed? ? mapping(context, names, value.to_h) : each_item(context, names, value)
 
           value
         else
@@ -34,6 +40,33 @@ module Twig
 
           value
         end
+      end
+
+      # What `{a, b} = value` reads its keys from. What filter returns for an
+      # Array or a Hash is the array PHP's filter returns, so it is read as a
+      # mapping by key; anything else is read as it is.
+      #
+      # @param [Object] value
+      # @return [Object]
+      def self.object(value)
+        value.is_a?(EnumerableHash) && value.keyed? ? value.to_h : value
+      end
+
+      # Reads the items by key, as PHP reads an array. PHP pads a shorter array
+      # with array_pad first, which renumbers its integer keys, so then the
+      # integer-keyed items are read in order.
+      def self.mapping(context, names, value)
+        if value.size < names.length
+          items = value.select { |key, _| integer_key?(key) }.values
+          assign(context, names) { |i| items[i] }
+        else
+          assign(context, names) { |i| value.key?(i) ? value[i] : value[i.to_s] }
+        end
+      end
+
+      # PHP turns a string key holding a decimal integer into an integer
+      def self.integer_key?(key)
+        key.is_a?(Integer) || (key.is_a?(String) && key.match?(/\A(?:0|-?[1-9]\d*)\z/))
       end
 
       # Consumes no more items than there are names, so a lazy or one-shot
@@ -51,8 +84,9 @@ module Twig
         names[i..].each { |name| context[name] = nil unless name.nil? }
       end
 
-      # An EnumerableHash (what filter returns, for instance) yields key and
-      # value pairs; take the value, as a for loop over it does
+      # An EnumerableHash (what filter returns for an enumerable that is not an
+      # Array or a Hash) yields key and value pairs; take the value, as a for
+      # loop over it does
       def self.each_value(value, &)
         if value.is_a?(EnumerableHash)
           value.each { |_key, item| yield item } # rubocop:disable Style/HashEachMethods
@@ -67,7 +101,7 @@ module Twig
         end
       end
 
-      private_class_method :each_item, :each_value, :assign
+      private_class_method :mapping, :integer_key?, :each_item, :each_value, :assign
     end
   end
 end
