@@ -295,6 +295,43 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  # Twig's byte-based name regex accepts every byte from \x7f, so any
+  # multibyte UTF-8 character
+  describe 'names with non-ASCII characters' do
+    def stream(code)
+      described_class.new(environment).tokenize(Twig::Source.new(code, 'index')).debug
+    end
+
+    it 'lexes them as names' do
+      expect(stream('{{ имя }}{{ user.名前 }}{{ café? }}')).to eq([
+        'var_start()', 'name(имя)', 'var_end()',
+        'var_start()', 'name(user)', 'operator(.)', 'name(名前)', 'var_end()',
+        'var_start()', 'name(café?)', 'var_end()',
+        'eof()'
+      ])
+    end
+
+    it 'keeps a ternary after them' do
+      expect(stream('{{ имя ? 1 : 2 }}')).to eq([
+        'var_start()', 'name(имя)', 'operator(?)', 'number(1)', 'punctuation(:)', 'number(2)', 'var_end()', 'eof()'
+      ])
+    end
+
+    it_behaves_like 'render_and_assert' do
+      let(:locals) { { user: { 'имя' => 'Пётр', '名前' => '太郎' } } }
+      let(:inputs) do
+        [
+          '{% set имя = "Иван" %}{{ имя }}',
+          '{{ user.имя }} {{ user.名前 }}',
+          '{% for 項目 in [1, 2] %}{{ 項目 }}{% endfor %}',
+          '{% macro 挨拶(名 = "x") %}{{ 名 }}{% endmacro %}{{ _self.挨拶("y") }}',
+          '{% block ブロック %}b{% endblock %}',
+        ]
+      end
+      let(:outputs) { ['Иван', 'Пётр 太郎', '12', 'y', 'b'] }
+    end
+  end
+
   describe 'CRLF line endings' do
     def render(code, **options)
       loader = Twig::Loader::Hash.new({ 'index.twig' => code })
