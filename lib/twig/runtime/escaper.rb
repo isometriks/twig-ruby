@@ -17,6 +17,8 @@ module Twig
         "\x09" => '\t',
       }.freeze
 
+      STRATEGIES = %i[html js url css html_attr html_attr_relaxed].freeze
+
       def escape(string, strategy = :html, charset = nil, autoescape = false)
         strategy = strategy.to_sym
 
@@ -49,7 +51,8 @@ module Twig
         when :url
           CGI.escape(string.to_s)
         else
-          string.to_s
+          raise Error::Runtime, "Invalid escaping strategy \"#{strategy}\" " \
+                                "(valid ones: \"#{STRATEGIES.join('", "')}\")."
         end.html_safe
       end
 

@@ -6,8 +6,11 @@ RSpec.describe Twig::Runtime::Escaper do
   let(:escaper) { described_class.new('UTF-8') }
   let(:strategies) { %i[html js url css html_attr html_attr_relaxed] }
 
-  it 'returns the same string if no matching escaper' do
-    expect(escaper.escape('<"alert{}">', :unknown)).to eq('<"alert{}">')
+  it 'raises for an unknown strategy' do
+    expect { escaper.escape('<"alert{}">', :unknown) }.to raise_error(
+      Twig::Error::Runtime,
+      'Invalid escaping strategy "unknown" (valid ones: "html", "js", "url", "css", "html_attr", "html_attr_relaxed").'
+    )
   end
 
   it 'returns an html_safe string as is when autoescaping for html' do

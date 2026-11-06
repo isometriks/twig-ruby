@@ -3,6 +3,22 @@
 require 'spec_helper'
 
 RSpec.describe Twig::NodeVisitor::Escaper do
+  context 'with an unknown escaping strategy' do
+    let(:environment) { Twig::Environment.new(Twig::Loader::Hash.new({})) }
+
+    [
+      "{{ v|e('foo') }}",
+      '{{ v|e(strategy) }}',
+      "{% autoescape 'foo' %}{{ v }}{% endautoescape %}",
+    ].each do |source|
+      it "raises in #{source.inspect}" do
+        expect { environment.create_template(source).render({ v: '<b>', strategy: 'foo' }) }.to raise_error(
+          Twig::Error::Runtime, /Invalid escaping strategy "foo" \(valid ones: "html", "js", .*\) in ".*" at line 1/
+        )
+      end
+    end
+  end
+
   context 'when html escaped output is autoescaped for another strategy' do
     let(:environment) { Twig::Environment.new(Twig::Loader::Hash.new({})) }
 
