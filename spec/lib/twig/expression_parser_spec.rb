@@ -472,6 +472,51 @@ module Twig
       end
     end
 
+    # Ported from Twig PHP's ExpressionParserTest (e5eb95d0d)
+    context 'with the literal parser' do
+      let(:parsers) { Twig::Environment.new(Twig::Loader::Hash.new({})).expression_parsers }
+
+      it 'has no operator tokens' do
+        literal = parsers.by_class(ExpressionParser::Prefix::Literal.name)
+
+        expect(literal.operator_tokens).to eq([])
+        expect(literal.name).to eq('literal')
+      end
+
+      it 'is not registered as an operator' do
+        expect(parsers.by_name(:prefix, 'literal')).to be_nil
+        expect(parsers.by_name(:infix, 'literal')).to be_nil
+      end
+
+      it 'is still iterated' do
+        expect(parsers.to_enum(:each).to_a).to include(an_instance_of(ExpressionParser::Prefix::Literal))
+      end
+
+      it 'leaves every other parser with its name and aliases as operator tokens' do
+        others = parsers.to_enum(:each).reject { |parser| parser.is_a?(ExpressionParser::Prefix::Literal) }
+
+        expect(others).not_to be_empty
+        others.each do |parser|
+          expect(parser.operator_tokens).to eq([parser.name, *parser.aliases]), parser.class.name
+        end
+      end
+    end
+
+    context 'with a name called literal' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{% block literal %}x{% endblock %}',
+            '{% macro m(literal) %}{{ literal }}{% endmacro %}{{ _self.m(2) }}',
+            '{% import _self as literal %}ok',
+            '{% macro m() %}M{% endmacro %}{% import _self as literal %}{{ literal.m() }}',
+            '{% set literal = 3 %}{{ literal }}',
+          ]
+        end
+        let(:outputs) { %w[x 2 ok M 3] }
+      end
+    end
+
     context 'when a parenthesis is not closed' do
       it_behaves_like 'render_and_raise' do
         let(:template) { '{{ (1 2) }}' }

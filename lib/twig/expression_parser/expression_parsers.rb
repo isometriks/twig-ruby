@@ -22,17 +22,18 @@ module Twig
           end
 
           parsers_by_name[parser.type] ||= {}
-          parsers_by_name[parser.type][parser.name] = parser
           parsers_by_class[parser.class.name] = parser
 
-          parser.aliases.each do |alias_name|
-            parsers_by_name[parser.type][alias_name] = parser
+          parser.operator_tokens.each do |token|
+            parsers_by_name[parser.type][token] = parser
           end
         end
       end
 
+      # Yields each parser once, including those registered by class only,
+      # such as the literal parser, which handles no operator token.
       def each(&)
-        parsers_by_name.values.map(&:values).flatten.each(&)
+        (parsers_by_name.values.flat_map(&:values) + parsers_by_class.values).uniq(&:object_id).each(&)
       end
 
       # @return [ExpressionParser::Base, nil]

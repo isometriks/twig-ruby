@@ -324,7 +324,7 @@ module Twig
     def infix_operators
       @infix_operators ||= [].tap do |operators|
         environment.expression_parsers.each do |parser|
-          operators.push(parser.name, *parser.aliases) if parser.type == :infix
+          operators.push(*parser.operator_tokens) if parser.type == :infix
         end
       end
     end
@@ -334,7 +334,7 @@ module Twig
     def expression_start_operators
       @expression_start_operators ||= ['['].tap do |operators|
         environment.expression_parsers.each do |parser|
-          operators.push(parser.name, *parser.aliases) if parser.type == :prefix
+          operators.push(*parser.operator_tokens) if parser.type == :prefix
         end
       end
     end
@@ -586,7 +586,7 @@ module Twig
       expression_parsers = []
 
       environment.expression_parsers.each do |expression_parser|
-        expression_parsers.concat([expression_parser.name], expression_parser.aliases)
+        expression_parsers.concat(expression_parser.operator_tokens)
       end
 
       operators = expression_parsers.

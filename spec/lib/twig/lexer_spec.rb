@@ -243,6 +243,13 @@ RSpec.describe Twig::Lexer do
     end
   end
 
+  # Ported from Twig PHP's LexerTest::testLiteralIsNotAnOperator
+  it 'does not lex literal as an operator' do
+    tokens = described_class.new(environment).tokenize(Twig::Source.new('{{ literal }}', 'index')).debug
+
+    expect(tokens).to eq(['var_start()', 'name(literal)', 'var_end()', 'eof()'])
+  end
+
   describe 'CRLF line endings' do
     def render(code, **options)
       loader = Twig::Loader::Hash.new({ 'index.twig' => code })
