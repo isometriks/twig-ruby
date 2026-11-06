@@ -28,7 +28,7 @@ module Twig
         end
 
         other.each do |k, v|
-          if overwrite || !key?(k.to_sym)
+          if overwrite || !key?(normalize_key(k))
             self[k] = v
           end
         end
@@ -122,13 +122,13 @@ module Twig
       end
 
       def [](key)
-        super(key.to_sym)
+        super(normalize_key(key))
       end
 
       def []=(key, value)
         super if popping
 
-        key = key.to_sym
+        key = normalize_key(key)
 
         if (frame = stack.last)
           super and return if frame[:replace].key?(key) || frame[:remove].include?(key)
@@ -159,6 +159,12 @@ module Twig
       private
 
       attr_reader :popping
+
+      # Names are stored as symbols. The with tag can also add the integer
+      # keys of a sequence, which stay integers as they do in PHP.
+      def normalize_key(key)
+        key.respond_to?(:to_sym) ? key.to_sym : key
+      end
 
       def stack
         @stack ||= []
