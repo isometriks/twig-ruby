@@ -46,8 +46,6 @@ module Twig
           Add: '+',
           Sub: '-',
           Mul: '*',
-          SameAs: '==',
-          NotSameAs: '!=',
         }.freeze
 
         # Lots of simple operator classes can just be generated dynamically

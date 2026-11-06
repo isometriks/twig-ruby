@@ -10,9 +10,9 @@ module Twig
         class SameAs < Test::Base
           def compile(compiler)
             compiler.
-              raw('(').
+              raw('::Twig::Runtime::Identity.same?(').
               subcompile(nodes[:node]).
-              raw(' == ').
+              raw(', ').
               subcompile(nodes[:arguments].nodes[0]).
               raw(')')
           end

@@ -12,19 +12,34 @@ RSpec.describe Twig::Node::Expression::Binary::SameAs do
         {{ "a" === "a" ? "OK" }}
         {{ null === null ? "OK" }}
         {{ 1 !== "1" ? "OK" }}
+        {{ 1 === 1.0 ? "KO" : "OK" }}
+        {{ 1 !== 1.0 ? "OK" }}
+        {{ 1 is same as(1.0) ? "KO" : "OK" }}
+        {{ 1 is not same as(1.0) ? "OK" }}
+        {{ [1] === [1] ? "OK" }}
+        {{ [1] === [1.0] ? "KO" : "OK" }}
+        {{ [[1, {a: [2]}]] === [[1, {a: [2]}]] ? "OK" }}
+        {{ {a: 1, b: 2} === {a: 1, b: 2} ? "OK" }}
+        {{ {a: 1, b: 2} === {b: 2, a: 1} ? "KO" : "OK" }}
+        {{ {a: {x: 1, y: 2}} === {a: {y: 2, x: 1}} ? "KO" : "OK" }}
+        {{ false === null ? "KO" : "OK" }}
+        {{ object === same ? "OK" }}
+        {{ object === other ? "KO" : "OK" }}
+        {{ object is same as(other) ? "KO" : "OK" }}
+        {{ object !== other ? "OK" }}
+        {{ 0_0 === 0 ? "OK" }}
+        {{ 007 is same as(7) ? "OK" }}
       INPUTS
     end
 
     let(:outputs) do
-      <<~OUTPUTS
-        OK
-        OK
-        OK
-        OK
-        OK
-      OUTPUTS
+      (['OK'] * 22).join("\n")
     end
 
-    let(:locals) { {} }
+    let(:locals) do
+      object = Object.new
+
+      { object:, same: object, other: Object.new }
+    end
   end
 end
