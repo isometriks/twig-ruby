@@ -124,7 +124,20 @@ module TwigParity
       data = data.call(environment) if data.is_a?(Proc)
 
       begin
-        output = environment.load('index.twig').render(data).gsub(/\A[\n ]*/, '').gsub(/[\n ]*\z/, '')
+        # Like IntegrationTestCase: deprecations from loading the templates
+        # always count, those from rendering only when the fixture expects some
+        deprecations = []
+        ::Twig::Parity::Deprecations.capture(deprecations) do
+          gsub_templates.each_key { |name| environment.load(name) }
+        end
+
+        template = environment.load('index.twig')
+        output = if deprecation
+                   ::Twig::Parity::Deprecations.capture(deprecations) { template.render(data) }
+                 else
+                   template.render(data)
+                 end
+        output = output.gsub(/\A[\n ]*/, '').gsub(/[\n ]*\z/, '')
         output = replace(output, replacements[:output])
 
         # PHP's IntegrationTestCase fails a fixture whose expected exception never comes
@@ -136,7 +149,14 @@ module TwigParity
         expected = expected.gsub(/\A[\n ]*/, '').gsub(/[\n ]*\z/, '')
         expected = replace(expected, replacements[:result])
 
-        if output == expected
+        if output == expected && deprecations.join("\n") != deprecation.to_s
+          {
+            message:,
+            file: @file,
+            status: false,
+            error: ::RSpec::Support::Differ.new.diff_as_string(deprecations.join("\n"), deprecation.to_s),
+          }
+        elsif output == expected
           {
             message:,
             file: @file,

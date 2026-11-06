@@ -1260,7 +1260,20 @@ module Twig
         package = package ? " (Package: #{package})" : ''
         version = version ? " (Version: #{version})" : ''
 
-        puts "Deprecation Notice: #{message} in #{template} on line #{line}#{package}#{version}"
+        report_deprecation("#{message} in #{template} on line #{line}#{package}#{version}")
+      end
+
+      # Reports a deprecation as Symfony's trigger_deprecation does for Twig:
+      # the message comes after "Since package version: ".
+      def self.trigger_deprecation(package, version, message)
+        prefix = package.to_s.empty? && version.to_s.empty? ? '' : "Since #{package} #{version}: "
+
+        report_deprecation("#{prefix}#{message}")
+      end
+
+      # Where every deprecation ends up
+      def self.report_deprecation(message)
+        puts "Deprecation Notice: #{message}"
       end
 
       def self.test_empty?(object)

@@ -219,8 +219,10 @@ module Twig
           raise e
         end
 
-        filter = TwigFilter.new(name, -> {})
+        return TwigFilter.new(name, -> {})
       end
+
+      trigger_callable_deprecation(filter, lineno)
 
       filter
     end
@@ -239,6 +241,8 @@ module Twig
           raise e
         end
       end
+
+      trigger_callable_deprecation(function, lineno)
 
       function
     end
@@ -259,7 +263,7 @@ module Twig
       end
 
       if test.nil? && ignore_unknown_twig_callables?
-        test = TwigTest.new(name, -> {})
+        return TwigTest.new(name, -> {})
       end
 
       unless test
@@ -268,6 +272,8 @@ module Twig
 
         raise e
       end
+
+      trigger_callable_deprecation(test, current_token.lineno)
 
       test
     end
@@ -388,6 +394,15 @@ module Twig
     end
 
     private
+
+    # @param [Callable, Node::Expression::HelperMethod] callable
+    # @param [Integer] lineno
+    def trigger_callable_deprecation(callable, lineno)
+      return unless callable.is_a?(Callable) && callable.deprecated?
+
+      source = stream.source
+      callable.trigger_deprecation(source.path.to_s.empty? ? source.name : source.path, lineno)
+    end
 
     # @return [ExpressionParser::ExpressionParsers]
     attr_reader :parsers

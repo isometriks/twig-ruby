@@ -17,7 +17,18 @@ module Twig
         needs_context: false,
         needs_charset: false,
         is_variadic: false,
+        deprecation_info: nil,
       }.merge(options)
+
+      deprecation_info = @options[:deprecation_info]
+      return if deprecation_info.nil?
+
+      unless deprecation_info.is_a?(DeprecatedCallableInfo)
+        raise Error::Logic, "The \"deprecation_info\" option must be an instance of \"#{DeprecatedCallableInfo.name}\"."
+      end
+
+      deprecation_info.name = name
+      deprecation_info.type = type
     end
 
     def type
@@ -34,6 +45,16 @@ module Twig
 
     def needs_context?
       @options[:needs_context]
+    end
+
+    def deprecated?
+      !@options[:deprecation_info].nil?
+    end
+
+    # @param [String, nil] file
+    # @param [Integer, nil] line
+    def trigger_deprecation(file = nil, line = nil)
+      @options[:deprecation_info].trigger_deprecation(file, line)
     end
 
     def with_dynamic_arguments(name, dynamic_name, arguments)
