@@ -324,17 +324,42 @@ module Twig
       end
 
       def self.max(value, *values)
-        args = [value, *values]
-        args = args[0] if args.length == 1
-        args = args.values if args.is_a?(Hash)
-        args.max
+        extremum_values('max', value, values).max
       end
 
       def self.min(value, *values)
-        args = [value, *values]
-        args = args[0] if args.length == 1
-        args = args.values if args.is_a?(Hash)
-        args.min
+        extremum_values('min', value, values).min
+      end
+
+      # PHP's max and min take a single array, or several values, and reject
+      # a single scalar or an empty array rather than return null, which Twig
+      # reports as a runtime error
+      def self.extremum_values(name, value, values)
+        return [value, *values] unless values.empty?
+
+        args = value.is_a?(Hash) ? value.values : value
+        args = args.to_a if args.is_a?(Enumerable)
+
+        unless args.is_a?(Array)
+          raise ArgumentError, "#{name}(): Argument #1 ($value) must be of type array, #{php_type(args)} given"
+        end
+
+        raise ArgumentError, "#{name}(): Argument #1 ($value) must contain at least one element" if args.empty?
+
+        args
+      end
+
+      # The type name PHP gives a value in a TypeError message
+      def self.php_type(value)
+        case value
+        when nil then 'null'
+        when true then 'true'
+        when false then 'false'
+        when Integer then 'int'
+        when Float then 'float'
+        when String, Symbol then 'string'
+        else value.class.name
+        end
       end
 
       def self.range(low, high, step: 1)
@@ -379,8 +404,13 @@ module Twig
       end
 
       def self.cycle(values, position)
-        unless values.respond_to?(:[])
-          raise Error::Runtime, 'The "cycle" function only works with arrays'
+        # A range or other sequence without [] is an array in PHP Twig
+        values = values.to_a if values.is_a?(Enumerable) && !values.respond_to?(:[])
+
+        # Like PHP's array or ArrayAccess: a String or number has [] in Ruby,
+        # but isn't a sequence to cycle through
+        if !values.respond_to?(:[]) || [String, Symbol, Numeric, Proc, Method].any? { |type| values.is_a?(type) }
+          raise Error::Runtime, 'The "cycle" function expects an array or "ArrayAccess" as first argument.'
         end
 
         unless values.respond_to?(:length)

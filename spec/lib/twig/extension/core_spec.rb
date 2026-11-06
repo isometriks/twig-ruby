@@ -399,7 +399,64 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  ["'abc'", ':abc', '12', '1.5', 'nil', 'obj'].each do |value|
+    context "when cycle is given #{value}" do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { "{{ cycle(#{value}, 1) }}" }
+        let(:environment) do
+          Twig::Environment.new(loader).tap { |env| env.add_global('obj', Object.new) }
+        end
+        let(:error) { Twig::Error::Runtime }
+        let(:message) do
+          'The "cycle" function expects an array or "ArrayAccess" as first argument in "template.twig" at line 1.'
+        end
+      end
+    end
+  end
+
+  context 'when cycle is given a range' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) { ['{{ cycle(1..3, 4) }}', '{{ cycle(range(1, 3), 4) }}'] }
+      let(:outputs) { %w[2 2] }
+    end
+  end
+
   %w[max min].each do |function|
+    { "''" => 'string', '5' => 'int', '1.5' => 'float', 'false' => 'false', 'nil' => 'null' }.each do |value, type|
+      context "when #{function} is given only #{value}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { "{{ #{function}(#{value}) }}" }
+          let(:error) { Twig::Error::Runtime }
+          let(:message) do
+            'An exception has been thrown during the rendering of a template ' \
+              "(\"#{function}(): Argument #1 ($value) must be of type array, #{type} given\") " \
+              'in "template.twig" at line 1.'
+          end
+        end
+      end
+    end
+
+    context "when #{function} is given a range" do
+      it_behaves_like 'render_and_assert' do
+        let(:input) { "{{ #{function}(2..4) }}" }
+        let(:output) { function == 'max' ? '4' : '2' }
+      end
+    end
+
+    %w[[] {}].each do |empty|
+      context "when #{function} is given #{empty}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { "{{ #{function}(#{empty}) }}" }
+          let(:error) { Twig::Error::Runtime }
+          let(:message) do
+            'An exception has been thrown during the rendering of a template ' \
+              "(\"#{function}(): Argument #1 ($value) must contain at least one element\") " \
+              'in "template.twig" at line 1.'
+          end
+        end
+      end
+    end
+
     context "when #{function} is called without arguments" do
       it_behaves_like 'render_and_raise' do
         let(:template) { "{{ #{function}() }}" }
