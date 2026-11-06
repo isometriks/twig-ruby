@@ -40,4 +40,14 @@ RSpec.describe Twig::NodeVisitor::SafeAnalysis do
 
     expect(attr_safe).to eq([:html_attr])
   end
+
+  context 'when a filter lists its strategies as strings' do
+    let(:attr_safe) { ['html_attr'] }
+
+    it 'is safe for them' do
+      template = environment.create_template("{% autoescape 'html_attr' %}{{ 'a b'|attr_safe }}{% endautoescape %}")
+
+      expect(template.render).to eq('a b')
+    end
+  end
 end

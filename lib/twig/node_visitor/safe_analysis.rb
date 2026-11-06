@@ -98,7 +98,8 @@ module Twig
       # @param [Node::Base] node
       # @param [Array] safe
       def set_safe(node, safe)
-        data[node] = safe
+        # Strategies can be given as strings, e.g. by escape('js')
+        data[node] = safe.map { |strategy| strategy.is_a?(String) ? strategy.to_sym : strategy }
       end
 
       # @param [Array<String>] a
