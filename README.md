@@ -276,6 +276,12 @@ the rest of the chain short, as in Twig PHP. So `user.admin?.label` reads `label
 `user.admin`, not on the predicate `admin?`; wrap the predicate to go on from its result:
 `{{ (user.admin?).to_s }}`.
 
+**Concatenating a safe value keeps it safe, as Rails' `SafeBuffer` does.** In
+`{{ include('card') ~ note }}` or `{{ html|raw ~ note }}`, the safe half is printed as is and
+only `note` is escaped. Twig PHP escapes the whole concatenation instead, so the safe half is
+escaped too unless the concatenation itself is marked `|raw`. Either way an unsafe value is
+never printed unescaped.
+
 **`strict_variables` raises on missing keys.** The Rails config turns it on, so
 `{{ params[:page] }}` raises when there's no `page` param. `??` and `default` are the way
 to allow for it:
