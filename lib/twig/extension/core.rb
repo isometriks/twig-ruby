@@ -499,14 +499,10 @@ module Twig
       end
 
       def self.split(charset, value, delimiter, limit: nil)
-        value ||= ''
+        value = value.to_s
+        delimiter = delimiter.to_s
 
-        unless delimiter == ''
-          return value.split(delimiter) if limit.nil?
-          return value.split(delimiter, limit) if limit >= 0
-
-          return value.split(delimiter)[0...limit]
-        end
+        return explode(delimiter, value, limit) unless delimiter == ''
 
         if limit.nil? || limit <= 1
           return split_into_characters(value, 'split')
@@ -519,6 +515,20 @@ module Twig
         end
 
         (0...length).step(limit).map { |i| value[i, limit] }
+      end
+
+      # Splits like PHP's explode, which String#split doesn't: it keeps
+      # trailing empty strings, splits on a literal space, gives [''] for an
+      # empty string, takes a limit of 0 as 1 and drops -limit parts from the
+      # end for a negative limit.
+      def self.explode(delimiter, value, limit)
+        limit = 1 if limit&.zero?
+        parts = bytewise(value, delimiter) do |string, separator|
+          string.split(Regexp.new(Regexp.escape(separator)), limit.nil? || limit.negative? ? -1 : limit)
+        end
+        parts = [''] if parts.empty?
+
+        limit.nil? || limit.positive? ? parts : parts.first([parts.length + limit, 0].max)
       end
 
       # @param [Hash, Array, Enumerable] object

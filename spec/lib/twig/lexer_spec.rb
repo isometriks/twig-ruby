@@ -650,6 +650,18 @@ RSpec.describe Twig::Lexer do
         let(:outputs) { ['y', 'n', 'y', 'y', 'a-b', "a\xffé", 'a', "é\xff", 'y', 'y', 'y'] }
       end
 
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            %q({{ "a\xffb"|split("\xff")|join(',') }}),
+            %q({{ "a\xffb"|split("\xff", 2)|join(',') }}),
+            %q({{ "a\xffb"|split("\xff", -1)|join(',') }}),
+            %q({{ "a\xffb"|split("b")|join(',')|raw }}),
+          ]
+        end
+        let(:outputs) { ['a,b', 'a,b', 'a', "a\xff,"] }
+      end
+
       # PHP's mb_strtoupper differs here; the byte is kept, as it was
       # before such a string got the encoding of the source
       it_behaves_like 'render_and_assert' do

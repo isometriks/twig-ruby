@@ -434,6 +434,35 @@ RSpec.describe Twig::Extension::Core do
       expect(described_class.split('UTF-8', 'ab', '', limit: 3)).to eq(%w[ab])
     end
 
+    it 'splits on a delimiter like PHP explode' do
+      expect(described_class.split('UTF-8', 'a,b,', ',')).to eq(['a', 'b', ''])
+      expect(described_class.split('UTF-8', ',a,,b,', ',')).to eq(['', 'a', '', 'b', ''])
+      expect(described_class.split('UTF-8', ' a  b', ' ')).to eq(['', 'a', '', 'b'])
+      expect(described_class.split('UTF-8', 'aXXbXX', 'XX')).to eq(['a', 'b', ''])
+      expect(described_class.split('UTF-8', 'a.b', '.')).to eq(%w[a b])
+      expect(described_class.split('UTF-8', '', ',')).to eq([''])
+      expect(described_class.split('UTF-8', nil, ',')).to eq([''])
+    end
+
+    it 'applies a delimiter limit like PHP explode' do
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: 0)).to eq(['a,b,c'])
+      expect(described_class.split('UTF-8', '', ',', limit: 0)).to eq([''])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: 1)).to eq(['a,b,c'])
+      expect(described_class.split('UTF-8', 'a,,b', ',', limit: 2)).to eq(['a', ',b'])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: 5)).to eq(%w[a b c])
+      expect(described_class.split('UTF-8', ',a,,b,', ',', limit: -1)).to eq(['', 'a', '', 'b'])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: -2)).to eq(['a'])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: -4)).to eq([])
+      expect(described_class.split('UTF-8', '', ',', limit: -1)).to eq([])
+    end
+
+    it 'splits a number as a string' do
+      expect(described_class.split('UTF-8', 12_345, '')).to eq(%w[1 2 3 4 5])
+      expect(described_class.split('UTF-8', 12_345, '3')).to eq(%w[12 45])
+      expect(described_class.split('UTF-8', 1.5, '.')).to eq(%w[1 5])
+      expect(described_class.split('UTF-8', 'a1b1c', 1)).to eq(%w[a b c])
+    end
+
     it 'raises a runtime error for a string that is not valid UTF-8' do
       expect { described_class.split('UTF-8', "\xC3\x28abc", '') }.
         to raise_error(Twig::Error::Runtime, /Unable to split the string passed to "split" into characters/)
