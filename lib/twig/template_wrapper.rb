@@ -15,7 +15,7 @@ module Twig
 
     def render_block(name, context = {}, call_context: nil, output_buffer: nil)
       context = Runtime::Context.from(context, call_context:, output_buffer:)
-      context.merge!(environment.globals)
+      context.merge!(environment.globals, overwrite: false)
 
       template.render_block(name, context).to_s
     end

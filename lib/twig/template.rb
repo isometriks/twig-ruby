@@ -30,7 +30,7 @@ module Twig
         raise Error::Runtime, 'Render must implement Twig::Runtime::Context.'
       end
 
-      render_with_blocks(context.merge(env.globals), blocks.merge(blocks))
+      render_with_blocks(context.merge(env.globals, overwrite: false), blocks.merge(blocks))
     end
 
     def render_with_blocks(context = {}, blocks = {})

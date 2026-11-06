@@ -3,6 +3,38 @@
 require 'spec_helper'
 
 RSpec.describe Twig::TemplateWrapper do
+  context 'when a global has the same name as a variable' do
+    let(:environment) do
+      Twig::Environment.new(Twig::Loader::Hash.new(templates), strict_variables: true).tap do |env|
+        env.add_global('user', 'global')
+      end
+    end
+    let(:templates) do
+      {
+        'index' => '{{ user }}|{% block b %}{{ user }}{% endblock %}',
+        'includes' => "{% include 'card' with {user: 'a'} %}|{% for user in ['b'] %}{% include 'card' %}{% endfor %}|" \
+                      "{{ include('card', {user: 'c'}) }}|{% embed 'card' with {user: 'd'} %}{% endembed %}",
+        'card' => '{{ user }}',
+      }
+    end
+
+    it 'renders the variable' do
+      expect(environment.load('index').render({ user: 'given' })).to eq('given|given')
+    end
+
+    it 'renders the variable in a block' do
+      expect(environment.load('index').render_block('b', { user: 'given' })).to eq('given')
+    end
+
+    it 'renders the global when no variable is given' do
+      expect(environment.load('index').render).to eq('global|global')
+    end
+
+    it 'passes the variable to included and embedded templates' do
+      expect(environment.load('includes').render).to eq('a|b|c|d')
+    end
+  end
+
   context 'when the parent template comes from a global' do
     let(:loader) do
       Twig::Loader::Hash.new({

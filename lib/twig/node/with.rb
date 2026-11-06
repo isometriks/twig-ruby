@@ -37,7 +37,7 @@ module Twig
             raw(", source_context)\n").
             outdent.
             write("end\n").
-            write("context.merge!(env.globals)\n").
+            write("context.merge!(env.globals, overwrite: false)\n").
             write("context.merge!(#{var_name})\n")
         end
 
