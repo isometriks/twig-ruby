@@ -60,9 +60,13 @@ module Twig
         locations = [self, @previous].compact.map(&:backtrace_locations).flatten
         locations.each do |location|
           next if location.nil?
-          next unless location.label&.start_with?('Twig::Compiled::')
 
-          klass, _method = location.label.split('#')
+          # A macro body or loop runs in a block, labelled
+          # "block (2 levels) in Twig::Compiled::Template_...#load_declared_macros"
+          label = location.label&.sub(/\Ablock (?:\(\d+ levels\) )?in /, '')
+          next unless label&.start_with?('Twig::Compiled::')
+
+          klass, _method = label.split('#')
           klass = begin
             Twig::Compiled.const_get(klass)
           rescue NameError

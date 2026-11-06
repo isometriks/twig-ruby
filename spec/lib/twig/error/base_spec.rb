@@ -53,3 +53,41 @@ RSpec.describe Twig::Error::Base do
     end
   end
 end
+
+RSpec.describe 'The line of a runtime error' do
+  let(:view) do
+    Class.new do
+      def boom
+        raise 'kaboom'
+      end
+    end.new
+  end
+
+  let(:templates) do
+    {
+      'local' => "{% macro m() %}\n\n{{ boom }}\n{% endmacro %}\n\n\n\n{{ _self.m() }}\n",
+      'importer' => "{% import 'macros' as x %}\n\n\n\n\n\n\n{{ x.m() }}\n",
+      'macros' => "{% macro m() %}\n\n{{ boom }}\n{% endmacro %}\n",
+      'nested' => "{% macro inner() %}\n{{ boom }}\n{% endmacro %}\n{% macro m() %}\n\n{{ _self.inner() }}\n" \
+                  "{% endmacro %}\n{{ _self.m() }}\n",
+      'apply' => "{% apply upper %}\n\n{{ boom }}\n{% endapply %}\n",
+    }
+  end
+
+  {
+    'local' => 'in "local" at line 3.',
+    'importer' => 'in "importer" at line 8.',
+    'nested' => 'in "nested" at line 2.',
+    'apply' => 'in "apply" at line 3.',
+  }.each do |name, location|
+    it "is the line that raised in #{name}" do
+      environment = Twig::Environment.new(Twig::Loader::Hash.new(templates))
+
+      expect { environment.load(name).render({}, call_context: view) }.
+        to raise_error(
+          Twig::Error::Runtime,
+          %(An exception has been thrown during the rendering of a template ("kaboom") #{location})
+        )
+    end
+  end
+end
