@@ -46,7 +46,6 @@ module Twig
           Add: '+',
           Sub: '-',
           Mul: '*',
-          Div: '/',
           Mod: '%',
           Power: '**',
           SameAs: '==',
