@@ -13,6 +13,8 @@ module Twig
               return expr.set_explicit_parentheses
             end
 
+            assign_context_variable(parser, expr)
+
             return Node::Expression::Array.new(AutoHash.new.add(expr), token.lineno)
           end
 
@@ -40,6 +42,8 @@ module Twig
             )
           end
 
+          names.each_value { |name| assign_context_variable(parser, name) }
+
           Node::Expression::Array.new(names, token.lineno)
         end
 
@@ -53,6 +57,18 @@ module Twig
 
         def precedence
           0
+        end
+
+        private
+
+        # The arguments of an arrow function can only be variables, as in
+        # (a, b) => a + b.
+        def assign_context_variable(parser, expr)
+          unless expr.is_a?(Node::Expression::Variable::Context)
+            raise Error::Syntax.new('A list must only contain variables.', expr.lineno, parser.stream.source)
+          end
+
+          expr
         end
       end
     end

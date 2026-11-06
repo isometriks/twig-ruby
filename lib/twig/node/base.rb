@@ -30,10 +30,12 @@ module Twig
         raise "#{invalid.inspect} does not extend from #{Node::Base.name}" if invalid
 
         @nodes = AutoHash[nodes]
-        @nodes.default_proc = ->(_hash, key) { raise "Node '#{key}' does not exist" }
+        @nodes.default_proc = ->(_hash, key) { raise "Node \"#{key}\" does not exist for Node \"#{self.class}\"." }
 
         @attributes = attributes
-        @attributes.default_proc = ->(_hash, key) { raise "Attribute '#{key}' does not exist" }
+        @attributes.default_proc = lambda do |_hash, key|
+          raise "Attribute \"#{key}\" does not exist for Node \"#{self.class}\"."
+        end
 
         @lineno = lineno
         @tag = nil

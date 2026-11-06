@@ -437,6 +437,23 @@ module Twig
       end
     end
 
+    # Ported from Twig PHP's GroupingExpressionParser
+    {
+      '{{ [1]|map((1) => 2)|join }}' => 'A list must only contain variables in "template.twig" at line 1.',
+      '{{ [1]|map((a.b, c) => 2)|join }}' => 'A list must only contain variables in "template.twig" at line 1.',
+      '{{ [1]|map((a, "b") => 2)|join }}' =>
+        'Unexpected token "string" of value "b" ("name" expected) in "template.twig" at line 1 column 16.',
+      '{{ (a.b, c) }}' => 'A list of variables must be followed by an arrow in "template.twig" at line 1.',
+    }.each do |source, error_message|
+      context "with an arrow function argument list in #{source}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { source }
+          let(:error) { Twig::Error::Syntax }
+          let(:message) { error_message }
+        end
+      end
+    end
+
     context 'with a macro argument ending in ?' do
       it_behaves_like 'render_and_raise' do
         let(:template) { '{% macro m(a?) %}{{ a? }}{% endmacro %}{{ _self.m(1) }}' }

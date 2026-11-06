@@ -118,4 +118,32 @@ RSpec.describe Twig::Node::Expression::Binary::ObjectDestructuringSetBinary do
       let(:message) { %r{only variables can be assigned in object/mapping destructuring} }
     end
   end
+
+  # Twig only takes a constant key, and wraps the error it gets for
+  # another one as a compilation error
+  context 'when a key is an expression that is not a constant' do
+    {
+      '{% do {(k): b} = {x: 1} %}' => 'Twig::Node::Expression::Variable::Context',
+      '{% do {(1 + 1): b} = {2: 5} %}' => 'Twig::Node::Expression::Binary::Add',
+    }.each do |source, node|
+      context "with #{source}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { source }
+          let(:error) { Twig::Error::Syntax }
+          let(:message) do
+            'An exception has been thrown during the compilation of a template ' \
+              "(\"Attribute \"value\" does not exist for Node \"#{node}\".\") in \"template.twig\"."
+          end
+        end
+      end
+    end
+  end
+
+  describe 'a key in parentheses that is a constant' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { '{% do {("name"): n} = user %}{{ n }}' }
+      let(:output) { 'Fabien' }
+      let(:locals) { { user: { 'name' => 'Fabien' } } }
+    end
+  end
 end

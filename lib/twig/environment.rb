@@ -353,6 +353,13 @@ module Twig
     rescue Error::Base => e
       e.source_context = source
       raise e
+    rescue RuntimeError => e
+      raise Error::Syntax.new(
+        "An exception has been thrown during the compilation of a template (\"#{e.message}\").",
+        -1,
+        source,
+        e
+      )
     end
 
     # @return [String]
