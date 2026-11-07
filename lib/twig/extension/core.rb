@@ -1198,25 +1198,10 @@ module Twig
         case value
         when true then '1'
         when false then ''
-        when Float then php_float_string(value)
+        when Float then Runtime::StringCast.float(value)
         when Numeric, Symbol then value.to_s
         else value
         end
-      end
-
-      # A float as PHP's (string) casts it, to 14 significant digits: 12.0 is
-      # "12", 0.1 + 0.2 is "0.3" and 1e20 is "1.0E+20"
-      def self.php_float_string(value)
-        return 'NAN' if value.nan?
-        return value.positive? ? 'INF' : '-INF' if value.infinite?
-
-        string = format('%.14G', value)
-        return string unless string.include?('E')
-
-        mantissa, exponent = string.split('E')
-        mantissa += '.0' unless mantissa.include?('.')
-
-        "#{mantissa}E#{exponent[0]}#{exponent[1..].to_i}"
       end
 
       def self.ensure_hash(value)

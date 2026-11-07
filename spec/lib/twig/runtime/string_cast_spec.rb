@@ -23,6 +23,22 @@ RSpec.describe Twig::Runtime::StringCast do
     end
   end
 
+  # Rounded from the float's exact value, which can differ from rounding its
+  # shortest decimal form
+  it 'rounds the 14th digit as PHP does' do
+    values = [-879_664.2447508946, 0.001811018382084051, 934_367_014.7690148, 555_720.123386285, 1.2408472750851494e+28]
+
+    expect(values.map { |value| described_class.cast(value) }).
+      to eq(['-879664.24475089', '0.0018110183820841', '934367014.76901', '555720.12338629', '1.2408472750851E+28'])
+  end
+
+  it 'casts a float in first, last and reverse as PHP does' do
+    template = Twig::Environment.new(Twig::Loader::Hash.new({})).
+      create_template('{{ x|first }}|{{ x|last }}|{{ x|reverse }}')
+
+    expect(template.render({ x: 934_367_014.7690148 })).to eq('9|1|10967.410763439')
+  end
+
   describe 'INF and NAN print as PHP prints them' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do
