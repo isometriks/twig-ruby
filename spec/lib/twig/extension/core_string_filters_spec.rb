@@ -168,4 +168,13 @@ RSpec.describe Twig::Extension::Core do
         to eq('22:13 +00:00|00:00 +00:00')
     end
   end
+
+  describe 'json_encode' do
+    it 'escapes / and characters outside ASCII like PHP, unless the flags say otherwise' do
+      expect(render("{{ {c: 'é/<'}|json_encode|raw }}|{{ '😀'|json_encode|raw }}")).
+        to eq('{"c":"\\u00e9\\/<"}|"\\ud83d\\ude00"')
+      expect(render("{{ {c: 'é/<'}|json_encode(64)|raw }}|{{ {c: 'é/<'}|json_encode(flags = 256)|raw }}")).
+        to eq('{"c":"\\u00e9/<"}|{"c":"é\\/<"}')
+    end
+  end
 end

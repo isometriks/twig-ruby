@@ -546,10 +546,10 @@ module Twig
         CGI.escape(string.to_s).gsub('+', '%20')
       end
 
-      def self.json_encode(object)
-        object = json_integers(object)
-
-        object.respond_to?(:to_json) ? object.to_json : '{}'
+      # Like PHP's json_encode, which escapes / and characters outside ASCII
+      # unless the flags say otherwise
+      def self.json_encode(object, flags: 0)
+        Util::PhpJson.encode(json_integers(object), flags)
       end
 
       # PHP's json_encode writes a float that has no fraction, below 1e17, as
