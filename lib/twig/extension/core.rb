@@ -766,21 +766,48 @@ module Twig
         1
       end
 
+      # Slices a sequence or a mapping like PHP's array_slice, and anything
+      # else like mb_substr: a negative start counts from the end, a start
+      # before the beginning is the beginning, and a negative length leaves
+      # that many items off the end. String keys are kept, and integer keys
+      # only with preserve_keys.
       def self.slice(object, start, length = nil, preserve_keys: false)
         object = to_array(object)
-
-        if object.is_a?(Hash)
-          object, keys = [object.values, object.keys]
-          preserve_keys = true
+        if !object.is_a?(Array) && !object.is_a?(Hash) && !object.is_a?(String) && object.respond_to?(:each)
+          object = Runtime::EnumerableHash.traversable(object).to_array(preserve_keys:)
         end
 
-        values = length.nil? ? object[start...] : object[start, length]
+        unless object.is_a?(Array) || object.is_a?(Hash)
+          string = scalar_to_string(object).to_s
+          offset, count = slice_bounds(string.length, start, length)
 
-        return values unless preserve_keys
+          return count.zero? ? '' : string[offset, count]
+        end
 
-        keys ||= [*0...object.length]
-        keys = length.nil? ? keys[start...] : keys[start, length]
-        keys.zip(values).to_h
+        offset, count = slice_bounds(object.size, start, length)
+        pairs = object.is_a?(Hash) ? object.to_a : object.each_with_index.map { |item, index| [index, item] }
+        index = -1
+        sliced = pairs[offset, count].to_h.transform_keys do |key|
+          preserve_keys || !Runtime::MappingKey.integer?(key) ? key : index += 1
+        end
+
+        sliced.each_key.with_index.all? { |key, i| key.is_a?(Integer) && key == i } ? sliced.values : sliced
+      end
+
+      # The offset and the number of items that slice takes of size items
+      #
+      # @return [Array(Integer, Integer)]
+      def self.slice_bounds(size, start, length)
+        offset = start.to_i.negative? ? [size + start.to_i, 0].max : [start.to_i, size].min
+        stop = if length.nil?
+                 size
+               elsif length.to_i.negative?
+                 size + length.to_i
+               else
+                 [offset + length.to_i, size].min
+               end
+
+        [offset, [stop - offset, 0].max]
       end
 
       def self.first(object)

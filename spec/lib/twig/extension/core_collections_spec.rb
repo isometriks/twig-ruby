@@ -303,6 +303,63 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the slice filter' do
+    # array_slice for a sequence or a mapping, mb_substr for anything else
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {{ [1, 2, 3, 4, 5]|slice(1, -1)|join(",") }}|{{ [1, 2, 3, 4, 5]|slice(-3, -1)|join(",") }}
+          {{ "abcdef"|slice(1, -1) }}|{{ [1, 2, 3]|slice(-5, 2)|join }}|{{ "abcdef"[1:-1] }}
+          {{ "abcdef"|slice(-10, 2) }}|{{ "abcdef"|slice(10) }}|{{ "abcdef"|slice(2, -10) }}|{{ "abcdef"|slice(-2) }}
+          {{ "héllo"|slice(1, 2) }}|{{ 12345|slice(1, 2) }}|{{ null|slice(1) }}|{{ "abcdef"|slice(1, 2.7) }}
+          {{ {a: 1, 5: 2, 9: 3}|slice(1)|json_encode|raw }}|{{ {a: 1, 5: 2, 9: 3}|slice(1, 1, true)|json_encode|raw }}
+          {{ [1, 2, 3]|slice(1, 5, true)|json_encode|raw }}|{{ [1, 2, 3]|slice(5)|json_encode|raw }}
+          {{ [1, 2, 3]|slice(0, -5)|json_encode|raw }}|{{ {"1": "a", "x": "b"}|slice(0)|json_encode|raw }}
+          {{ [1, 2, 3]|filter(v => v > 1)|slice(1)|json_encode|raw }}|{{ {b: 1, a: 2}|slice(0, 1)|json_encode|raw }}
+          {{ items|slice(1)|json_encode|raw }}|{{ items|slice(1, 1, true)|json_encode|raw }}
+        INPUTS
+      end
+
+      let(:outputs) do
+        <<~OUTPUTS
+          2,3,4|3,4
+          bcde|12|bcde
+          ab|||ef
+          él|23||bc
+          [2,3]|{"5":2}
+          {"1":2,"2":3}|[]
+          []|{"0":"a","x":"b"}
+          [3]|{"b":1}
+          [2,3]|{"1":2}
+        OUTPUTS
+      end
+
+      let(:locals) { { items: [1, 2, 3].each } }
+    end
+
+    pair_sequences.each do |name, pairs|
+      context "with #{name} of pairs" do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) do
+            [
+              '{{ pairs|slice(1)|json_encode|raw }}',
+              '{{ pairs|slice(1, 1, true)|json_encode|raw }}',
+              '{{ yielded|slice(1)|json_encode|raw }}',
+            ]
+          end
+          let(:outputs) { ['[[3,4]]', '{"1":[3,4]}', '[2]'] }
+          let(:locals) { { pairs:, yielded: } }
+        end
+      end
+    end
+
+    it_behaves_like 'render_and_assert' do
+      # A float is sliced as the string PHP casts it to
+      let(:input) { '{{ 10.0|slice(1) }}|{{ 1.5e-7|slice(3) }}|{{ 0.5|slice(0, 2) }}' }
+      let(:output) { '0|E-7|0.' }
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do
