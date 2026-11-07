@@ -8,51 +8,32 @@ module Twig
           case token.type
           when Token::SYMBOL_TYPE
             parser.stream.next
-            @type = :constant
 
             return Node::Expression::Constant.new(token.value.to_sym, token.lineno)
           when Token::CLASS_VAR_TYPE
             parser.stream.next
-            @type = :variable
 
             return Node::Expression::Variable::Context.new(token.value, token.lineno)
           when Token::NAME_TYPE
             parser.stream.next
 
-            # We can adjust for a ternary with no space here like a? b : c, we should however ignore function
-            # nodes because a?() is fine
-            token_value = token.value
-            if token.value.end_with?('?') && parser.current_token.value != '('
-              parser.stream.inject([Token.new(Token::OPERATOR_TYPE, '?', token.lineno)])
-              token_value = token.value.chomp('?')
-            end
-
-            case token_value
+            # A name only ends in ? (user_signed_in?) where the lexer has
+            # ruled out a ternary, so it's always the whole name here.
+            case token.value
             when 'true', 'TRUE'
-              @type = :constant
-
               return Node::Expression::Constant.new(true, token.lineno)
             when 'false', 'FALSE'
-              @type = :constant
-
               return Node::Expression::Constant.new(false, token.lineno)
             when 'null', 'NULL', 'nil', 'none', 'NONE'
-              @type = :constant
-
               return Node::Expression::Constant.new(nil, token.lineno)
             else
-              @type = :variable
-
-              return Node::Expression::Variable::Context.new(token_value, token.lineno)
+              return Node::Expression::Variable::Context.new(token.value, token.lineno)
             end
           when Token::NUMBER_TYPE
             parser.stream.next
-            @type = :constant
 
             return Node::Expression::Constant.new(token.value, token.lineno)
           when Token::STRING_TYPE, Token::INTERPOLATION_START_TYPE
-            @type = :string
-
             return parse_string_expression(parser)
           when Token::PUNCTUATION_TYPE
             if token.value == '{'
@@ -72,30 +53,27 @@ module Twig
             if (match = token.value.match(Lexer::REGEX_NAME)) && match.to_s == token.value
               # in this context, string operators are variable names
               parser.stream.next
-              @type = :variable
 
               return Node::Expression::Variable::Context.new(token.value, token.lineno)
             end
 
-            if token.value == '=' && %w[== !=].include?(parser.stream.look(-1).value)
-              raise Error::Syntax.new(
-                "Unexpected operator of value \"#{token.value}\". Did you try to use \"===\" or \"!==\" for " \
-                'strict comparison? Use "is same as(value)" instead.',
-                token.lineno,
-                parser.stream.source
-              )
-            end
           end
 
           raise Error::Syntax.new(
-            "Unexpected token \"#{token.type}\" of value \"#{token.value}\".",
+            "Unexpected token \"#{token.to_english}\" of value \"#{token.value}\".",
             token.lineno,
             parser.stream.source
           )
         end
 
         def name
-          @type || :literal
+          'literal'
+        end
+
+        # Literals are names, numbers, strings, sequences and mappings, not
+        # operators, so the lexer must not lex "literal" as one.
+        def operator_tokens
+          []
         end
 
         def precedence
@@ -135,8 +113,6 @@ module Twig
 
         # @param [Parser] parser
         def parse_sequence_expression(parser)
-          @type = :sequence
-
           stream = parser.stream
           stream.expect(Token::OPERATOR_TYPE, '[', 'A sequence element was expected')
 
@@ -155,7 +131,9 @@ module Twig
 
             first = false
 
-            if stream.next_if(Token::OPERATOR_TYPE, '...')
+            if stream.test(Token::PUNCTUATION_TYPE, ',') || stream.test(Token::PUNCTUATION_TYPE, ']')
+              node.add_element(Node::Expression::EmptySlot.new(stream.current.lineno))
+            elsif stream.next_if(Token::OPERATOR_TYPE, '...')
               expr = parser.parse_expression
               node.add_element(Node::Expression::Unary::ArraySpread.new(expr, expr.lineno))
             else
@@ -170,8 +148,6 @@ module Twig
 
         # @param [Parser] parser
         def parse_mapping_expression(parser)
-          @type = :mapping
-
           stream = parser.stream
           stream.expect(Token::PUNCTUATION_TYPE, '{', 'A mapping element was expected')
 
@@ -221,8 +197,8 @@ module Twig
               current = stream.current
 
               raise Error::Syntax.new(
-                'A mapping key must be a quoted string, number, name, or expression in parentheses ' \
-                "expected token '#{current.type}' of value '#{current.value}'.",
+                'A mapping key must be a quoted string, a number, a name, or an expression enclosed in ' \
+                "parentheses (unexpected token \"#{current.to_english}\" of value \"#{current.value}\".",
                 current.lineno,
                 stream.source
               )

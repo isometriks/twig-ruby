@@ -1,0 +1,252 @@
+# frozen_string_literal: true
+
+require 'spec_helper'
+
+# The expected values are what Twig PHP renders for the same template
+RSpec.describe Twig::Extension::Core do
+  def render(template, context = {})
+    environment = Twig::Environment.new(Twig::Loader::Hash.new({ 'index' => template }), strict_variables: true)
+
+    environment.load('index').render(context)
+  end
+
+  describe 'nl2br' do
+    it 'inserts <br /> before each \r\n, \n\r, \n and \r' do
+      expect(render('{{ s|nl2br|raw }}', { 's' => "a\r\nb\rc\nd" })).to eq("a<br />\r\nb<br />\rc<br />\nd")
+      expect(render('{{ s|nl2br|raw }}', { 's' => "\n\r\n\r\r\n\n\n" })).
+        to eq("<br />\n\r<br />\n\r<br />\r\n<br />\n<br />\n")
+    end
+
+    it 'escapes before it inserts the breaks' do
+      expect(render('{{ x|nl2br }}', { 'x' => "<b>\n" })).to eq("&lt;b&gt;<br />\n")
+    end
+
+    it 'gives an empty string for null' do
+      expect(render('{{ null|nl2br }}')).to eq('')
+    end
+
+    it 'casts a value that is not a string like PHP' do
+      template = '{% autoescape false %}{{ true|nl2br }}|{{ 1.0|nl2br }}|{{ (0.1 + 0.2)|nl2br }}{% endautoescape %}'
+
+      expect(render(template)).to eq('1|1|0.3')
+    end
+  end
+
+  describe 'striptags' do
+    it 'leaves the text between tags as it is, to be escaped once' do
+      expect(render("{{ 'Tom & Jerry'|striptags }}")).to eq('Tom &amp; Jerry')
+      expect(render("{{ 'a < b > c'|striptags }}")).to eq('a &lt; b &gt; c')
+    end
+
+    it 'adds no whitespace in place of tags or comments' do
+      expect(render("{{ '<p>a <b>b</b></p><!-- c --><br/>d'|striptags }}")).to eq('a bd')
+      expect(render('{{ s|striptags|raw }}', { 's' => "<p>a</p>\n<p>b</p>" })).to eq("a\nb")
+    end
+
+    it 'keeps the allowed tags, given as a string or as names' do
+      expect(render("{{ '<p>a <b>b</b><br/></p>'|striptags('<b><br>')|raw }}")).to eq('a <b>b</b><br/>')
+      expect(render("{{ '<p>a <b>b</b></p>'|striptags(['p'])|raw }}")).to eq('<p>a b</p>')
+      expect(render("{{ '<b>x</b>'|striptags(allowable_tags='<b>')|raw }}")).to eq('<b>x</b>')
+    end
+
+    it 'removes processing instructions and declarations' do
+      expect(render(%q({{ '<?php echo "a>b"; ?>c<!DOCTYPE html>d<?xml x ?>e'|striptags }}))).to eq('cde')
+    end
+
+    it 'gives an empty string for null' do
+      expect(render('{{ null|striptags }}')).to eq('')
+    end
+
+    it 'casts a value that is not a string like PHP' do
+      expect(render('{{ true|striptags }}|{{ (0.1 + 0.2)|striptags }}|{{ 1.0|striptags }}')).to eq('1|0.3|1')
+    end
+  end
+
+  describe 'title' do
+    it 'upper-cases the first letter of each word and lower-cases the rest' do
+      expect(render("{{ 'iPhone user'|title }}|{{ 'McDonald x'|title }}|{{ 'hello wORLD'|title }}")).
+        to eq('Iphone User|Mcdonald X|Hello World')
+    end
+
+    it 'keeps underscores and hyphens, and starts a word after them' do
+      expect(render("{{ 'a_b-c'|title }}|{{ 'hello-world foo_bar'|title }}")).to eq('A_B-C|Hello-World Foo_Bar')
+    end
+
+    it 'starts a word after a digit but not after an apostrophe' do
+      expect(render(%q({{ "it's 1st o'neil"|title }}))).to eq('It&#039;s 1St O&#039;neil')
+    end
+
+    it 'title-cases other scripts' do
+      expect(render("{{ 'élan ÉCOLE'|title }}|{{ 'ǆemal straße'|title }}|{{ 'ﬁx'|title }}")).
+        to eq('Élan École|ǅemal Straße|Fix')
+    end
+
+    it 'gives an empty string for null' do
+      expect(render('{{ null|title }}')).to eq('')
+    end
+
+    it 'casts a value that is not a string like PHP' do
+      expect(render('{{ true|title }}|{{ 1.0|title }}|{{ false|title }}')).to eq('1|1|')
+    end
+  end
+
+  describe 'format' do
+    it 'formats like PHP sprintf' do
+      expect(render(%q({{ '%e'|format(12345.678) }}|{{ "%'*10s"|format('hi') }}|{{ '%u'|format(-3) }}))).
+        to eq('1.234568e+4|********hi|18446744073709551613')
+      expect(render("{{ '%d'|format('12abc') }}|{{ '%d'|format(null) }}|{{ '%F'|format(1.5) }}")).
+        to eq('12|0|1.500000')
+      expect(render("{{ '%05.2f|%b|%x|%2$s %1$s'|format(3.14159, 5, 255) }}")).to eq('03.14|101|ff|5 3.14159')
+      expect(render("{{ '%s %s'|format(1.0, true) }}|{{ '%s'|format(0.1 + 0.2) }}")).to eq('1 1|0.3')
+      expect(render("{{ '%.2f'|format(2.675) }}|{{ '%.1f'|format(0.35) }}|{{ '%s'|format(7.05017039081155) }}")).
+        to eq('2.67|0.3|7.0501703908115')
+    end
+
+    it 'gives an empty string for null' do
+      expect(render('{{ null|format }}')).to eq('')
+    end
+
+    it 'raises when an argument is missing, like PHP' do
+      expect { render("{{ '%s %s'|format('a') }}") }.to raise_error(
+        Twig::Error::Runtime,
+        'An exception has been thrown during the rendering of a template ' \
+        '("3 arguments are required, 2 given") in "index" at line 1.'
+      )
+    end
+  end
+
+  describe 'number_format' do
+    it 'rounds to tens, hundreds and so on for negative decimals' do
+      expect(render('{{ 1250|number_format(-2) }}|{{ -1250.5|number_format(-1) }}|{{ 499|number_format(-3) }}')).
+        to eq('1,300|-1,250|0')
+    end
+
+    it 'casts what is not a number to a float, like PHP' do
+      expect(render("{{ true|number_format }}|{{ 'abc'|number_format }}|{{ '12abc'|number_format(1) }}")).
+        to eq('1|0|12.0')
+      expect(render("{{ null|number_format }}|{{ ''|number_format }}|{{ '1e3'|number_format }}")).to eq('0|0|1,000')
+    end
+
+    it 'uses the separators with no decimals' do
+      expect(render("{{ 1250.5|number_format(0, ',', '.') }}|{{ 1250|number_format(-2, ',', '.') }}")).
+        to eq('1.251|1.300')
+      expect(render("{{ 1234567.891|number_format(2, '::', '--') }}")).to eq('1--234--567::89')
+    end
+
+    it 'drops the sign of a number that rounds to 0' do
+      expect(render('{{ -0.4|number_format }}|{{ -0.004|number_format(2) }}')).to eq('0|0.00')
+    end
+
+    it 'casts the decimals to an integer, like PHP' do
+      expect(render("{{ 1234.5|number_format('2') }}|{{ 1234.5|number_format(' 1') }}")).to eq('1,234.50|1,234.5')
+      expect(render("{{ 1234.5|number_format('-2') }}")).to eq('1,200')
+      expect(render('{{ 1234.5|number_format(true) }}|{{ 1234.5|number_format(2.7) }}')).to eq('1,234.5|1,234.50')
+      expect { render("{{ 1234.5|number_format('abc') }}") }.to raise_error(
+        Twig::Error::Runtime,
+        'An exception has been thrown during the rendering of a template ' \
+        '("number_format(): Argument #2 ($decimals) must be of type int, string given") in "index" at line 1.'
+      )
+    end
+
+    it 'prints a float with its exact binary digits, like %.*f' do
+      expect(render('{{ 0.1|number_format(20) }}|{{ 1.1|number_format(17) }}|{{ 2.675|number_format(2) }}')).
+        to eq('0.10000000000000000555|1.10000000000000009|2.68')
+      expect(render('{{ 1e22|number_format }}|{{ 1e23|number_format(-2) }}')).
+        to eq('10,000,000,000,000,000,000,000|99,999,999,999,999,991,611,392')
+    end
+  end
+
+  describe 'url_encode' do
+    it 'builds a query like http_build_query' do
+      expect(render('{{ {a: null, b: true, c: false}|url_encode|raw }}')).to eq('b=1&c=0')
+      expect(render('{{ {c: [1, 2]}|url_encode|raw }}|{{ {c: {d: "e"}}|url_encode|raw }}')).
+        to eq('c%5B0%5D=1&c%5B1%5D=2|c%5Bd%5D=e')
+      expect(render("{{ {a: 1.5, b: 1e20, 'x y': {'p q': [null, 'r s'], e: []}, 0: 'z'}|url_encode|raw }}")).
+        to eq('a=1.5&b=1.0E%2B20&x%20y%5Bp%20q%5D%5B1%5D=r%20s&0=z')
+      expect(render('{{ [1, "a b", [2]]|url_encode|raw }}|{{ {r: 1..2}|url_encode|raw }}')).
+        to eq('0=1&1=a%20b&2%5B0%5D=2|r%5B0%5D=1&r%5B1%5D=2')
+    end
+
+    it 'casts a value that is not a string like PHP' do
+      expect(render('{{ true|url_encode }}|{{ false|url_encode }}|{{ 1.0|url_encode }}|{{ 1e20|url_encode }}')).
+        to eq('1||1|1.0E%2B20')
+    end
+  end
+
+  describe 'replace' do
+    it 'tries the longest key first at each position, like strtr' do
+      expect(render("{{ 'aaa'|replace({'a': 'b', 'aa': 'c'}) }}")).to eq('cb')
+      expect(render("{{ 'hello'|replace({'l': 'L', 'll': 'XX', 'hel': 'H'}) }}")).to eq('HLo')
+    end
+
+    it 'ignores an empty key, like strtr' do
+      expect(render("{{ 'abc'|replace({'': 'x', 'b': 'y'}) }}|{{ 'x'|replace({'': 'y'}) }}")).to eq('ayc|x')
+    end
+
+    it 'converts the replacements like PHP' do
+      expect(render("{{ 'a1'|replace({1: true, 'a': null}) }}")).to eq('1')
+    end
+  end
+
+  describe 'date' do
+    it 'reads a string of digits or @ and digits as a timestamp' do
+      expect(render("{{ '1700000000'|date('%Y-%m-%d %H:%M:%S') }}|{{ '@1700000000'|date('%Y-%m-%d') }}")).
+        to eq('2023-11-14 22:13:20|2023-11-14')
+      expect(render("{{ '-86400'|date('%Y-%m-%d') }}|{{ '@1700000000.75'|date('%H:%M:%S.%6N') }}")).
+        to eq('1969-12-31|22:13:20.750000')
+    end
+
+    it 'reads a float as a timestamp' do
+      expect(render("{{ 1700000000.5|date('%Y-%m-%d %H:%M:%S.%L') }}")).to eq('2023-11-14 22:13:20.500')
+    end
+
+    it 'gives a timestamp in UTC when the timezone is false, like Twig' do
+      expect(render("{{ '1700000000'|date('%H:%M %:z', false) }}|{{ 0|date('%H:%M %:z', false) }}")).
+        to eq('22:13 +00:00|00:00 +00:00')
+    end
+  end
+
+  describe 'json_encode' do
+    it 'escapes / and characters outside ASCII like PHP, unless the flags say otherwise' do
+      expect(render("{{ {c: 'é/<'}|json_encode|raw }}|{{ '😀'|json_encode|raw }}")).
+        to eq('{"c":"\\u00e9\\/<"}|"\\ud83d\\ude00"')
+      expect(render("{{ {c: 'é/<'}|json_encode(64)|raw }}|{{ {c: 'é/<'}|json_encode(flags = 256)|raw }}")).
+        to eq('{"c":"\\u00e9/<"}|{"c":"é\\/<"}')
+    end
+  end
+
+  describe 'split' do
+    def error(message)
+      "An exception has been thrown during the rendering of a template (\"#{message}\") in \"index\" at line 1."
+    end
+
+    it 'converts the value and the delimiter like PHP' do
+      expect(render("{{ true|split(',')|join('|') }}|{{ 'a1b'|split(true)|join('|') }}")).to eq('1|a|b')
+      expect(render("{{ 1e20|split('E')|join('|') }}")).to eq('1.0|+20')
+      expect(render("{{ false|split('')|join('|') }}|{{ 'abc'|split(',', false)|join('|') }}")).to eq('|abc')
+    end
+
+    it 'raises for a sequence or an empty delimiter, like explode' do
+      expect { render("{{ ['a', 'b']|split(',') }}") }.to raise_error(
+        Twig::Error::Runtime, error('explode(): Argument #2 ($string) must be of type string, array given')
+      )
+      expect { render("{{ 'abc'|split(null) }}") }.
+        to raise_error(Twig::Error::Runtime, error('explode(): Argument #1 ($separator) cannot be empty'))
+    end
+
+    it 'casts the limit to an int like PHP' do
+      expect(render("{{ 'a,b'|split(',', '1')|join('|') }}|{{ 'a,b,c'|split(',', -1.5)|join('|') }}")).to eq('a,b|a|b')
+      expect(render("{{ 'a,b,c'|split(',', ' 2 ')|join('|') }}|{{ 'abcde'|split('', '2')|join('|') }}")).
+        to eq('a|b,c|ab|cd|e')
+      expect(render("{{ 'abcde'|split('', 2.5)|join('|') }}|{{ 'abcde'|split('', true)|join('|') }}")).
+        to eq('ab|cd|a|b|c|d|e')
+      expect { render("{{ 'a,b'|split(',', 'abc') }}") }.
+        to raise_error(Twig::Error::Runtime, error('explode(): Argument #3 ($limit) must be of type int, string given'))
+    end
+
+    it 'compares a limit that is not numeric like PHP' do
+      expect(render("{{ 'abcde'|split('', 'x')|join('|') }}|{{ 'abcde'|split('', [1])|join('|') }}")).
+        to eq('abcde|abcde')
+    end
+  end
+end

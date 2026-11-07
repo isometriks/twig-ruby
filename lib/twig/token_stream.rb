@@ -41,14 +41,15 @@ module Twig
       unless token.test(type, value)
         expected = Token.type_to_english(type)
         unexpected = Token.type_to_english(token.type)
-        token_value = token.value.empty? ? '' : " of value \"#{token.value}\""
-        value = " with value \"#{value}\"" if value
-        message = "#{message} " if message
+        token_value = shown?(token.value) ? " of value \"#{token.value}\"" : ''
+        value = shown?(value) ? " with value \"#{value}\"" : nil
+        message = "#{message}. " if message
 
         raise Error::Syntax.new(
           "#{message}Unexpected token \"#{unexpected}\"#{token_value} (\"#{expected}\" expected#{value}).",
           token.lineno,
-          source
+          source,
+          column: source&.column(token.offset)
         )
       end
 
@@ -75,6 +76,14 @@ module Twig
       current.test(primary, secondary) ? self.next : nil
     end
 
+    # Replaces the current token, for a parser that reads it differently
+    # from the lexer.
+    #
+    # @param [Token] token
+    def replace_current(token)
+      tokens[@current] = token
+    end
+
     def eof?
       current.type == Token::EOF_TYPE
     end
@@ -88,6 +97,14 @@ module Twig
     # @param [Array<Token>] tokens
     def inject(tokens)
       @tokens.insert(@current, *tokens)
+    end
+
+    private
+
+    # Twig leaves a value out of an error when it is falsy in PHP, as 0, 0.0,
+    # "0" and "" are.
+    def shown?(value)
+      !(value.nil? || value == false || value == '' || value == '0' || (value.is_a?(Numeric) && value.zero?))
     end
   end
 end

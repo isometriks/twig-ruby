@@ -33,8 +33,6 @@ module Twig
         end
 
         OPERATORS = {
-          Neg: '-',
-          Pos: '+',
           Spread: '(not rendered)',
           ArraySpread: '*',
           HashSpread: '**',
@@ -47,6 +45,27 @@ module Twig
               compiler.raw(self.class.const_get('OPERATOR'))
             end
           end).const_set('OPERATOR', operation)
+        end
+
+        # PHP's -a and +a multiply a by -1 and 1, so a numeric string or null
+        # is cast as in any arithmetic. A number written in the template is
+        # just signed.
+        { Neg: ['-', -1], Pos: ['+', 1] }.each do |name, (operation, factor)|
+          const_set(name.to_s, Class.new(Unary::Base) do
+            def compile(compiler)
+              node = nodes[:node]
+              return super if node.is_a?(Constant) && node.attributes[:value].is_a?(Numeric)
+
+              compiler.
+                raw('::Twig::Runtime::Arithmetic.multiply(').
+                subcompile(node).
+                raw(", #{self.class.const_get('FACTOR')})")
+            end
+
+            def operator(compiler)
+              compiler.raw(self.class.const_get('OPERATOR'))
+            end
+          end).const_set('OPERATOR', operation).then { const_get(name).const_set('FACTOR', factor) }
         end
       end
     end

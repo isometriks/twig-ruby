@@ -29,7 +29,7 @@ module Twig
         [
           # Unary operators
           unary.new(Node::Expression::Unary::Not, 'not', 70),
-          unary.new(Node::Expression::Unary::Spread, '...', 512, description: 'Spread Operator'),
+          ExpressionParser::Prefix::Spread.new,
           unary.new(Node::Expression::Unary::Neg, '-', 500),
           unary.new(Node::Expression::Unary::Pos, '+', 500),
 
@@ -47,9 +47,11 @@ module Twig
           binary.new(Node::Expression::Binary::And, 'and', 15),
           binary.new(Node::Expression::Binary::BitwiseOr, 'b-or', 16),
           binary.new(Node::Expression::Binary::BitwiseXor, 'b-xor', 17),
-          binary.new(Node::Expression::Binary::BitwiseAnd, 'b-and', 16),
+          binary.new(Node::Expression::Binary::BitwiseAnd, 'b-and', 18),
           binary.new(Node::Expression::Binary::Equal, '==', 20),
           binary.new(Node::Expression::Binary::NotEqual, '!=', 20),
+          binary.new(Node::Expression::Binary::SameAs, '===', 20),
+          binary.new(Node::Expression::Binary::NotSameAs, '!==', 20),
           binary.new(Node::Expression::Binary::Spaceship, '<=>', 20),
           binary.new(Node::Expression::Binary::Less, '<', 20),
           binary.new(Node::Expression::Binary::Greater, '>', 20),
@@ -91,6 +93,9 @@ module Twig
           # Arrow function
           ExpressionParser::Infix::Arrow.new,
 
+          # Assignment operator
+          ExpressionParser::Infix::Assignment.new,
+
           # All literals
           ExpressionParser::Prefix::Literal.new,
         ]
@@ -102,7 +107,9 @@ module Twig
           TwigFilter.new('date', method(:format_date)),
           TwigFilter.new('format', static(:sprintf)),
           TwigFilter.new('replace', static(:replace)),
-          TwigFilter.new('number_format', method(:number_format)),
+          TwigFilter.new('number_format', method(:number_format), {
+            argument_names: { thousands_separator: 'thousand_sep' },
+          }),
           TwigFilter.new('abs', static(:abs)),
           TwigFilter.new('round', static(:round)),
 
@@ -124,16 +131,16 @@ module Twig
           TwigFilter.new('slug', static(:slug)),
 
           # array helpers
-          TwigFilter.new('join', static(:join)),
+          TwigFilter.new('join', static(:join), argument_names: { and_glue: 'and' }),
           TwigFilter.new('split', static(:split), needs_charset: true),
           TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
-          TwigFilter.new('batch', static(:batch)),
+          TwigFilter.new('batch', static(:batch), argument_names: { count: 'size' }),
           TwigFilter.new('column', static(:column)),
-          TwigFilter.new('filter', static(:filter)),
-          TwigFilter.new('map', static(:map)),
-          TwigFilter.new('reduce', static(:reduce)),
-          TwigFilter.new('find', static(:find)),
+          TwigFilter.new('filter', static(:filter), argument_names: { proc: 'arrow' }),
+          TwigFilter.new('map', static(:map), argument_names: { proc: 'arrow' }),
+          TwigFilter.new('reduce', static(:reduce), argument_names: { proc: 'arrow' }),
+          TwigFilter.new('find', static(:find), argument_names: { proc: 'arrow' }),
 
           # Arrays / Hashes filters
           TwigFilter.new('reverse', static(:reverse)),
@@ -164,14 +171,20 @@ module Twig
           TwigFunction.new('loop', nil, {
             parser_callable: static(:parse_loop_function),
           }),
+          TwigFunction.new('attribute', nil, {
+            parser_callable: static(:parse_attribute_function),
+          }),
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
-          TwigFunction.new('constant', static(:constant)),
+          TwigFunction.new('constant', static(:constant), argument_names: { defined_test: 'check_defined' }),
           TwigFunction.new('cycle', static(:cycle)),
           TwigFunction.new('random', static(:random), needs_charset: true),
           TwigFunction.new('date', method(:convert_date)),
           TwigFunction.new('include', static(:include), {
+            needs_environment: true, needs_context: true, is_safe: [:all]
+          }),
+          TwigFunction.new('include_only', static(:include_only), {
             needs_environment: true, needs_context: true, is_safe: [:all]
           }),
           TwigFunction.new('source', static(:source), {
@@ -210,6 +223,7 @@ module Twig
           TokenParser::Do.new,
           TokenParser::Embed.new,
           TokenParser::Extends.new,
+          TokenParser::Flush.new,
           TokenParser::For.new,
           TokenParser::From.new,
           TokenParser::Guard.new,
@@ -218,6 +232,7 @@ module Twig
           TokenParser::Import.new,
           TokenParser::Include.new,
           TokenParser::Set.new,
+          TokenParser::Types.new,
           TokenParser::Use.new,
           TokenParser::With.new,
           TokenParser::Yield.new,
@@ -226,7 +241,7 @@ module Twig
 
       def node_visitors
         [
-          NodeVisitor::Spreader.new,
+          NodeVisitor::Correctness.new,
         ]
       end
 
@@ -239,8 +254,9 @@ module Twig
       def convert_date(date = nil, timezone: self.timezone)
         if date == 'now' || date.nil?
           date = DateTime.now
-        elsif date.is_a?(Integer)
-          date = Time.then { |t| timezone == false ? t : t.zone }.at(date).to_datetime
+        elsif (timestamp = self.class.timestamp(date))
+          # A timestamp is a date in UTC, as Twig reads it with '@'
+          date = Time.at(timestamp).utc.to_datetime
         elsif date.is_a?(String)
           date = Time.then { |t| timezone == false ? t : t.zone }.parse(date)
         end
@@ -252,8 +268,25 @@ module Twig
         @timezone ||= Time.zone
       end
 
+      # The Unix timestamp a date is, as Twig reads an integer, a string of
+      # digits with an optional minus sign, or a string of the form
+      # "@1700000000" or "@1700000000.5". A float is read as a timestamp too.
+      #
+      # @return [Numeric, nil]
+      def self.timestamp(date)
+        case date
+        when Integer then date
+        when Float then date if date.finite?
+        when String
+          return date.to_i if date.match?(/\A-?\d+\z/)
+
+          date[/\A@(-?\d+(?:\.\d+)?)\z/, 1]&.then { |number| number.include?('.') ? number.to_r : number.to_i }
+        end
+      end
+
+      # Like PHP's sprintf, where Kernel#format differs
       def self.sprintf(string, *values)
-        format(string || '', *values)
+        Util::PhpSprintf.call(string || '', *values)
       end
 
       def self.replace(string, from)
@@ -263,108 +296,222 @@ module Twig
           raise Error::Runtime, "The \"replace\" filter expects a sequence or a mapping, got \"#{from.class}\"."
         end
 
-        from = ensure_hash(from)
-        regex = Regexp.union(
-          *from.keys.map(&:to_s)
-        )
+        # Like strtr, which ignores an empty key and tries the longest key
+        # first at each position
+        from = ensure_hash(from).to_h { |key, value| [Util::PhpCast.to_string(key), Util::PhpCast.to_string(value)] }
+        from = from.reject { |key, _| key.empty? }.sort_by { |key, _| -key.bytesize }.to_h
+        return String.new(string.to_s) if from.empty?
 
-        string.gsub(regex, from.transform_keys(&:to_s))
+        bytewise(string, *from.keys, *from.values) do |subject, *pairs|
+          keys = pairs.first(from.length)
+
+          subject.gsub(Regexp.union(*keys), keys.zip(pairs.drop(from.length)).to_h)
+        end
       end
 
+      # Like PHP's number_format, which casts what isn't a number to a float,
+      # rounds half up, to tens, hundreds and so on for negative decimals,
+      # prints the rounded float with all its binary digits, as %.*f does,
+      # and drops the sign of a number that rounds to 0. A number is kept as
+      # it is, so a BigDecimal or a large Integer keeps its digits.
       def number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
-        number = 0 if number.nil? || number == ''
-        decimal ||= @number_format[0]
+        number = Util::PhpCast.to_float(number) unless number.is_a?(Numeric)
+        decimal = Util::PhpCast.int_param(decimal || @number_format[0], 'number_format(): Argument #2 ($decimals)')
         decimal_point ||= @number_format[1]
         thousands_separator ||= @number_format[2]
 
-        options = {
-          precision: decimal,
-          delimiter: thousands_separator,
-          separator: decimal_point,
-        }.compact
+        return number.nan? ? 'nan' : 'inf' if number.is_a?(Float) && !number.finite?
 
-        self.class.number_to_delimited(
-          self.class.number_to_rounded(number, options),
-          options
-        )
+        if decimal.negative?
+          float = number.is_a?(Float)
+          number = number.round(decimal, half: :up)
+          number = number.to_f if float
+          decimal = 0
+        end
+
+        rounded = self.class.number_to_rounded(number.abs, precision: decimal)
+        rounded = Util::PhpSprintf.fixed(Float(rounded), decimal) if number.is_a?(Float)
+        whole, fraction = rounded.split('.')
+        whole = whole.gsub(/\d(?=(?:\d{3})+\z)/) { |digit| "#{digit}#{thousands_separator}" }
+        negative = number.negative? && "#{whole}#{fraction}".match?(/[1-9]/)
+
+        "#{'-' if negative}#{whole}#{"#{decimal_point}#{fraction}" if decimal.positive?}"
       end
 
+      PHP_NUMERIC_STRING = /\A[ \t\n\r\v\f]*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?[ \t\n\r\v\f]*\z/
+
+      # PHP's abs takes an int or a float: null and false are 0, true is 1 and a
+      # numeric string such as " -2.5" is its number, but any other string raises
       def self.abs(number)
-        number.abs
+        case number
+        when nil, false then 0
+        when true then 1
+        when String
+          unless number.match?(PHP_NUMERIC_STRING)
+            raise TypeError, 'abs(): Argument #1 ($num) must be of type int|float, string given'
+          end
+
+          (number.match?(/[.eE]/) ? number.to_f : number.to_i).abs
+        else
+          number.abs
+        end
       end
 
+      # PHP's round, ceil and floor give a float. Rounded to decimal places,
+      # this is a Float too, which prints as PHP prints it, -0 included. With
+      # none, it is an Integer while PHP's int can hold it, so the result
+      # works as a range bound, a key, a format argument or a string as in
+      # PHP, where the float would show its .0 in Ruby. A negative value
+      # rounded to zero is then 0, where PHP prints -0.
       def self.round(value, precision: 0, method: :common)
         value = value.to_f
         method = method.to_sym
 
-        return value.round(precision) if method == :common
-
-        unless %i[ceil floor].include?(method)
-          raise Error::Runtime, 'The "round" filter only supports the "common", "ceil", and "floor" methods'
+        unless %i[common ceil floor].include?(method)
+          raise Error::Runtime, 'The "round" filter only supports the "common", "ceil", and "floor" methods.'
         end
 
-        rounded = (value * (10.0**precision)).public_send(method) / (10.0**precision)
-        rounded = rounded.to_i unless precision.positive?
+        return value unless value.finite?
 
-        rounded&.zero? ? 0 : rounded
+        rounded = if method == :common
+                    value.round(precision).to_f
+                  else
+                    (value * (10.0**precision)).public_send(method) / (10.0**precision)
+                  end
+
+        if !precision.positive? && rounded.abs < 2.0**63
+          rounded.round
+        elsif rounded.zero? && 1.0.fdiv(value).negative?
+          -0.0
+        else
+          rounded
+        end
       end
 
-      def self.max(*args)
-        args = args[0] if args&.length&.== 1
-        args = args.values if args.is_a?(Hash)
-        args.max
+      # PHP's max and min compare values as its <=> does, and compare the
+      # elements of one array the other way round from several arguments
+      def self.max(value, *values)
+        args = extremum_values('max', value, values)
+
+        values.empty? ? Runtime::Comparison.max_of(args) : Runtime::Comparison.max(args)
       end
 
-      def self.min(*args)
-        args = args[0] if args&.length&.== 1
-        args = args.values if args.is_a?(Hash)
-        args.min
+      def self.min(value, *values)
+        args = extremum_values('min', value, values)
+
+        values.empty? ? Runtime::Comparison.min_of(args) : Runtime::Comparison.min(args)
+      end
+
+      # PHP's max and min take a single array, or several values, and reject
+      # a single scalar or an empty array rather than return null, which Twig
+      # reports as a runtime error
+      def self.extremum_values(name, value, values)
+        return [value, *values] unless values.empty?
+
+        args = value.is_a?(Hash) ? value.values : value
+        # What filter returns for an Enumerable is a Traversable, which PHP's
+        # max and min reject, rather than an array of its key/value pairs
+        args = args.to_a if args.is_a?(Enumerable) && !args.is_a?(Runtime::EnumerableHash)
+
+        unless args.is_a?(Array)
+          raise ArgumentError, "#{name}(): Argument #1 ($value) must be of type array, #{php_type(args)} given"
+        end
+
+        raise ArgumentError, "#{name}(): Argument #1 ($value) must contain at least one element" if args.empty?
+
+        args
+      end
+
+      # The type name PHP gives a value in a TypeError message
+      def self.php_type(value)
+        case value
+        when nil then 'null'
+        when true then 'true'
+        when false then 'false'
+        when Integer then 'int'
+        when Float then 'float'
+        when String, Symbol then 'string'
+        else value.class.name
+        end
+      end
+
+      # A sequence, as PHP's range() returns an array, so a range works
+      # everywhere a sequence does: reverse, slice, [i], merge, json_encode
+      # The type name PHP's get_debug_type gives a value
+      def self.debug_type(value)
+        [true, false].include?(value) ? 'bool' : php_type(value)
       end
 
       def self.range(low, high, step: 1)
-        Range.new(low, high).step(step)
+        Range.new(low, high).step(step).to_a
       end
 
       # @param [String] constant
       # @param [Object, nil] object
       # @param [Boolean] defined_test
       def self.constant(constant, object = nil, defined_test: false)
-        unless object.nil?
-          if defined_test
-            return object.class.const_defined?(constant)
-          end
-
-          return object.class.const_get(constant)
-        end
-
-        if constant.include?('::')
-          class_name, _, constant = constant.rpartition('::')
+        if object.nil?
+          class_name, _, name = constant.rpartition('::')
+          klass = class_name.empty? ? Kernel : constant_owner(class_name)
         else
-          class_name = Kernel.name
+          return defined_test ? true : object.class.name if constant == 'class'
+
+          klass = object.class
+          name = constant
+          constant = "#{klass.name}::#{constant}"
         end
 
-        unless Object.const_defined?(class_name)
-          return false if defined_test
-
-          raise Error::Runtime, "Class #{class_name} does not exist."
+        holder = begin
+          constant_holder(klass, name) unless klass.nil?
+        rescue NameError
+          nil
         end
 
-        klass = Object.const_get(class_name)
+        return !holder.nil? if defined_test
+        return holder.const_get(name) if holder
 
-        unless klass.const_defined?(constant)
-          return false if defined_test
-
-          raise Error::Runtime, "Class #{class_name} does not have a constant #{constant}."
+        if constant.downcase.end_with?('::class')
+          raise Error::Runtime, "You cannot use the Twig function \"constant\" to access \"#{constant}\". " \
+                                'You could provide an object and call constant("class", $object) or use the ' \
+                                'class name directly as a string.'
         end
 
-        return true if defined_test
+        raise Error::Runtime, "Constant \"#{constant}\" is undefined."
+      end
 
-        klass.const_get(constant)
+      # The class or module that holds klass::name as Ruby finds it: klass or
+      # one of its ancestors, but not Object unless klass is Object, as PHP
+      # finds only a class's own and inherited constants. A constant without
+      # a class (klass is Kernel) is a global one.
+      #
+      # @return [Module, nil]
+      def self.constant_holder(klass, name)
+        return klass.const_defined?(name) ? klass : nil if klass.equal?(Kernel)
+
+        stop = klass.equal?(Object) ? nil : Object
+        klass.ancestors.take_while { |ancestor| !ancestor.equal?(stop) }.find do |ancestor|
+          ancestor.const_defined?(name, false)
+        end
+      end
+
+      # @return [Module, nil]
+      def self.constant_owner(class_name)
+        owner = Object.const_get(class_name)
+        owner.is_a?(Module) ? owner : nil
+      rescue NameError
+        nil
       end
 
       def self.cycle(values, position)
-        unless values.respond_to?(:[])
-          raise Error::Runtime, 'The "cycle" function only works with arrays'
+        # A range or other sequence without [] is an array in PHP Twig, but
+        # what filter returns for an Enumerable is a Traversable, which isn't
+        values = values.to_a if values.is_a?(Enumerable) && !values.respond_to?(:[]) &&
+                                !values.is_a?(Runtime::EnumerableHash)
+
+        # Like PHP's array or ArrayAccess: a String or number has [] in Ruby,
+        # but isn't a sequence to cycle through
+        if !values.respond_to?(:[]) || [String, Symbol, Numeric, Proc, Method].any? { |type| values.is_a?(type) }
+          raise Error::Runtime, 'The "cycle" function expects an array or "ArrayAccess" as first argument.'
         end
 
         unless values.respond_to?(:length)
@@ -379,41 +526,107 @@ module Twig
       end
 
       def self.url_encode(url)
-        if url.respond_to?(:map)
-          require 'uri'
-          URI.encode_www_form(url || {}).gsub('+', '%20')
-        else
-          require 'cgi'
-          CGI.escape(url || '').gsub('+', '%20')
-        end
+        url.respond_to?(:map) ? http_build_query(url) : rawurlencode(url || '')
       end
 
-      def self.json_encode(object)
-        object.respond_to?(:to_json) ? object.to_json : '{}'
+      # PHP's http_build_query with PHP_QUERY_RFC3986: a null is left out,
+      # true and false are 1 and 0, and a nested sequence or mapping gives
+      # key[0]= and key[sub]=
+      def self.http_build_query(data, prefix = nil)
+        pairs = data.is_a?(Hash) ? data : data.each_with_index.map { |value, index| [index, value] }
+
+        pairs.filter_map do |key, value|
+          key = prefix ? "#{prefix}[#{key}]" : key.to_s
+
+          if value.is_a?(Enumerable)
+            http_build_query(value, key).then { |query| query unless query.empty? }
+          elsif !value.nil?
+            "#{rawurlencode(key)}=#{rawurlencode(value == false ? '0' : Util::PhpCast.to_string(value))}"
+          end
+        end.join('&')
+      end
+
+      # PHP's rawurlencode (RFC 3986), which encodes a space as %20, where
+      # CGI.escape uses form encoding and gives +, of the value cast to a
+      # string as PHP casts it
+      def self.rawurlencode(string)
+        CGI.escape(Util::PhpCast.to_string(string)).gsub('+', '%20')
+      end
+
+      # Like PHP's json_encode, which escapes / and characters outside ASCII
+      # unless the flags say otherwise
+      def self.json_encode(object, flags: 0)
+        Util::PhpJson.encode(json_integers(object), flags)
+      end
+
+      # PHP's json_encode writes a float that has no fraction, below 1e17, as
+      # an integer, so 3.0 is 3, 0.0 is 0 and -0.0 is -0
+      def self.json_integers(object)
+        case object
+        when Float
+          return JSON::Fragment.new('-0') if object.zero? && 1.0.fdiv(object).negative? && defined?(JSON::Fragment)
+
+          object.finite? && object.abs < 1e17 && object == object.truncate ? object.to_i : object
+        when Hash
+          object.transform_values { |value| json_integers(value) }
+        when Array
+          object.map { |value| json_integers(value) }
+        else
+          object
+        end
       end
 
       def self.convert_encoding(string, to, from)
         (string || '').to_s.encode(to, from)
       end
 
+      # Like mb_convert_case with MB_CASE_TITLE: a letter after a cased one is
+      # lower case, any other is title case, and a case-ignorable character
+      # such as ' leaves that as it is. Nothing is removed, where titleize
+      # humanizes the string first.
       def self.title_case(string)
-        string&.titleize
+        title = false
+
+        Util::PhpCast.to_string(string).each_char.map do |char|
+          # A byte that isn't valid in the encoding is kept, as by upper
+          unless char.valid_encoding?
+            title = false
+            next char
+          end
+
+          converted = title ? char.downcase : char.capitalize
+          title = char.match?(/\p{Cased}/) unless char.match?(/\p{Case_Ignorable}/)
+
+          converted
+        end.join
       end
 
       def self.capitalize(string)
-        string&.capitalize
+        return string&.capitalize unless invalid_string?(string)
+
+        change_case(string[0], &:upcase) + change_case(string[1..], &:downcase)
       end
 
       def self.upper(string)
-        string&.upcase
+        change_case(string, &:upcase)
       end
 
       def self.lower(string)
-        string&.downcase
+        change_case(string, &:downcase)
       end
 
-      def self.strip_tags(string, tags: [])
-        Sanitize.fragment(string || '', elements: tags)
+      # Changes the case of each character, keeping a byte that isn't valid in
+      # the encoding of the string as it is, where String#upcase raises.
+      def self.change_case(string, &)
+        return string&.then(&) unless invalid_string?(string)
+
+        string.chars.chunk(&:valid_encoding?).map { |valid, chars| valid ? yield(chars.join) : chars.join }.join
+      end
+
+      # Like PHP's strip_tags, which leaves the text between tags as it is.
+      # The tags to keep are a string such as "<p><a>" or a sequence of names.
+      def self.strip_tags(string, allowable_tags = nil)
+        Util::PhpStripTags.call(Util::PhpCast.to_string(string), allowable_tags)
       end
 
       def self.trim(string, character_mask: DEFAULT_TRIM_CHARS, side: :both)
@@ -421,33 +634,42 @@ module Twig
         return if string.nil?
 
         side = side.to_sym
+        original = string
         safe = string.html_safe?
 
         unless %i[left right both].include?(side)
           raise Error::Runtime, 'Trimming side must be "left", "right" or "both".'
         end
 
-        if %i[left both].include?(side)
-          string = string.gsub(/\A[#{Regexp.escape(character_mask)}]*/, '')
+        string = bytewise(string, character_mask) do |subject, mask|
+          subject = subject.gsub(/\A[#{Regexp.escape(mask)}]*/, '') if %i[left both].include?(side)
+          subject = subject.gsub(/[#{Regexp.escape(mask)}]*\z/, '') if %i[right both].include?(side)
+
+          subject
         end
 
-        if %i[right both].include?(side)
-          string = string.gsub(/[#{Regexp.escape(character_mask)}]*\z/, '')
-        end
+        return string unless safe && character_mask == DEFAULT_TRIM_CHARS
 
-        safe && character_mask == DEFAULT_TRIM_CHARS ? string.html_safe : string
+        # Trimmed escaped output is still only safe for its strategy
+        original.is_a?(Runtime::Escaped) ? Runtime::Escaped.new(string, original.strategy) : string.html_safe
       end
 
+      # Like PHP's nl2br, which inserts <br /> before each \r\n, \n\r, \n or \r
       def self.nl2br(string)
-        string.gsub("\n", "<br>\n")
+        bytewise(Util::PhpCast.to_string(string)) { |subject| subject.gsub(/\r\n|\n\r|\n|\r/, '<br />\0') }
       end
 
+      # The singular form, or the word as it is for a count other than 1, as
+      # plural gives the word as it is for a count of 1. ActiveSupport's
+      # singularize takes a locale, not a count.
       def self.singularize(string, count = nil)
-        string.singularize(count)
+        return string unless count.nil? || count == 1
+
+        bytewise(string, &:singularize)
       end
 
       def self.pluralize(string, count = nil)
-        string.pluralize(count)
+        bytewise(string) { |word| word.pluralize(count) }
       end
 
       def self.slug(string, separator: '-', locale: 'en')
@@ -459,59 +681,120 @@ module Twig
 
         value = value.values if value.respond_to?(:values)
         value = value.to_a if value.respond_to?(:to_a)
+        value = value.map { |item| item.is_a?(Float) ? Runtime::StringCast.float(item) : item }
 
-        return value.join(glue) if and_glue.nil? || and_glue == glue
+        return value.join(glue) if and_glue.nil? || and_glue == glue || value.empty?
         return value[0] if value.length == 1
 
         value[..-2].join(glue) + and_glue.to_s + value[-1].to_s
       end
 
+      # Like Twig's split, which passes the value, the delimiter and the limit
+      # to PHP functions that convert them as PHP does, or raise a TypeError:
+      # true is "1", a sequence isn't a string, and the limit is an int
       def self.split(charset, value, delimiter, limit: nil)
-        value ||= ''
+        value = '' if value.nil?
 
         unless delimiter == ''
-          return value.split(delimiter) if limit.nil?
-          return value.split(delimiter, limit) if limit >= 0
+          delimiter = Util::PhpCast.string_param(delimiter, 'explode(): Argument #1 ($separator)')
+          raise ArgumentError, 'explode(): Argument #1 ($separator) cannot be empty' if delimiter.empty?
 
-          return value.split(delimiter)[0...limit]
+          value = Util::PhpCast.string_param(value, 'explode(): Argument #2 ($string)')
+          limit = Util::PhpCast.int_param(limit, 'explode(): Argument #3 ($limit)') unless limit.nil?
+
+          return explode(delimiter, value, limit)
         end
 
-        if limit.nil? || limit <= 1
-          return value.chars
+        number = limit.is_a?(String) ? Util::PhpCast.numeric(limit) || limit : limit
+
+        if php_compare(number, 1) <= 0
+          value = Util::PhpCast.string_param(value, 'mb_str_split(): Argument #1 ($string)')
+
+          return split_into_characters(value, 'split')
         end
 
-        length = value.length
+        value = Util::PhpCast.string_param(value, 'mb_strlen(): Argument #1 ($string)')
+        return [value] if php_compare(number, value.length).positive?
 
-        if limit.nil? || length < limit
-          return [value]
-        end
+        size = Util::PhpCast.int_param(limit, 'mb_substr(): Argument #3 ($length)', '?int')
 
-        [*0..(length / limit).ceil].map do |i|
-          value[i * limit, limit]
+        (0...value.length).step(number).map { |i| value[i.to_i, size] }
+      end
+
+      # Compares a limit of any type with an integer the way PHP compares
+      # mixed types: null and booleans as booleans, a string that isn't
+      # numeric as a string, and a sequence as greater than any number
+      def self.php_compare(limit, integer)
+        case limit
+        when nil, true, false then (limit ? 1 : 0) <=> (integer.zero? ? 0 : 1)
+        when Array, Hash then 1
+        when String then limit <=> integer.to_s
+        else limit <=> integer
         end
+      end
+
+      # Splits like PHP's explode, which String#split doesn't: it keeps
+      # trailing empty strings, splits on a literal space, gives [''] for an
+      # empty string, takes a limit of 0 as 1 and drops -limit parts from the
+      # end for a negative limit.
+      def self.explode(delimiter, value, limit)
+        limit = 1 if limit&.zero?
+        parts = bytewise(value, delimiter) do |string, separator|
+          string.split(Regexp.new(Regexp.escape(separator)), limit.nil? || limit.negative? ? -1 : limit)
+        end
+        parts = [''] if parts.empty?
+
+        limit.nil? || limit.positive? ? parts : parts.first([parts.length + limit, 0].max)
       end
 
       # @param [Hash, Array, Enumerable] object
       def self.sort(object, arrow = nil)
+        object = to_array(object)
+
         if arrow.nil?
-          object.is_a?(Hash) ? object.sort { |a, b| a[1] <=> b[1] }.to_h : object.sort
-        else
-          object.sort { |a, b| arrow.call(a, b) }.then do |sorted|
-            object.is_a?(Hash) ? sorted.to_h : sorted
+          if object.is_a?(Hash)
+            Runtime::Comparison.sort(object.to_a, &:last).to_h
+          else
+            Runtime::Comparison.sort(object.to_a)
           end
+        elsif object.is_a?(Hash)
+          # PHP's uasort compares the values and keeps their keys
+          object.sort { |(_, a), (_, b)| arrow.call(a, b) }.to_h
+        else
+          object.sort { |a, b| arrow.call(a, b) }
         end
       end
 
+      # Merges like PHP's [...$a, ...$b], into a new sequence or mapping, so
+      # what the filter is applied to stays as it is: string keys are kept,
+      # a later value replacing an earlier one, and integer keys are
+      # renumbered after the items so far, so {1: 'a'}|merge({1: 'b'}) is
+      # ['a', 'b'] and [1]|merge({a: 2}) is {0: 1, a: 2}.
       def self.merge(first, *rest)
-        if first.is_a?(Hash)
-          [first, *rest].reduce(&:merge)
-        else
-          [first, *rest].reduce do |array, current|
-            array.concat(current.respond_to?(:values) ? current.values : current)
-          end
+        arrays = [first, *rest]
+        arrays.each_with_index do |array, index|
+          next if array.respond_to?(:each)
+
+          raise Error::Runtime, "The \"merge\" filter expects a sequence or a mapping, got \"#{debug_type(array)}\" " \
+                                "for argument #{index + 1}."
         end
+
+        merged = Runtime::Spread.sequence(*arrays.map { |array| Runtime::Spread.new(array) })
+        return merged unless merged.is_a?(Hash)
+
+        # PHP has one key for :a and "a", so a later one replaces the value
+        # where the first one is, under its name, as a HashWithIndifferentAccess
+        # does, and the result is of the first one's class
+        names = {}
+        merged = merged.transform_keys { |key| names[key.is_a?(Symbol) ? key.to_s : key] ||= key }
+
+        first.is_a?(Hash) && !first.instance_of?(Hash) ? first.class[merged] : merged
       end
 
+      # Splits into rows of count items like PHP's array_chunk, which keeps
+      # the keys only with preserve_keys, and fills the last row up to count
+      # items with fill when it is given.
+      #
       # @param [Array, Hash] object
       # @param [Integer, Float] count
       # @param [Object] fill
@@ -519,40 +802,97 @@ module Twig
       def self.batch(object, count, fill: nil, preserve_keys: true)
         return if object.nil?
 
-        hash = object.is_a?(Array) ? object.each_with_index.to_h { |k, v| [v, k] } : object
+        object = to_array(object)
+        object = Runtime::EnumerableHash.traversable(object).to_array unless object.is_a?(Array) || object.is_a?(Hash)
         size = count.ceil
-        last_key = 0
 
-        result = hash.each_slice(size).map do |slice|
-          unless preserve_keys
-            slice = [*0...size].zip(slice.to_h.values)
-          end
+        rows = if preserve_keys
+                 pairs = object.is_a?(Hash) ? object.to_a : object.each_with_index.map { |item, index| [index, item] }
+                 pairs.each_slice(size).map { |row| AutoHash[row] }
+               else
+                 (object.is_a?(Hash) ? object.values : object).each_slice(size).to_a
+               end
 
-          sliced_hash = slice.to_h
-          last_key = sliced_hash.keys[-1]
-
-          sliced_hash
+        if !fill.nil? && !rows.empty? && rows[-1].length < size
+          missing = [fill] * (size - rows[-1].length)
+          rows[-1] = rows[-1].is_a?(Array) ? rows[-1] + missing : rows[-1].add(*missing)
         end
 
-        if fill.nil? || result.empty?
-          return result
-        end
-
-        result[-1] = AutoHash.new.merge(result[-1])
-
-        [*0...(size - result[-1].length)].each do
-          result[-1].add(fill)
-        end
-
-        result
+        rows.map { |row| row.is_a?(Hash) ? array_from_hash(row) : row }
       end
 
-      def self.column(object, column)
-        object.map { |o| o[column] }
+      # The values of a column of the rows, like PHP's array_column: a row
+      # without the column is left out, and with an index the values are keyed
+      # by that column of their row, or added after the others when the row
+      # has none. A name of null takes the whole rows.
+      def self.column(object, name, index = nil)
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"column\" filter expects a sequence or a mapping, got \"#{debug_type(object)}\"."
+        end
+
+        result = AutoHash.new
+        Runtime::EnumerableHash.traversable(object).each do |_key, row| # rubocop:disable Style/HashEachMethods
+          value = name.nil? ? row : column_value(row, name)
+          next if value.equal?(KEY_NOT_FOUND)
+
+          key = index.nil? ? KEY_NOT_FOUND : column_value(row, index)
+          key.equal?(KEY_NOT_FOUND) ? result.add(value) : result[column_key(key)] = value
+        end
+
+        array_from_hash(result)
       end
 
+      # A row's value for a column of column, or KEY_NOT_FOUND. PHP reads an
+      # object's public property, which for an object without [] is a public
+      # reader of its own taking no arguments, such as a Data member or an
+      # attr_reader, but not a method every object has, such as hash.
+      def self.column_value(row, name)
+        if row.is_a?(Hash) || row.is_a?(Array)
+          key = subscript_key(row, name)
+
+          return key.equal?(KEY_NOT_FOUND) ? key : row[key]
+        end
+
+        scalar = [nil, true, false].include?(row) ||
+                 [String, Symbol, Numeric, Proc, Method].any? { |type| row.is_a?(type) }
+        return KEY_NOT_FOUND if scalar
+        return row[name] if row.respond_to?(:[])
+
+        column_reader?(row, name) ? row.public_send(name) : KEY_NOT_FOUND
+      end
+
+      def self.column_reader?(row, name)
+        return false unless (name.is_a?(String) || name.is_a?(Symbol)) && row.respond_to?(name)
+
+        reader = row.method(name)
+        [0, -1].include?(reader.arity) && ![Object, Kernel, BasicObject].include?(reader.owner)
+      end
+
+      # The key PHP makes of a value: true is 1, false 0, null "", a float is
+      # truncated and a decimal string is its integer
+      def self.column_key(value)
+        case value
+        when true then 1
+        when false then 0
+        when nil then ''
+        when Float then value.to_i
+        when String then Runtime::MappingKey.integer?(value) ? value.to_i : value
+        else value
+        end
+      end
+
+      # PHP's array_filter keeps the keys of an array, so a sequence with
+      # items taken out is a mapping of the indexes that are left, as in
+      # [1, 2, 3]|filter(v => v > 1), which is {1: 2, 2: 3}. Anything else is
+      # filtered as a Traversable, an EnumerableHash.
       def self.filter(object, proc)
-        enumerable_function(object, :filter, proc)
+        result = enumerable_function(object, :filter, truthy_arrow(proc))
+
+        case object
+        when Hash then result.to_h
+        when Array then result.to_array
+        else result
+        end
       end
 
       def self.map(object, proc)
@@ -565,77 +905,75 @@ module Twig
         end
       end
 
+      # Calls the arrow with the accumulator, then each value and its key, as
+      # Twig does. A PHP closure ignores extra arguments, so the arrow can take
+      # only the accumulator and the value, or only the accumulator.
       def self.reduce(object, proc, initial = nil)
-        accumulator = initial
-
-        case proc.arity
-        when 2
-          (object.is_a?(Hash) ? object.values : object).each do |value|
-            accumulator = proc.call(accumulator, value)
-          end
-        when 3
-          (object.is_a?(Hash) ? object : object.each_with_index).each do |key, value|
-            accumulator = proc.call(accumulator, value, key)
-          end
-        else
-          raise Error::Runtime, "Reduce takes 2 or 3 arguments, given #{proc.arity}."
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"reduce\" filter expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        accumulator
+        Runtime::EnumerableHash.traversable(object).reduce(initial) do |accumulator, (key, value)|
+          call_arrow(proc, accumulator, value, key)
+        end
       end
 
+      # Calls an arrow as PHP calls a closure, which ignores the arguments it
+      # doesn't take
+      def self.call_arrow(proc, *arguments)
+        arguments = arguments.first(proc.arity) if proc.arity.between?(0, arguments.length)
+
+        proc.call(*arguments)
+      end
+
+      # Whether the arrow is true for every value, which it gets with its key
       def self.array_every?(object, proc)
-        unless object.respond_to?(:all?)
-          raise Error::Runtime, "The \"has every\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"has every\" test expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        if object.is_a?(Hash)
-          object.each do |k, v|
-            if proc.arity == 1
-              return false unless proc.call(v)
-            elsif !proc.call(v, k)
-              return false
-            end
-          end
-
-          true
-        else
-          object.all?(&proc)
+        Runtime::EnumerableHash.traversable(object).all? do |key, value|
+          Runtime::Truthiness.cast?(call_arrow(proc, value, key))
         end
       end
 
+      # Whether the arrow is true for a value, which it gets with its key
       def self.array_some?(object, proc)
-        unless object.respond_to?(:any?)
-          raise Error::Runtime, "The \"has some\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"has some\" test expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        if object.is_a?(Hash)
-          object.each do |k, v|
-            if proc.arity == 1
-              return true if proc.call(v)
-            elsif proc.call(v, k)
-              return true
-            end
-          end
-
-          false
-        else
-          object.any?(&proc)
+        Runtime::EnumerableHash.traversable(object).any? do |key, value|
+          Runtime::Truthiness.cast?(call_arrow(proc, value, key))
         end
       end
 
       def self.find(object, proc)
-        enumerable_function(object, :find, proc)&.dig(1)
+        enumerable_function(object, :find, truthy_arrow(proc))&.dig(1)
       end
 
+      # Reverses like PHP's array_reverse, which keeps string keys, and integer
+      # keys only with preserve_keys, or else the characters of a string
       def self.reverse(object, preserve_keys: false)
         return if object.nil?
 
-        object.is_a?(Hash) ? object.to_a.reverse.to_h : object.reverse
+        object = scalar_to_string(to_array(object))
+        # String#reverse raises a bare ArgumentError on invalid bytes
+        return split_into_characters(object, 'reverse').reverse.join if object.is_a?(String)
+
+        object = Runtime::EnumerableHash.traversable(object).to_array unless object.is_a?(Array) || object.is_a?(Hash)
+        return object.reverse if object.is_a?(Array) && !preserve_keys
+
+        pairs = object.is_a?(Hash) ? object.to_a : object.each_with_index.map { |item, index| [index, item] }
+        index = -1
+        array_from_hash(pairs.reverse.to_h.transform_keys do |key|
+          preserve_keys || !Runtime::MappingKey.integer?(key) ? key : index += 1
+        end)
       end
 
       def self.shuffle(object)
-        return object.chars.shuffle.join if object.is_a?(String)
+        object = to_array(object)
+        return split_into_characters(object, 'shuffle').shuffle.join if object.is_a?(String)
 
         object.is_a?(Hash) ? object.values.shuffle : object.shuffle
       end
@@ -648,23 +986,54 @@ module Twig
         1
       end
 
+      # Slices a sequence or a mapping like PHP's array_slice, and anything
+      # else like mb_substr: a negative start counts from the end, a start
+      # before the beginning is the beginning, and a negative length leaves
+      # that many items off the end. String keys are kept, and integer keys
+      # only with preserve_keys.
       def self.slice(object, start, length = nil, preserve_keys: false)
-        if object.is_a?(Hash)
-          object, keys = [object.values, object.keys]
-          preserve_keys = true
+        object = to_array(object)
+        if !object.is_a?(Array) && !object.is_a?(Hash) && !object.is_a?(String) && object.respond_to?(:each)
+          object = Runtime::EnumerableHash.traversable(object).to_array(preserve_keys:)
         end
 
-        values = length.nil? ? object[start...] : object[start, length]
+        unless object.is_a?(Array) || object.is_a?(Hash)
+          string = scalar_to_string(object).to_s
+          offset, count = slice_bounds(string.length, start, length)
 
-        return values unless preserve_keys
+          return count.zero? ? '' : string[offset, count]
+        end
 
-        keys ||= [*0...object.length]
-        keys = length.nil? ? keys[start...] : keys[start, length]
-        keys.zip(values).to_h
+        offset, count = slice_bounds(object.size, start, length)
+        pairs = object.is_a?(Hash) ? object.to_a : object.each_with_index.map { |item, index| [index, item] }
+        index = -1
+        sliced = pairs[offset, count].to_h.transform_keys do |key|
+          preserve_keys || !Runtime::MappingKey.integer?(key) ? key : index += 1
+        end
+
+        array_from_hash(sliced)
+      end
+
+      # The offset and the number of items that slice takes of size items
+      #
+      # @return [Array(Integer, Integer)]
+      def self.slice_bounds(size, start, length)
+        offset = start.to_i.negative? ? [size + start.to_i, 0].max : [start.to_i, size].min
+        stop = if length.nil?
+                 size
+               elsif length.to_i.negative?
+                 size + length.to_i
+               else
+                 [offset + length.to_i, size].min
+               end
+
+        [offset, [stop - offset, 0].max]
       end
 
       def self.first(object)
         return if object.nil?
+
+        object = scalar_to_string(to_array(object))
         return object[0] if object.is_a?(String)
 
         (object.is_a?(Hash) ? object.values : object).first
@@ -672,15 +1041,21 @@ module Twig
 
       def self.last(object)
         return if object.nil?
+
+        object = scalar_to_string(to_array(object))
         return object[-1] if object.is_a?(String)
 
         (object.is_a?(Hash) ? object.values : object).last
       end
 
+      # The keys of a sequence, a mapping or another Enumerable, and none for
+      # anything else, such as a string or a number, as in PHP
       def self.keys(object)
         return object.keys if object.respond_to?(:keys)
+        return (0...object.length).to_a if object.is_a?(Array)
+        return [] unless object.respond_to?(:each)
 
-        (0...object.length).to_a
+        Runtime::EnumerableHash.traversable(object).keys
       end
 
       def self.values(object)
@@ -699,7 +1074,9 @@ module Twig
         callable.call(*, **)
       end
 
-      def self.random(charset, values = nil, max = nil)
+      # max is a keyword so that a template can name it without values, as in
+      # random(max: 5), which Twig fills with the default of values
+      def self.random(charset, values = nil, max: nil)
         if values.nil?
           return max.nil? ? rand : rand(0..max.to_i)
         end
@@ -727,8 +1104,7 @@ module Twig
             values = convert_encoding(values, 'UTF-8', charset)
           end
 
-          # Unicode version of string split - split at all positions, but not after start and not before end
-          values = values.chars
+          values = split_into_characters(values, 'random')
 
           if charset != 'UTF-8'
             values = values.map { |value| convert_encoding(value, charset, 'UTF-8') }
@@ -750,6 +1126,84 @@ module Twig
         values.sample
       end
 
+      # Unicode version of str_split(), an empty string giving a single empty character.
+      def self.split_into_characters(string, name)
+        string = string.dup.force_encoding(Encoding::UTF_8) if string.encoding == Encoding::BINARY
+
+        unless string.valid_encoding?
+          raise Error::Runtime, "Unable to split the string passed to \"#{name}\" into characters: " \
+                                'Malformed UTF-8 characters, possibly incorrectly encoded.'
+        end
+
+        characters = string.chars
+        characters.empty? ? [''] : characters
+      end
+
+      # PHP's string functions read bytes, so a byte that isn't valid in the
+      # encoding of the string, as in "a\xffb" from a template, is one like any
+      # other to str_contains, explode, strtr or trim, where Ruby's String
+      # methods raise or don't find it. Yields the strings as they are when
+      # they are all valid, as bytes then give the same result, or else as
+      # bytes, and gives any string the block returns the encoding of the
+      # first one back.
+      def self.bytewise(*strings)
+        return yield(*strings) if strings.none? { |string| invalid_string?(string) }
+
+        encoding = strings.find { |string| string.is_a?(String) }.encoding
+        result = yield(*strings.map { |string| string.is_a?(String) ? string.b : string })
+
+        with_encoding(result, encoding)
+      end
+
+      # @param [String, Array] value
+      def self.with_encoding(value, encoding)
+        case value
+        when String then value.dup.force_encoding(encoding)
+        when Array then value.map { |item| with_encoding(item, encoding) }
+        else value
+        end
+      end
+
+      # Whether value is a string with a byte its encoding doesn't allow.
+      def self.invalid_string?(value)
+        value.is_a?(String) && !value.valid_encoding?
+      end
+
+      # The array PHP's toArray makes of a value: what filter returns for an
+      # enumerable that is not an Array or a Hash, the Traversable of PHP,
+      # becomes an Array or a Hash; without preserve_keys, a mapping becomes
+      # its values. Anything else is returned as it is, so an Enumerable such
+      # as a lazy query keeps its own first or sort.
+      #
+      # @return [Object]
+      def self.to_array(value, preserve_keys: true)
+        case value
+        when Runtime::EnumerableHash then value.to_array(preserve_keys:)
+        when Hash then preserve_keys ? value : value.values
+        else value
+        end
+      end
+
+      # A PHP array held in a Hash, as a sequence when its keys are 0, 1, 2...
+      # in order, as PHP calls such an array a list
+      #
+      # @return [Array, Hash]
+      def self.array_from_hash(hash)
+        hash.each_key.with_index.all? { |key, index| key.is_a?(Integer) && key == index } ? hash.values : hash
+      end
+
+      # What first, last and reverse read of a number, a boolean or a symbol:
+      # the string PHP casts it to
+      def self.scalar_to_string(value)
+        case value
+        when true then '1'
+        when false then ''
+        when Float then Runtime::StringCast.float(value)
+        when Numeric, Symbol then value.to_s
+        else value
+        end
+      end
+
       def self.ensure_hash(value)
         return value.to_h if value.is_a?(Hash)
 
@@ -760,108 +1214,149 @@ module Twig
         Float(value, exception: false)
       end
 
+      # Twig's CoreExtension::compare, which is PHP 8's <=>
       def self.compare(a, b)
-        trim_var = ->(value) { trim(value, character_mask: " \t\n\r\v\f") }
-
-        if a.is_a?(Integer) && b.is_a?(String)
-          b_trim = trim_var.call(b)
-
-          unless numeric?(b_trim)
-            return a.to_s <=> b
-          end
-
-          if b_trim.to_i.to_s == b_trim
-            return a <=> b_trim.to_i
-          else
-            return a.to_f <=> b_trim.to_f
-          end
-        end
-
-        if a.is_a?(String) && b.is_a?(Integer)
-          a_trim = trim_var.call(a)
-
-          unless numeric?(a_trim)
-            return a <=> b.to_s
-          end
-
-          if a_trim.to_i.to_s == a_trim
-            return a_trim.to_i <=> b
-          else
-            return a_trim.to_f <=> b.to_f
-          end
-        end
-
-        if (a.is_a?(Float) || a.is_a?(Complex)) && b.is_a?(String)
-          if a.is_a?(Complex)
-            return 1
-          end
-
-          b_trim = trim_var.call(b)
-          unless numeric?(b_trim)
-            return a.to_s <=> b
-          end
-
-          return a <=> b_trim.to_f
-        end
-
-        if a.is_a?(String) && (b.is_a?(Float) || b.is_a?(Complex))
-          if b.is_a?(Complex)
-            return 1
-          end
-
-          a_trim = trim_var.call(a)
-          unless numeric?(a_trim)
-            return a <=> b.to_s
-          end
-
-          return a_trim.to_f <=> b
-        end
-
-        if a.is_a?(String) && b.is_a?(Symbol)
-          return a <=> b.to_s
-        end
-
-        if a.is_a?(Symbol) && b.is_a?(String)
-          return a.to_s <=> b
-        end
-
-        a <=> b
+        Runtime::Comparison.compare(a, b)
       end
 
+      # Whether value is in object, as Twig's CoreExtension::inFilter decides:
+      # a substring of a string, or equal to one of the values of a sequence
+      # or mapping as == compares them, never one of its keys
       def self.in_filter(value, object)
-        return false unless object.respond_to?(:include?)
-
         if object.is_a?(String)
-          return object.include?(value.to_s)
+          return false unless [String, Symbol, Integer, Float].any? { |type| value.is_a?(type) }
+
+          needle = Runtime::StringCast.cast(value)
+
+          return bytewise(object, needle) { |haystack, part| haystack.include?(part) }
         end
 
-        unless object.respond_to?(:any?)
-          return false
+        values = case object
+                 when Hash, Runtime::EnumerableHash then object.values
+                 when Enumerable then object
+                 else return false
+                 end
+
+        # An object is only found as the same object
+        unless compared_in?(value)
+          return values.any? { |item| Runtime::Identity.same?(value, item) }
         end
 
-        object.any? do |k, v|
-          (!v.nil? && compare(value, v)&.zero?) ||
-            compare(value, k)&.zero?
-        end ||
-          object.any? { |v| compare(value, v)&.zero? } ||
-          (value == false && in_filter(0, object)) ||
-          (value == [] && in_filter(false, object)) ||
-          (value == true && in_filter(1, object))
+        values.any? { |item| compare(value, item).zero? }
       end
+
+      # Whether in compares value with ==, as it does a PHP scalar or array
+      def self.compared_in?(value)
+        case value
+        when nil, true, false, Numeric, String, Symbol, Array, Hash, Runtime::EnumerableHash, ::Range,
+             Enumerator::ArithmeticSequence
+          true
+        else
+          false
+        end
+      end
+
+      PCRE_BRACKET_DELIMITERS = { '(' => ')', '[' => ']', '{' => '}', '<' => '>' }.freeze
+      PCRE_MODIFIERS = { 'i' => Regexp::IGNORECASE, 'x' => Regexp::EXTENDED, 's' => Regexp::MULTILINE }.freeze
+      # Only the boolean result matters to matches, so modifiers that change
+      # captures or greediness, or that Onigmo always applies, can be ignored.
+      # Ruby's ^ and $ are always line anchors, so m is the default and D
+      # cannot be honoured. Onigmo always matches by character, so u only
+      # decides whether a malformed subject raises.
+      PCRE_IGNORED_MODIFIERS = %w[m D S U X J n].freeze
 
       def self.matches(regexp, string)
-        return false if string.nil?
+        regex, utf8 = parse_pcre(regexp)
+        subject = string.to_s
 
-        if regexp.respond_to?(:match) && (matches = regexp.match(%r{\A/([^/]*)/(.*)\z}))
-          modifiers = matches[2].empty? ? '' : "(?#{matches[2]})"
-          regex = /#{modifiers}#{matches[1]}/
-        else
-          regex = /#{regex}/
+        begin
+          subject.match?(regex)
+        rescue ArgumentError, Encoding::CompatibilityError
+          # Only the u modifier makes preg_match check the subject's encoding.
+          # Without it the bytes are read as they are, so stray ones are
+          # replaced rather than rejected.
+          if utf8
+            raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: " \
+                                  'Malformed UTF-8 characters, possibly incorrectly encoded.'
+          end
+
+          # A pattern of bytes, as in "/\xff/", matches the bytes of the subject
+          return subject.b.match?(regex) if regex.encoding == Encoding::BINARY
+
+          subject.dup.force_encoding(Encoding::UTF_8).scrub.match?(regex)
+        end
+      rescue Regexp::TimeoutError
+        raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" failed: Backtrack limit exhausted."
+      rescue RegexpError => e
+        raise Error::Runtime, "Regexp \"#{regexp}\" passed to \"matches\" is not valid: #{e.message}"
+      end
+
+      # Converts a PCRE pattern with delimiters and modifiers, as PHP's
+      # preg_match takes it, into a Regexp. Raises RegexpError with PHP's
+      # message for a malformed pattern.
+      def self.pcre_to_regexp(pattern)
+        parse_pcre(pattern).first
+      end
+
+      # @return [Array(Regexp, Boolean)] the Regexp, and whether the u modifier
+      #   was given
+      def self.parse_pcre(pattern)
+        pattern = pattern.to_s.lstrip
+        raise RegexpError, 'Empty regular expression' if pattern.empty?
+
+        delimiter = pattern[0]
+        if delimiter.match?(/[[:alnum:]\\\0]/)
+          raise RegexpError, 'Delimiter must not be alphanumeric, backslash, or NUL'
         end
 
-        string.to_s.match?(regex)
-      rescue RegexpError => e
-        raise Error::Runtime, "Invalid regular expression passed to matches: #{e.message}"
+        closing = PCRE_BRACKET_DELIMITERS.fetch(delimiter, delimiter)
+        depth = 1
+        position = 1
+        while position < pattern.length
+          case pattern[position]
+          when '\\'
+            position += 1
+          when closing
+            depth -= 1
+            break if depth.zero?
+          when delimiter
+            depth += 1
+          end
+
+          position += 1
+        end
+
+        if position >= pattern.length
+          raise RegexpError, if closing == delimiter
+                               "No ending delimiter '#{closing}' found"
+                             else
+                               "No ending matching delimiter '#{closing}' found"
+                             end
+        end
+
+        options = 0
+        anchored = false
+        utf8 = false
+        pattern[(position + 1)..].each_char do |modifier|
+          if PCRE_MODIFIERS.key?(modifier)
+            options |= PCRE_MODIFIERS[modifier]
+          elsif modifier == 'A'
+            anchored = true
+          elsif modifier == 'u'
+            utf8 = true
+          elsif !PCRE_IGNORED_MODIFIERS.include?(modifier) && !modifier.match?(/[ \r\n]/)
+            raise RegexpError, "Unknown modifier '#{modifier}'"
+          end
+        end
+
+        body = pattern[1...position]
+        # A newline ends a trailing comment in extended mode before the group closes
+        body = "\\A(?:#{body}#{"\n" if options.anybits?(Regexp::EXTENDED)})" if anchored
+        # Without u, PCRE reads the pattern as bytes, so a byte that isn't valid
+        # UTF-8, as in "/\xff/" from a template, matches that byte
+        body = body.b unless utf8 || body.valid_encoding?
+
+        [Regexp.new(body, options), utf8]
       end
 
       # The key or index that +attribute+ matches on a subscriptable object, or
@@ -875,6 +1370,14 @@ module Twig
       #
       # @return [Object] the matching key, or KEY_NOT_FOUND
       def self.subscript_key(object, attribute)
+        # PHP truncates a float key to an integer, so items[1.5] is items[1],
+        # though a Ruby hash with that float key finds it
+        if attribute.is_a?(Float) && attribute.finite?
+          return attribute if !object.is_a?(Array) && object.respond_to?(:key?) && object.key?(attribute)
+
+          attribute = attribute.to_i
+        end
+
         if object.is_a?(Array)
           return KEY_NOT_FOUND unless attribute.is_a?(Integer)
 
@@ -896,6 +1399,11 @@ module Twig
         string = attribute.to_s if attribute.respond_to?(:to_s)
         return string if !string.nil? && object.key?(string)
 
+        # PHP stores a decimal string key such as "5" as the integer 5, so
+        # h["5"] finds the key that {5: ...} or {(n): ...} created
+        integer = attribute.to_i if attribute.is_a?(String) && attribute.match?(/\A(?:0|-?[1-9]\d*)\z/)
+        return integer if !integer.nil? && object.key?(integer)
+
         KEY_NOT_FOUND
       end
 
@@ -905,9 +1413,50 @@ module Twig
       #
       # @return [String]
       def self.key_not_found_message(object, attribute)
-        keys = object.respond_to?(:keys) ? " with keys \"#{object.keys.join(', ')}\"" : ''
+        keys = if object.is_a?(::Array)
+                 (0...object.length).to_a
+               elsif object.respond_to?(:keys)
+                 object.keys
+               end
+
+        if keys&.empty? && (object.is_a?(::Array) || object.is_a?(::Hash))
+          return "Key \"#{attribute}\" does not exist as the sequence/mapping is empty."
+        end
+
+        keys = keys ? " with keys \"#{keys.join(', ')}\"" : ''
 
         "Key \"#{attribute}\" for sequence/mapping#{keys} does not exist."
+      end
+
+      # The message for an attribute that isn't there, as Twig gives it for a
+      # sequence, mapping or scalar (a "key" for x[k], a "method" for x.m()),
+      # or nil for any other object.
+      #
+      # @return [String, nil]
+      def self.missing_attribute_message(object, attribute, type)
+        action = case type
+                 when Template::ARRAY_CALL then 'access a key'
+                 when Template::METHOD_CALL then 'invoke a method'
+                 else 'access an attribute'
+                 end
+
+        case object
+        when nil
+          "Impossible to #{action} (\"#{attribute}\") on a null variable."
+        when ::Array, ::Hash
+          return key_not_found_message(object, attribute) unless type == Template::METHOD_CALL
+
+          "Impossible to invoke a method (\"#{attribute}\") on a sequence/mapping."
+        when true, false, Integer, Float, String, Symbol
+          value = case object
+                  when true then '1'
+                  when false then ''
+                  else object.to_s
+                  end
+          type_name = [true, false].include?(object) ? 'bool' : php_type(object)
+
+          "Impossible to #{action} (\"#{attribute}\") on a #{type_name} variable (\"#{value}\")."
+        end
       end
 
       # @param [Environment] environment
@@ -934,7 +1483,7 @@ module Twig
             end
 
             raise Error::Runtime.new(
-              key_not_found_message(object, attribute),
+              missing_attribute_message(object, attribute, type) || key_not_found_message(object, attribute),
               lineno,
               source
             )
@@ -952,43 +1501,19 @@ module Twig
             return true
           end
 
-          positional = []
-          arguments.each do |k, v|
-            if !v.is_a?(Runtime::Spread) && k.is_a?(Integer)
-              positional << v
-            elsif v.is_a?(Runtime::Spread) && v.array?
-              positional = [*positional, *v.value]
-            end
-          end
-
-          kwargs = {}
-          arguments.each do |k, v|
-            if !v.is_a?(Runtime::Spread) && !k.is_a?(Integer)
-              kwargs[k] = v
-            elsif v.is_a?(Runtime::Spread) && v.hash?
-              kwargs = kwargs.merge(v.value)
-            end
-          end
-
-          kwargs = kwargs.transform_keys(&:to_sym)
+          # A method call compiles its arguments to a Hash keyed by position or
+          # name, and attribute() passes them as a sequence or a mapping, which
+          # is unpacked like a spread. Spreads are unpacked as PHP unpacks the
+          # argument array it calls the method with.
+          arguments = [Runtime::Spread.new(arguments)] unless arguments.nil? || arguments.is_a?(::Hash)
+          positional, kwargs = Runtime::Spread.split_arguments(arguments || {}, overwrite: true)
 
           # public_send, not send: respond_to? above already excludes private and
           # protected methods, but an object with a loose respond_to_missing?
           # can report true for one. Templates only reach the public interface.
-          if positional.length.positive? && kwargs.empty?
-            object.public_send(attribute, *positional, &)
-          elsif positional.empty? && kwargs.length.positive?
-            object.public_send(attribute, **kwargs, &)
-          elsif positional.length.positive? && kwargs.length.positive?
-            object.public_send(attribute, *positional, **kwargs, &)
-          else
-            # Reached only when the object responds to the attribute and the
-            # key/index lookup above did not match, so subscripting a Hash or
-            # Array here could only ever miss — it raised TypeError on arrays
-            # ({{ list.any? }}) and returned nil on hashes, silently rendering
-            # nothing. Collections dispatch methods like any other object.
-            object.public_send(attribute, &)
-          end
+          # Collections dispatch methods like any other object: this is reached
+          # only when the key/index lookup above did not match.
+          object.public_send(attribute, *positional, **kwargs.transform_keys(&:to_sym), &)
         # Constant could be nil but we should return if we find it
         elsif (constant = get_constant(object, attribute.to_s)) && constant[0] == :found
           constant[1]
@@ -999,9 +1524,9 @@ module Twig
             return false
           end
 
-          message = if object.nil?
-                      "Impossible to access an attribute (\"#{attribute}\") on a null variable."
-                    elsif object.respond_to?(:[]) && !object.is_a?(String)
+          message = if (missing = missing_attribute_message(object, attribute, type))
+                      missing
+                    elsif object.respond_to?(:[])
                       key_not_found_message(object, attribute)
                     else
                       "Impossible to access an attribute (\"#{attribute}\") on a #{object.class} " \
@@ -1028,26 +1553,27 @@ module Twig
         [:not_found]
       end
 
-      # Zeroes are false in Twig
+      # Whether Twig counts a value as true, as PHP's (bool) cast does
       def self.bool(value)
-        if !value ||
-           (value.respond_to?(:zero?) && value.zero?) ||
-           value == ''
-          false
-        else
-          true
-        end
+        Runtime::Truthiness.true?(value)
       end
 
-      # @todo How to post deprecations? Also check if Rails is loaded and deprecate that way
-      def self.deprecation_notice(message, template, line, package: nil, version: nil)
-        package = package ? " (Package: #{package})" : ''
-        version = version ? " (Version: #{version})" : ''
+      # Reports a deprecation as Symfony's trigger_deprecation does for Twig:
+      # the message comes after "Since package version: ".
+      def self.trigger_deprecation(package, version, message)
+        prefix = package.to_s.empty? && version.to_s.empty? ? '' : "Since #{package} #{version}: "
 
-        puts "Deprecation Notice: #{message} in #{template} on line #{line}#{package}#{version}"
+        report_deprecation("#{prefix}#{message}")
+      end
+
+      # Where every deprecation ends up
+      def self.report_deprecation(message)
+        puts "Deprecation Notice: #{message}"
       end
 
       def self.test_empty?(object)
+        object = to_array(object)
+
         object.nil? ||
           (object == false) ||
           (object.respond_to?(:empty?) && object.empty?) ||
@@ -1058,16 +1584,17 @@ module Twig
 
       # @param [Environment] environment
       # @param [Context] context
-      def self.include(
-        environment, context, template, variables = {}, with_context: true, ignore_missing: false, sandboxed: false
-      )
+      def self.include(environment, context, template, variables = {}, with_context: true, ignore_missing: false)
+        # PHP's array_merge takes only an array
+        variables = Runtime::Context.variables(variables) do |type|
+          ::TypeError.new("array_merge(): Argument #2 must be of type array, #{type} given")
+        end
+
         variables = if with_context
                       context.merge(variables)
                     else
                       context.only(variables)
                     end
-
-        # @todo: Missing sandbox
 
         begin
           loaded = environment.resolve_template(template)
@@ -1079,9 +1606,20 @@ module Twig
           return ''
         end
 
-        variables.buffer_and_return do
+        rendered = variables.buffer_and_return do
           loaded.render(variables)
-        end
+        end.to_s
+
+        rendered.empty? ? '' : rendered.html_safe
+      end
+
+      # Unlike PHP, this needs the context: Context#only keeps the call context
+      # (Rails view helpers) and the output buffer of the including template.
+      #
+      # @param [Environment] environment
+      # @param [Context] context
+      def self.include_only(environment, context, template, variables = {}, ignore_missing: false)
+        include(environment, context, template, variables, with_context: false, ignore_missing:)
       end
 
       # @param [Environment] environment
@@ -1128,6 +1666,17 @@ module Twig
 
       # @param [Parser] parser
       # @param [Node::Base] fake_node
+      def self.parse_attribute_function(parser, fake_node, args, line)
+        fake_function = TwigFunction.new('attribute', ->(variable, attribute, arguments = nil) {})
+        positional, = Util::CallableArgumentsExtractor.
+          new(fake_node, fake_function, parser.environment).
+          extract_arguments(args)
+
+        Node::Expression::GetAttribute.new(positional[0], positional[1], positional[2], Template::ANY_CALL, line)
+      end
+
+      # @param [Parser] parser
+      # @param [Node::Base] fake_node
       def self.parse_loop_function(parser, fake_node, args, line)
         fake_function = TwigFunction.new('loop', ->(iterator) {})
         positional, = Util::CallableArgumentsExtractor.
@@ -1150,6 +1699,16 @@ module Twig
         expr.attributes[:is_generator] = true
 
         expr
+      end
+
+      # An arrow that returns whether the given one's result is true, as PHP
+      # casts it to bool, with the same number of arguments
+      def self.truthy_arrow(arrow)
+        case arrow.arity
+        when 1 then ->(value) { Runtime::Truthiness.cast?(arrow.call(value)) }
+        when 2 then ->(value, key) { Runtime::Truthiness.cast?(arrow.call(value, key)) }
+        else arrow
+        end
       end
 
       def self.enumerable_function(object, function, proc)

@@ -19,14 +19,26 @@ module Twig
             ))
           end
 
-          if test.name == 'defined' && left.is_a?(Node::Expression::Variable::Context) &&
-             !(aliased = parser.imported_symbol(:function, left.attributes[:name])).nil?
-            left = Node::Expression::MacroReference.new(
-              aliased[:node].nodes[:var],
-              aliased[:name],
-              Node::Expression::Array.new(AutoHash.new, left.lineno),
-              left.lineno
-            )
+          if test.name == 'defined'
+            if left.is_a?(Node::Expression::Variable::Context) &&
+               !(aliased = parser.imported_symbol(:function, left.attributes[:name])).nil?
+              left = Node::Expression::MacroReference.new(
+                aliased[:node].nodes[:var],
+                aliased[:name],
+                Node::Expression::Array.new(AutoHash.new, left.lineno),
+                left.lineno
+              )
+              left.call_parentheses = false
+            end
+
+            if left.is_a?(Node::Expression::MacroReference) && left.call_parentheses?
+              raise Error::Syntax.new(
+                'Using parentheses when testing a macro with the "defined" test is not allowed; ' \
+                'remove the parentheses after the macro name.',
+                left.lineno,
+                stream.source
+              )
+            end
           end
 
           test.node_class.new(left, test, arguments, parser.current_token.lineno)

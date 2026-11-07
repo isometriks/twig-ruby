@@ -46,14 +46,12 @@ module Twig
       @embedded_templates = AutoHash.new
       @block_stack = []
       @imported_symbols = [{}]
-      @ignore_unknown_twig_callables = false
+      # Not reset, as in Twig: an embed inside the discarded branch of a guard
+      # tag still ignores unknown callables. The stack restores it afterwards.
 
       begin
         body = subparse(test, drop_needle:)
-
-        if !@parent.nil? && (body = filter_body_nodes(body)).nil?
-          body = Node::Empty.new
-        end
+        body = cleanup_body_for_child_templates(body) if @parent
       rescue Error::Syntax => e
         unless e.source_context
           e.source_context = stream.source
@@ -127,7 +125,8 @@ module Twig
 
           unless subparser
             if test.nil?
-              raise Error::Syntax.new("Unknown \"#{token.value}\" tag.", token.lineno, stream.source)
+              e = Error::Syntax.new("Unknown \"#{token.value}\" tag.", token.lineno, stream.source)
+              e.add_suggestions(token.value, environment.token_parsers.keys)
             else
               e = Error::Syntax.new("Unexpected \"#{token.value}\" tag", token.lineno, stream.source)
 
@@ -136,9 +135,9 @@ module Twig
                   " (expecting closing tag for the \"#{receiver.tag}\" tag defined near line #{lineno})."
                 )
               end
-
-              raise e
             end
+
+            raise e
           end
 
           stream.next
@@ -155,17 +154,31 @@ module Twig
         end
       end
 
+      return rv.values.first if rv.length == 1
+
       Node::Nodes.new(rv)
     end
 
+    # Parses a discarded part of the template: what it registers (parent,
+    # blocks, macros, ...) is discarded as well.
     def subparse_ignore_unknown_twig_callables(test, drop_needle: false)
       previous = @ignore_unknown_twig_callables
+      # Ruby hashes are mutated in place, so copy what the subparse can register into
+      state = [
+        @parent,
+        @blocks.dup,
+        @macros.dup,
+        @imported_symbols.map { |scope| scope.transform_values(&:dup) },
+        @traits.dup,
+        @embedded_templates.dup,
+      ]
       @ignore_unknown_twig_callables = true
 
       begin
         subparse(test, drop_needle:)
       ensure
         @ignore_unknown_twig_callables = previous
+        @parent, @blocks, @macros, @imported_symbols, @traits, @embedded_templates = state
       end
     end
 
@@ -198,28 +211,38 @@ module Twig
 
     # @return [TwigFilter]
     def filter(name, lineno)
-      unless (filter = environment.filter(name))
+      unless (filter = lookup_callable(:filter, name))
         unless ignore_unknown_twig_callables?
-          raise Error::Syntax.new("Unknown '#{name}' filter.", lineno, stream.source)
+          e = Error::Syntax.new("Unknown \"#{name}\" filter.", lineno, stream.source)
+          e.add_suggestions(name, environment.filters.keys)
+
+          raise e
         end
 
-        filter = TwigFilter.new(name, -> {})
+        return TwigFilter.new(name, -> {})
       end
+
+      trigger_callable_deprecation(filter, lineno)
 
       filter
     end
 
     # @return [TwigFunction, Node::Expression::HelperMethod]
     def function(name, args, lineno)
-      unless (function = environment.function(name))
+      unless (function = lookup_callable(:function, name))
         if ignore_unknown_twig_callables?
           return TwigFunction.new(name, -> {})
         elsif environment.allow_helper_methods?
           return Node::Expression::HelperMethod.new(name, args, lineno)
         else
-          raise Error::Syntax.new("Unknown \"#{name}\" function.", lineno, stream.source)
+          e = Error::Syntax.new("Unknown \"#{name}\" function.", lineno, stream.source)
+          e.add_suggestions(name, environment.functions.keys)
+
+          raise e
         end
       end
+
+      trigger_callable_deprecation(function, lineno)
 
       function
     end
@@ -233,19 +256,24 @@ module Twig
         # try 2 word tests
         name = "#{name} #{current_token.value}"
 
-        test = environment.test(name)
+        test = lookup_callable(:test, name)
         stream.next
       else
-        test = environment.test(name)
+        test = lookup_callable(:test, name)
       end
 
       if test.nil? && ignore_unknown_twig_callables?
-        test = TwigTest.new(name, -> {})
+        return TwigTest.new(name, -> {})
       end
 
       unless test
-        raise Error::Syntax.new("Unknown #{name} test.", line, stream.source)
+        e = Error::Syntax.new("Unknown \"#{name}\" test.", line, stream.source)
+        e.add_suggestions(name, environment.tests.keys)
+
+        raise e
       end
+
+      trigger_callable_deprecation(test, current_token.lineno)
 
       test
     end
@@ -315,6 +343,14 @@ module Twig
     # @param [String] name
     # @param [Node::Macro] node
     def set_macro(name, node)
+      if @macros.key?(name)
+        raise Error::Syntax.new(
+          "Macro \"#{name}\" is defined twice (first definition at line #{@macros[name].lineno}).",
+          node.lineno,
+          node.source_context || stream.source
+        )
+      end
+
       @macros[name] = node
     end
 
@@ -333,12 +369,24 @@ module Twig
     end
 
     # @param [Node::Base] parent
-    def parent=(parent)
+    # @param [Boolean] throw_on_multiple
+    def set_parent(parent, throw_on_multiple: true)
       if @parent
-        raise Error::Syntax.new('Cannot extends twice', parent.lineno, parent.source_context)
+        return unless throw_on_multiple
+
+        raise Error::Syntax.new(
+          'Multiple extends tags are forbidden.',
+          parent.lineno,
+          parent.source_context || stream.source
+        )
       end
 
       @parent = parent
+    end
+
+    # @param [Node::Base] parent
+    def parent=(parent)
+      set_parent(parent)
     end
 
     def ignore_unknown_twig_callables?
@@ -347,57 +395,46 @@ module Twig
 
     private
 
+    # @param [Callable, Node::Expression::HelperMethod] callable
+    # @param [Integer] lineno
+    def trigger_callable_deprecation(callable, lineno)
+      return unless callable.is_a?(Callable) && callable.deprecated?
+
+      source = stream.source
+      callable.trigger_deprecation(source.path.to_s.empty? ? source.name : source.path, lineno)
+    end
+
     # @return [ExpressionParser::ExpressionParsers]
     attr_reader :parsers
 
-    def filter_body_nodes(node, nested: false)
-      # check that the body does not contain non-empty output nodes
-      if (node.is_a?(Node::Text) && !node.attributes[:data].match?(/\A[[:space:]]*\z/)) ||
-         (!node.is_a?(Node::Text) && !node.is_a?(Node::BlockReference) && node.is_a?(Node::Output))
-        if node.to_s.include?("\xEF\xBB\xBF")
-          t = node.attributes[:data][3..]
-          # bypass empty nodes starting with a BOM
-          if t == '' || t.match?(/\A[[:space:]]*\z/)
-            return nil
-          end
-        end
+    # An undefined callable callback may raise a syntax error for a name it
+    # knows is missing; while unknown callables are ignored (in a guard tag's
+    # discarded branch) treat that the same as an unknown name.
+    #
+    # @param [Symbol] kind :filter, :function or :test
+    def lookup_callable(kind, name)
+      environment.public_send(kind, name)
+    rescue Error::Syntax
+      raise unless ignore_unknown_twig_callables?
 
-        raise Error::Syntax.new(
-          'A template that extends another one cannot include content outside Twig blocks. Did you forget ' \
-          'to put the content inside a {% block %} tag?',
-          node.lineno,
-          stream.source
-        )
+      nil
+    end
+
+    # The correctness node visitor checks that a child template only has
+    # content inside blocks; drop what is left that would never be output.
+    def cleanup_body_for_child_templates(body)
+      if body.is_a?(Node::BlockReference) || (body.is_a?(Node::Text) && body.blank?)
+        return Node::Empty.new
       end
 
-      # Bypass nodes that "capture" the output
-      if node.is_a?(Node::Set)
-        return node
+      body.nodes.delete_if do |_k, node|
+        # as it has a parent, the block reference won't be used
+        node.is_a?(Node::BlockReference) ||
+          # remove nodes considered as "empty"
+          (node.is_a?(Node::Text) && node.blank?)
       end
 
-      # "block" tags that are not captured (see above) are only used for defining
-      # the content of the block. In such a case, nesting it does not work as
-      # expected as the definition is not part of the default template code flow.
-      if nested && node.is_a?(Node::BlockReference)
-        raise Error::Syntax.new(
-          'A block definition cannot be nested under non-capturing nodes.',
-          node.lineno,
-          stream.source
-        )
-      end
-
-      if node.is_a?(Node::Output)
-        return nil
-      end
-
-      nested ||= !node.is_a?(Node::Nodes)
-      node.nodes.each do |k, n|
-        if filter_body_nodes(n, nested: nested).nil?
-          node.nodes.delete(k)
-        end
-      end
-
-      node
+      body
     end
   end
 end

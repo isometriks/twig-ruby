@@ -18,6 +18,7 @@ module Twig
           {
             index: nil,
             embedded_templates:,
+            strategy: false,
           },
           1
         )
@@ -88,12 +89,10 @@ module Twig
         compiler.
           subcompile(nodes[:blocks])
 
-        # Macros
-        compiler.
-          subcompile(nodes[:macros])
-
+        compile_macros(compiler)
         compile_get_template_name(compiler)
         compile_traitable(compiler)
+        compile_default_escape_strategy(compiler)
         compile_debug_info(compiler)
         compile_get_source_context(compiler)
 
@@ -230,18 +229,47 @@ module Twig
           write('')
 
         if parent.is_a?(Node::Expression::Constant)
-          compiler.subcompile(parent)
-        else
-          compiler.
-            raw('load(').
-            subcompile(parent).
-            raw(', ').
-            repr(parent.lineno).
-            raw(')')
+          # a constant parent never depends on the context, so resolve it once
+          compiler.raw('@parent ||= ')
         end
+
+        # loading here rather than in get_parent lets an error, such as a
+        # missing parent, report the line of the extends tag
+        compiler.
+          raw('load(').
+          subcompile(parent).
+          raw(', ').
+          repr(parent.lineno).
+          raw(')')
 
         compiler.
           raw("\n").
+          outdent.
+          write("end\n\n")
+      end
+
+      # @param [Compiler] compiler
+      def compile_macros(compiler)
+        return if nodes[:macros].empty?
+
+        compiler.
+          write("private def load_declared_macros\n").
+          indent.
+          write("{\n").
+          indent
+
+        nodes[:macros].nodes.each do |name, macro|
+          compiler.
+            write('').
+            string(name).
+            raw(' => ').
+            subcompile(macro).
+            raw(",\n")
+        end
+
+        compiler.
+          outdent.
+          write("}\n").
           outdent.
           write("end\n\n")
       end
@@ -290,6 +318,21 @@ module Twig
           write("def traitable?\n").
           indent.
           write("false\n").
+          outdent.
+          write("end\n\n")
+      end
+
+      def compile_default_escape_strategy(compiler)
+        unless (strategy = attributes[:strategy])
+          return
+        end
+
+        compiler.
+          write("def default_escape_strategy\n").
+          indent.
+          write('').
+          repr(strategy).
+          raw("\n").
           outdent.
           write("end\n\n")
       end

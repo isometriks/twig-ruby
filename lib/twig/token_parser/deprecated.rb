@@ -22,7 +22,7 @@ module Twig
             raise Error::Syntax.new(
               "Unknown \"#{k}\" option.",
               stream.current.lineno,
-              stream.source_context
+              stream.source
             )
           end
         end

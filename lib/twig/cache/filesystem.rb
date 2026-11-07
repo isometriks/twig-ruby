@@ -16,20 +16,29 @@ module Twig
       end
 
       def load(key)
-        if File.file?(key)
-          Kernel.load(key)
+        Kernel.load(key)
 
-          true
-        else
-          false
-        end
+        true
+      rescue LoadError
+        # Also covers an entry removed between a freshness check and this load
+        false
       end
 
-      def write(key, content)
+      def write(key, content, mtime: nil)
         dirname = File.dirname(key)
 
         FileUtils.mkdir_p(dirname) unless File.directory?(dirname)
-        File.write(key, content)
+
+        # Written through a temporary file and renamed into place, so another
+        # thread or process loading the entry never sees it half written.
+        tmp = "#{key}.#{SecureRandom.hex(8)}.tmp"
+        begin
+          File.write(tmp, content)
+          File.utime(mtime, mtime, tmp) if mtime
+          File.rename(tmp, key)
+        ensure
+          FileUtils.rm_f(tmp)
+        end
       end
 
       def timestamp(key)

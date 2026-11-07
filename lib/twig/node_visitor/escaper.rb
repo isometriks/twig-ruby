@@ -18,10 +18,22 @@ module Twig
       def enter_node(node, env)
         case node
         when Node::Module
+          # A compilation error can abort the previous template before
+          # leave_node runs, so start every template from a clean state
+          @default_strategy = false
+          @status_stack = []
+          safe_analysis.reset
+
           if env.extension?(Extension::Escaper)
             default_strategy = env.extension(Extension::Escaper).default_strategy(node.template_name)
             @default_strategy = default_strategy if default_strategy
           end
+
+          # the compiled template exposes the strategy it was compiled with
+          node.attributes[:strategy] = case @default_strategy
+                                       when String, Symbol then @default_strategy.to_sym
+                                       else false
+                                       end
 
           @blocks = {}
           @safe_vars = []
@@ -41,6 +53,7 @@ module Twig
           @default_strategy = false
           @safe_vars = []
           @blocks = {}
+          safe_analysis.reset
         elsif node.is_a?(Node::Expression::Filter)
           return pre_escape_filter_node(node, env)
         elsif node.is_a?(Node::Print) && (type = need_escaping) != false

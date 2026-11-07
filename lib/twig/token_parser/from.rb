@@ -35,15 +35,15 @@ module Twig
 
         stream.expect(Token::BLOCK_END_TYPE)
 
-        internal_ref = Node::Expression::Variable::AssignTemplate.new(
-          Node::Expression::Variable::Template.new(nil, token.lineno),
+        internal_ref = Node::Expression::Variable::AssignMacro.new(
+          Node::Expression::Variable::Macro.new(nil, token.lineno),
           global: parser.main_scope?
         )
 
         node = Node::Import.new(macro, internal_ref, token.lineno)
 
         targets.each do |name, aliased|
-          parser.add_imported_symbol(:function, aliased.attributes[:name], "macro_#{name}", internal_ref)
+          parser.add_imported_symbol(:function, aliased.attributes[:name], name, internal_ref)
         end
 
         node

@@ -12,7 +12,7 @@ module Twig
 
         unless %w[function filter test].include?(type_token.value)
           raise Error::Syntax.new(
-            "Supported guard types are function, filter, and test, \"#{token.value}\" given.",
+            "Supported guard types are function, filter and test, \"#{type_token.value}\" given.",
             type_token.lineno,
             stream.source
           )
@@ -45,12 +45,16 @@ module Twig
 
         if stream.next.value == 'else'
           stream.expect(Token::BLOCK_END_TYPE)
-          else_node = parser.subparse(method(:decide_guard_end), drop_needle: true)
+          if exists
+            parser.subparse_ignore_unknown_twig_callables(method(:decide_guard_end), drop_needle: true)
+          else
+            else_node = parser.subparse(method(:decide_guard_end), drop_needle: true)
+          end
         end
 
         stream.expect(Token::BLOCK_END_TYPE)
 
-        Node::Nodes.new(AutoHash.new.add(exists ? body : else_node))
+        Node::Nodes.new(AutoHash.new.add(exists ? body : else_node), token.lineno)
       end
 
       def tag

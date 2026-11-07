@@ -6,13 +6,18 @@ module Twig
       # @return [Integer]
       attr_reader :lineno
 
+      # @return [Integer, nil] the 1-based column, or nil when unknown
+      attr_reader :column
+
       # @param [String] message
       # @param [Integer] lineno
       # @param [Source] source
-      def initialize(message, lineno = -1, source = nil, previous = nil)
+      # @param [Integer, nil] column
+      def initialize(message, lineno = -1, source = nil, previous = nil, column: nil)
         super('')
 
         @lineno = lineno
+        @column = column
         @source = source
         @raw_message = message
         @previous = previous
@@ -40,6 +45,12 @@ module Twig
         update_repr
       end
 
+      # @param [Integer, nil] column
+      def column=(column)
+        @column = column
+        update_repr
+      end
+
       def append_message(raw_message)
         @raw_message += raw_message
         update_repr
@@ -49,10 +60,19 @@ module Twig
         locations = [self, @previous].compact.map(&:backtrace_locations).flatten
         locations.each do |location|
           next if location.nil?
-          next unless location.label&.start_with?('Twig::Compiled::')
 
-          klass, _method = location.label.split('#')
-          klass = Twig::Compiled.const_get(klass)
+          # A macro body or loop runs in a block, labelled
+          # "block (2 levels) in Twig::Compiled::Template_...#load_declared_macros"
+          label = location.label&.sub(/\Ablock (?:\(\d+ levels\) )?in /, '')
+          next unless label&.start_with?('Twig::Compiled::')
+
+          klass, _method = label.split('#')
+          klass = begin
+            Twig::Compiled.const_get(klass)
+          rescue NameError
+            # A recompile replaced the class since this frame ran
+            next
+          end
 
           next unless source.name == klass.source_context.name
 
@@ -81,7 +101,9 @@ module Twig
         @message = @raw_message.dup
         last = @message[-1]
 
-        if (punctuation = %w[. ?].include?(last) ? last : '')
+        punctuation = %w[. ?].include?(last) ? last : nil
+
+        if punctuation
           @message = @message[0...-1]
         end
 
@@ -91,9 +113,10 @@ module Twig
 
         if lineno.positive?
           @message += " at line #{lineno}"
+          @message += " column #{column}" unless column.nil?
         end
 
-        unless punctuation.empty?
+        if punctuation
           @message += punctuation
         end
       end

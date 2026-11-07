@@ -71,8 +71,8 @@ RSpec.describe Twig::Extension::Core do
           {{ madeup.foo|default("Hello World!") }}
           {{ class.attribute(...args) }}
           {{ class.attribute("Hello", ...args2) }}
-          {{ class.attribute(sep: "-", ...args) }}
-          {{ class.attribute(...{ sep: "*" }, ...args) }}
+          {{ class.attribute(...args, ...{ sep: "-" }) }}
+          {{ class.attribute(...[...args, ...{ sep: "*" }]) }}
           {{ class.attribute_hash(arg1: "Hello", arg2: "World!") }}
           {{ class.attribute_hash(...args_hash) }}
           {{ [...[1, 2, 3], ...[4, 5]]|join(", ") }}
@@ -96,7 +96,7 @@ RSpec.describe Twig::Extension::Core do
           {{ numbers[slice_start:slice_end]|join }}
           {% for i in range(0, 10) if i > 5 %}{{ i }},{% endfor %}
           {% set func = x => 'Hello '~x %}{{ func|invoke('World!') }}
-          {{ [3, 2, 1]|reverse(preserveKeys=true) }}
+          {{ [3, 2, 1]|reverse(preserveKeys=true)|json_encode|raw }}
           {{ asdf ?? 'OK' }}
         INPUTS
       end
@@ -173,7 +173,7 @@ RSpec.describe Twig::Extension::Core do
           1, 2, 3, 4, 5
           Hello World!
           Special character
-          [{"0":1,"1":2},{"2":3,"3":"fill"}]
+          [[1,2],{"2":3,"3":"fill"}]
           Hello World!
           one|two|three,four,five
           one|two|three
@@ -181,7 +181,7 @@ RSpec.describe Twig::Extension::Core do
           OK
           OK
           OK
-          Hello World! How are you?
+          Hello World!How are you?
           <h1>Hello World!</h1>How are you?
           a or b
           a - b
@@ -191,7 +191,7 @@ RSpec.describe Twig::Extension::Core do
           234
           6,7,8,9,10,
           Hello World!
-          [1, 2, 3]
+          {"2":1,"1":2,"0":3}
           OK
         OUTPUTS
       end
@@ -241,7 +241,7 @@ RSpec.describe Twig::Extension::Core do
           Hello {{ include("include.twig") }}
           {{ [1, 2]|sort((a, b) => (b - a)) }}
           {{ [3, 2, 1]|sort }}
-          {{ { a: 2, b: 1 }|sort((a, b) => (a[1] - b[1])) }}
+          {{ { a: 2, b: 1 }|sort((a, b) => (a - b)) }}
           {{ { b: 2, a: 1 }|sort }}
           {{ [1, 2, 3]|join }}
           {{ [1, 2, 3]|join(", ") }}
@@ -312,6 +312,79 @@ RSpec.describe Twig::Extension::Core do
           'source.twig' => '{{ Hello World! }}',
           'blocks.twig' => '{% block greeting "Hello" %}{% block message "World!" %}',
         }
+      end
+    end
+  end
+
+  # The singular form, or the word as it is for a count other than 1, as
+  # plural gives the word as it is for a count of 1
+  context 'with the singular filter' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ 'apples'|singular }}",
+          "{{ 'people'|singular }}",
+          "{{ 'apples'|singular(1) }}",
+          "{{ 'apples'|singular(2) }}",
+        ]
+      end
+
+      let(:outputs) { %w[apple person apple apples] }
+    end
+  end
+
+  context 'with the constant function' do
+    before do
+      stub_const('Holder', Class.new)
+      stub_const('Holder::FOO', 'foo')
+      stub_const('HolderMixin', Module.new)
+      stub_const('HolderMixin::BAR', 'bar')
+      stub_const('SubHolder', Class.new(Holder) { include HolderMixin })
+    end
+
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ constant('class', object) }}",
+          "{{ constant('class', object) is defined ? 'yes' : 'no' }}",
+          "{{ constant('FOO', object) ?? 'KO' }}",
+          "{{ constant('NOPE', object) ?? 'KO' }}",
+          "{{ constant('Holder::FOO') ?? 'KO' }}",
+          # A class's own and inherited constants, but not the global ones
+          "{{ constant('FOO', sub) }}",
+          "{{ constant('BAR', sub) }}",
+          "{{ constant('SubHolder::BAR') }}",
+          "{{ constant('String', object) is defined ? 'yes' : 'no' }}",
+          "{{ constant('Holder::String') is defined ? 'yes' : 'no' }}",
+          "{{ constant('HolderMixin::String') is defined ? 'yes' : 'no' }}",
+          "{{ constant('RUBY_ENGINE') }}",
+        ]
+      end
+
+      let(:outputs) { %w[Holder yes foo KO foo foo bar bar no no no ruby] }
+      let(:locals) { { object: Holder.new, sub: SubHolder.new } }
+    end
+
+    {
+      "constant('Holder::NOPE')" => 'Constant "Holder::NOPE" is undefined',
+      "constant('NOPE', object)" => 'Constant "Holder::NOPE" is undefined',
+      "constant('Nope::NOPE')" => 'Constant "Nope::NOPE" is undefined',
+      "constant('NOPE')" => 'Constant "NOPE" is undefined',
+      "constant('String', object)" => 'Constant "Holder::String" is undefined',
+      "constant('Holder::RUBY_ENGINE')" => 'Constant "Holder::RUBY_ENGINE" is undefined',
+      "constant('Holder::class')" => 'You cannot use the Twig function "constant" to access "Holder::class". ' \
+                                     'You could provide an object and call constant("class", $object) or use ' \
+                                     'the class name directly as a string',
+    }.each do |call, message|
+      context "with {{ #{call} }}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { "{{ #{call} }}" }
+          let(:environment) do
+            Twig::Environment.new(loader).tap { |env| env.add_global('object', Holder.new) }
+          end
+          let(:error) { Twig::Error::Runtime }
+          let(:message) { %(#{message} in "template.twig" at line 1.) }
+        end
       end
     end
   end
@@ -396,6 +469,170 @@ RSpec.describe Twig::Extension::Core do
 
     it 'gets the maximum value of hash values' do
       expect(described_class.max({ a: 1, b: 2 })).to eq(2)
+    end
+  end
+
+  ["'abc'", ':abc', '12', '1.5', 'nil', 'obj'].each do |value|
+    context "when cycle is given #{value}" do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { "{{ cycle(#{value}, 1) }}" }
+        let(:environment) do
+          Twig::Environment.new(loader).tap { |env| env.add_global('obj', Object.new) }
+        end
+        let(:error) { Twig::Error::Runtime }
+        let(:message) do
+          'The "cycle" function expects an array or "ArrayAccess" as first argument in "template.twig" at line 1.'
+        end
+      end
+    end
+  end
+
+  context 'when cycle is given a range' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) { ['{{ cycle(1..3, 4) }}', '{{ cycle(range(1, 3), 4) }}'] }
+      let(:outputs) { %w[2 2] }
+    end
+  end
+
+  %w[max min].each do |function|
+    { "''" => 'string', '5' => 'int', '1.5' => 'float', 'false' => 'false', 'nil' => 'null' }.each do |value, type|
+      context "when #{function} is given only #{value}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { "{{ #{function}(#{value}) }}" }
+          let(:error) { Twig::Error::Runtime }
+          let(:message) do
+            'An exception has been thrown during the rendering of a template ' \
+              "(\"#{function}(): Argument #1 ($value) must be of type array, #{type} given\") " \
+              'in "template.twig" at line 1.'
+          end
+        end
+      end
+    end
+
+    context "when #{function} is given a range" do
+      it_behaves_like 'render_and_assert' do
+        let(:input) { "{{ #{function}(2..4) }}" }
+        let(:output) { function == 'max' ? '4' : '2' }
+      end
+    end
+
+    %w[[] {}].each do |empty|
+      context "when #{function} is given #{empty}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { "{{ #{function}(#{empty}) }}" }
+          let(:error) { Twig::Error::Runtime }
+          let(:message) do
+            'An exception has been thrown during the rendering of a template ' \
+              "(\"#{function}(): Argument #1 ($value) must contain at least one element\") " \
+              'in "template.twig" at line 1.'
+          end
+        end
+      end
+    end
+
+    context "when #{function} is called without arguments" do
+      it_behaves_like 'render_and_raise' do
+        let(:template) { "{{ #{function}() }}" }
+        let(:error) { Twig::Error::Syntax }
+        let(:message) { /Value for argument "value" is required for function "#{function}"/ }
+      end
+    end
+  end
+
+  context 'when the result of include is assigned' do
+    it_behaves_like 'render_and_assert' do
+      let(:input) { %({% set assigned = include("amp.twig") %}[{{ assigned }}]) }
+      let(:output) { '[a &amp; b]' }
+      let(:templates) { { 'amp.twig' => '{{ text }}' } }
+      let(:locals) { { text: 'a & b' } }
+    end
+  end
+
+  describe '#self.split' do
+    it 'splits an empty string into a single empty character' do
+      expect(described_class.split('UTF-8', '', '')).to eq([''])
+      expect(described_class.split('UTF-8', nil, '')).to eq([''])
+    end
+
+    it 'splits a multibyte string into characters' do
+      expect(described_class.split('UTF-8', 'héllo', '')).to eq(%w[h é l l o])
+    end
+
+    it 'splits into chunks of the limit without a trailing empty chunk' do
+      expect(described_class.split('UTF-8', 'aabbcc', '', limit: 2)).to eq(%w[aa bb cc])
+      expect(described_class.split('UTF-8', 'aabbc', '', limit: 2)).to eq(%w[aa bb c])
+      expect(described_class.split('UTF-8', 'ab', '', limit: 3)).to eq(%w[ab])
+    end
+
+    it 'splits on a delimiter like PHP explode' do
+      expect(described_class.split('UTF-8', 'a,b,', ',')).to eq(['a', 'b', ''])
+      expect(described_class.split('UTF-8', ',a,,b,', ',')).to eq(['', 'a', '', 'b', ''])
+      expect(described_class.split('UTF-8', ' a  b', ' ')).to eq(['', 'a', '', 'b'])
+      expect(described_class.split('UTF-8', 'aXXbXX', 'XX')).to eq(['a', 'b', ''])
+      expect(described_class.split('UTF-8', 'a.b', '.')).to eq(%w[a b])
+      expect(described_class.split('UTF-8', '', ',')).to eq([''])
+      expect(described_class.split('UTF-8', nil, ',')).to eq([''])
+    end
+
+    it 'applies a delimiter limit like PHP explode' do
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: 0)).to eq(['a,b,c'])
+      expect(described_class.split('UTF-8', '', ',', limit: 0)).to eq([''])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: 1)).to eq(['a,b,c'])
+      expect(described_class.split('UTF-8', 'a,,b', ',', limit: 2)).to eq(['a', ',b'])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: 5)).to eq(%w[a b c])
+      expect(described_class.split('UTF-8', ',a,,b,', ',', limit: -1)).to eq(['', 'a', '', 'b'])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: -2)).to eq(['a'])
+      expect(described_class.split('UTF-8', 'a,b,c', ',', limit: -4)).to eq([])
+      expect(described_class.split('UTF-8', '', ',', limit: -1)).to eq([])
+    end
+
+    it 'splits a number as a string' do
+      expect(described_class.split('UTF-8', 12_345, '')).to eq(%w[1 2 3 4 5])
+      expect(described_class.split('UTF-8', 12_345, '3')).to eq(%w[12 45])
+      expect(described_class.split('UTF-8', 1.5, '.')).to eq(%w[1 5])
+      expect(described_class.split('UTF-8', 'a1b1c', 1)).to eq(%w[a b c])
+    end
+
+    it 'raises a runtime error for a string that is not valid UTF-8' do
+      expect { described_class.split('UTF-8', "\xC3\x28abc", '') }.
+        to raise_error(Twig::Error::Runtime, /Unable to split the string passed to "split" into characters/)
+    end
+  end
+
+  context 'with the attribute function' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ attribute(obj, 'bar', ['a', 'b']) }}",
+          "{{ attribute(obj, 'bar') }}",
+          '{{ attribute(obj, name) }}',
+          "{{ attribute({ key: 'value' }, 'key') }}",
+          "{{ attribute(obj, 'missing') is defined ? 'KO' : 'OK' }}",
+        ]
+      end
+      let(:outputs) { ['bar_a-b', 'bar_-', 'bar_-', 'value', 'OK'] }
+      let(:locals) do
+        obj = Class.new do
+          def bar(first = nil, second = nil)
+            "bar_#{first}-#{second}"
+          end
+        end.new
+
+        { obj:, name: 'bar' }
+      end
+    end
+  end
+
+  describe 'include_only' do
+    it 'keeps globals but not the current context' do
+      loader = Twig::Loader::Hash.new({
+        'index.twig' => '{{ include_only("other.twig") }}',
+        'other.twig' => '[{{ site }}|{{ foo ?? "none" }}]',
+      })
+      environment = Twig::Environment.new(loader)
+      environment.add_global('site', 'Twig')
+
+      expect(environment.load('index.twig').render({ 'foo' => 'bar' }).to_s).to eq('[Twig|none]')
     end
   end
 
@@ -545,7 +782,7 @@ RSpec.describe Twig::Extension::Core do
           e.message
         end
         dot = begin
-          attribute_of(object, 'c', strict)
+          described_class.get_attribute(strict, source, object, 'c', Twig::Template::ANY_CALL)
         rescue Twig::Error::Runtime => e
           e.message
         end
@@ -554,8 +791,39 @@ RSpec.describe Twig::Extension::Core do
       end
 
       it 'does not double the space when the object has no keys' do
-        expect { subscript_of(%w[a b], 5, strict) }.
-          to raise_error(Twig::Error::Runtime, %r{sequence/mapping does not exist})
+        expect { subscript_of(Struct.new(:a).new(1), 5, strict) }.
+          to raise_error(Twig::Error::Runtime, %r{Key "5" for sequence/mapping does not exist})
+      end
+
+      # The messages Twig gives for a sequence, a mapping and a scalar
+      {
+        '{{ 5.nope }}' => 'Impossible to access an attribute ("nope") on a int variable ("5").',
+        '{{ 5[1] }}' => 'Impossible to access a key ("1") on a int variable ("5").',
+        '{{ 5.nope() }}' => 'Impossible to invoke a method ("nope") on a int variable ("5").',
+        '{{ 1.5.nope }}' => 'Impossible to access an attribute ("nope") on a float variable ("1.5").',
+        '{{ t.nope }}' => 'Impossible to access an attribute ("nope") on a bool variable ("1").',
+        '{{ f[1] }}' => 'Impossible to access a key ("1") on a bool variable ("").',
+        '{{ s.nope() }}' => 'Impossible to invoke a method ("nope") on a string variable ("abc").',
+        '{{ s[9] }}' => 'Impossible to access a key ("9") on a string variable ("abc").',
+        '{{ n[1] }}' => 'Impossible to access a key ("1") on a null variable.',
+        '{{ n.nope() }}' => 'Impossible to invoke a method ("nope") on a null variable.',
+        '{{ list[5] }}' => 'Key "5" for sequence/mapping with keys "0, 1" does not exist.',
+        '{{ list.nope }}' => 'Key "nope" for sequence/mapping with keys "0, 1" does not exist.',
+        '{{ empty[5] }}' => 'Key "5" does not exist as the sequence/mapping is empty.',
+        '{{ empty_map.nope }}' => 'Key "nope" does not exist as the sequence/mapping is empty.',
+        '{{ list.nope() }}' => 'Impossible to invoke a method ("nope") on a sequence/mapping.',
+        '{{ foo.nope() }}' => 'Impossible to invoke a method ("nope") on a sequence/mapping.',
+      }.each do |template, message|
+        it "reports #{template} as Twig does" do
+          env = Twig::Environment.new(Twig::Loader::Hash.new('index' => template), strict_variables: true)
+          context = {
+            'foo' => { 'bar' => 1 }, 'list' => [1, 2], 't' => true, 'f' => false, 's' => 'abc',
+            'n' => nil, 'empty' => [], 'empty_map' => {}
+          }
+
+          expect { env.load('index').render(context) }.
+            to raise_error(Twig::Error::Runtime, message.sub(/\.\z/, ' in "index" at line 1.'))
+        end
       end
     end
 

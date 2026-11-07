@@ -30,7 +30,7 @@ module Twig
         raise Error::Runtime, 'Render must implement Twig::Runtime::Context.'
       end
 
-      render_with_blocks(context.merge(env.globals), blocks.merge(blocks))
+      render_with_blocks(context.merge(env.globals, overwrite: false), blocks.merge(blocks))
     end
 
     def render_with_blocks(context = {}, blocks = {})
@@ -60,6 +60,9 @@ module Twig
       template = if use_blocks && blocks.key?(name)
                    blocks[name]
                  elsif self.blocks.key?(name)
+                   # expose this template's own blocks so nested block() calls resolve
+                   # against them when the block is rendered directly (e.g. block(name, template))
+                   blocks = self.blocks.merge(blocks)
                    self.blocks[name]
                  end
 
@@ -93,7 +96,7 @@ module Twig
           end
 
           exception = Error::Runtime.new(
-            "An exception has been thrown during the rendering of a template (#{e})",
+            "An exception has been thrown during the rendering of a template (\"#{e}\").",
             -1,
             template[0].source_context,
             e
@@ -144,7 +147,7 @@ module Twig
         parent.render_block(name, context, blocks, use_blocks: false)
       else
         raise Error::Runtime.new(
-          "The template has no parent and no traits defining the #{name} block.",
+          "The template has no parent and no traits defining the \"#{name}\" block.",
           -1,
           source_context
         )
@@ -172,72 +175,25 @@ module Twig
       @parents[parent]
     end
 
-    def macro?(name, context)
-      if respond_to?(name.to_sym)
-        return true
-      end
-
-      unless (parent = get_parent(context))
-        return false
-      end
-
-      parent.macro?(name, context)
-    end
-
-    def render_macro(name, context, args, lineno, source)
-      macro_method = macro_template_reference(name, context, lineno, source)
-      macro_arguments = macro_method.parameters.select { |arg| arg[0] == :key }.map { |_, arg| arg }
-      mapped_arguments = AutoHash.new
-      kwarg = false
-
-      args.each do |key, value|
-        if !kwarg && key.is_a?(Integer)
-          if key >= 0 && key < macro_arguments.length
-            mapped_key = macro_arguments[key]
-          else
-            mapped_arguments.add(value)
-
-            next
-          end
-        elsif kwarg && key.is_a?(Integer)
-          raise Error::Runtime.new('Cannot place a positional argument after a keyword argument.', lineno, source)
-        else
-          kwarg = true
-          mapped_key = key.to_sym
-        end
-
-        if mapped_arguments.key?(mapped_key)
-          raise Error::Runtime.new("Argument \"#{mapped_key.inspect}\" passed twice.", lineno, source)
-        end
-
-        mapped_arguments[mapped_key] = value
-      end
-
-      macro_method.call(context.call_context, **mapped_arguments)
-    end
-
-    # @return [Method]
-    def macro_template_reference(name, context, lineno, source)
-      if respond_to?(name.to_sym)
-        return method(name.to_sym)
-      end
-
-      parent = self
-      while (parent = parent.get_parent(context))
-        if parent.respond_to?(name.to_sym)
-          return parent.method(name.to_sym)
-        end
-      end
-
-      raise Error::Runtime.new(
-        "Macro \"#{name.delete_prefix('macro_')}\" is not defined in template \"#{template_name}\".",
-        lineno,
-        source
-      )
+    # The macros this template declares, as imported by `import` or reached through `_self`
+    #
+    # @return [Runtime::MacroNamespace]
+    def macro_namespace
+      @macro_namespace ||= Runtime::MacroNamespace.new(self, load_declared_macros)
     end
 
     def source_context
       raise NotImplementedError
+    end
+
+    # The escaping strategy the template body was compiled with. It describes
+    # the template's own source, not its output: autoescape, escape, and
+    # anything rendered by a parent, embedded or included template can use
+    # another strategy.
+    #
+    # @return [Symbol, false] false when the template is not autoescaped
+    def default_escape_strategy
+      false
     end
 
     def traitable?
@@ -248,17 +204,22 @@ module Twig
       self
     end
 
+    # @param [Environment] environment
+    def owned_by?(environment)
+      env.equal?(environment)
+    end
+
     private
 
     # @param [String, TemplateWrapper] template
     # @return [Template]
     def load(template, line, index = nil)
       if template.is_a?(Array)
-        return env.resolve_template(template).unwrap
+        return env.resolve_template(template).unwrap(env)
       end
 
       if template.is_a?(TemplateWrapper)
-        return template.unwrap
+        return template.unwrap(env)
       end
 
       if template == template_name
@@ -293,6 +254,24 @@ module Twig
     # Overloaded by children
     def do_get_parent(context)
       false
+    end
+
+    # An import in the template body only runs when the body is rendered, so a block or a
+    # macro rendered on its own can't see it
+    def throw_uninitialized_macro_namespace(line)
+      raise Error::Runtime.new(
+        "Macros imported in the body of template \"#{template_name}\" are not available because the body was " \
+        'not rendered; move the "import" or "from" tag inside the block or the macro that uses it.',
+        line,
+        source_context
+      )
+    end
+
+    # Overloaded by children that declare macros
+    #
+    # @return [Hash{String => Runtime::Macro}]
+    def load_declared_macros
+      {}
     end
 
     # @return [Environment]

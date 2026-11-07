@@ -15,19 +15,43 @@ module Twig
 
     def render_block(name, context = {}, call_context: nil, output_buffer: nil)
       context = Runtime::Context.from(context, call_context:, output_buffer:)
-      context.merge!(environment.globals)
+      context.merge!(environment.globals, overwrite: false)
 
       template.render_block(name, context).to_s
     end
 
     def block?(name, context = {})
-      context = Runtime::Context.from(context)
+      # Globals are needed to resolve a dynamic parent, e.g. {% extends layout %}
+      context = Runtime::Context.from(context).merge(environment.globals, overwrite: false)
 
       template.block?(name, context)
     end
 
+    # The escaping strategy the template body was compiled with. It describes
+    # the template's own source, not its output: autoescape, escape, and
+    # anything rendered by a parent, embedded or included template can use
+    # another strategy.
+    #
+    # @return [Symbol, false] false when the template is not autoescaped
+    def default_escape_strategy
+      template.default_escape_strategy
+    end
+
+    # @param [Environment] environment
+    def owned_by?(environment)
+      self.environment.equal?(environment) && template.owned_by?(environment)
+    end
+
+    # A wrapper only works with the environment that loaded it, whose
+    # extensions, globals and sandboxing its template was compiled for
+    #
+    # @param [Environment] environment
     # @return [Template]
-    def unwrap
+    def unwrap(environment)
+      unless owned_by?(environment)
+        raise Error::Runtime, "A \"#{self.class}\" can only be used with the \"#{Environment}\" that created it."
+      end
+
       template
     end
 

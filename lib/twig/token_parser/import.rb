@@ -11,8 +11,8 @@ module Twig
         macro = parser.parse_expression
         parser.stream.expect(Token::NAME_TYPE, 'as')
         name = parser.stream.expect(Token::NAME_TYPE).value
-        var = Node::Expression::Variable::AssignTemplate.new(
-          Node::Expression::Variable::Template.new(name, token.lineno),
+        var = Node::Expression::Variable::AssignMacro.new(
+          Node::Expression::Variable::Macro.new(name, token.lineno),
           global: parser.main_scope?
         )
         parser.stream.expect(Token::BLOCK_END_TYPE)

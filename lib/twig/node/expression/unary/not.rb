@@ -7,7 +7,7 @@ module Twig
         class Not < Unary::Base
           def compile(compiler)
             compiler.
-              raw('!::Twig::Extension::Core.bool(').
+              raw('!::Twig::Runtime::Truthiness.true?(').
               subcompile(nodes[:node]).
               raw(')')
           end

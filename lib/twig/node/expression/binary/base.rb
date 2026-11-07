@@ -30,34 +30,36 @@ module Twig
           end
         end
 
-        OPERATORS = {
-          BitwiseOr: '|',
-          BitwiseXor: '^',
-          BitwiseAnd: '&',
-          Equal: '==',
-          NotEqual: '!=',
-          Spaceship: '<=>',
-          Less: '<',
-          Greater: '>',
-          LessEqual: '<=',
-          GreaterEqual: '>=',
+        # Operators that compare or calculate as PHP does, through a runtime
+        # method, instead of with Ruby's operators
+        RUNTIME_OPERATORS = {
+          Equal: 'Comparison.equal?',
+          NotEqual: 'Comparison.not_equal?',
+          Spaceship: 'Comparison.compare',
+          Less: 'Comparison.less?',
+          Greater: 'Comparison.greater?',
+          LessEqual: 'Comparison.less_equal?',
+          GreaterEqual: 'Comparison.greater_equal?',
 
-          Range: '..',
-          Add: '+',
-          Sub: '-',
-          Mul: '*',
-          Div: '/',
-          Mod: '%',
-          Power: '**',
+          BitwiseOr: 'Arithmetic.bitwise_or',
+          BitwiseXor: 'Arithmetic.bitwise_xor',
+          BitwiseAnd: 'Arithmetic.bitwise_and',
+          Add: 'Arithmetic.add',
+          Sub: 'Arithmetic.subtract',
+          Mul: 'Arithmetic.multiply',
         }.freeze
 
-        # Lots of simple operator classes can just be generated dynamically
-        OPERATORS.each do |name, operation|
+        RUNTIME_OPERATORS.each do |name, method|
           const_set(name.to_s, Class.new(Binary::Base) do
-            def operator(compiler)
-              compiler.raw(self.class.const_get('OPERATOR'))
+            def compile(compiler)
+              compiler.
+                raw("::Twig::Runtime::#{self.class.const_get('METHOD')}(").
+                subcompile(nodes[:left]).
+                raw(', ').
+                subcompile(nodes[:right]).
+                raw(')')
             end
-          end).const_set('OPERATOR', operation)
+          end).const_set('METHOD', method)
         end
       end
     end

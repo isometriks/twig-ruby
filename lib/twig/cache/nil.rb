@@ -11,9 +11,13 @@ module Twig
         0
       end
 
-      def write(_key, _content); end
-      def load(_key); end
+      def write(_key, _content, mtime: nil); end
       def remove(_key); end
+
+      # Nothing is ever cached, so there is never anything to load
+      def load(_key)
+        false
+      end
     end
   end
 end

@@ -21,14 +21,14 @@ module Twig
       end
 
       def merge!(other, overwrite: true)
-        return if other == []
+        return self if other == []
 
         unless other.is_a?(Hash)
           raise "Must merge! another Hash, given #{other.class.name}"
         end
 
         other.each do |k, v|
-          if overwrite || !key?(k)
+          if overwrite || !key?(normalize_key(k))
             self[k] = v
           end
         end
@@ -122,13 +122,13 @@ module Twig
       end
 
       def [](key)
-        super(key.to_sym)
+        super(normalize_key(key))
       end
 
       def []=(key, value)
         super if popping
 
-        key = key.to_sym
+        key = normalize_key(key)
 
         if (frame = stack.last)
           super and return if frame[:replace].key?(key) || frame[:remove].include?(key)
@@ -152,6 +152,22 @@ module Twig
         end
       end
 
+      # The variables an include or embed passes, which can be any iterable,
+      # as PHP's CoreExtension::merge and toArray take: a sequence or any
+      # other enumerable gives its keys (integers by position) and values.
+      # Anything else raises what merge raises, unless a block gives the error.
+      #
+      # @return [Hash]
+      def self.variables(value)
+        return value if value.is_a?(::Hash)
+        return EnumerableHash.from(value).to_h if value.is_a?(::Enumerable)
+
+        type = [true, false].include?(value) ? 'bool' : Extension::Core.php_type(value)
+        raise yield(type) if block_given?
+
+        raise Error::Runtime, "The \"merge\" filter expects a sequence or a mapping, got \"#{type}\" for argument 2."
+      end
+
       def each(...)
         to_h.each(...)
       end
@@ -159,6 +175,12 @@ module Twig
       private
 
       attr_reader :popping
+
+      # Names are stored as symbols. The with tag can also add the integer
+      # keys of a sequence, which stay integers as they do in PHP.
+      def normalize_key(key)
+        key.respond_to?(:to_sym) ? key.to_sym : key
+      end
 
       def stack
         @stack ||= []

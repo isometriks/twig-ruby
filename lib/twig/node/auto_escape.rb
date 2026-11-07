@@ -3,7 +3,7 @@
 module Twig
   module Node
     class AutoEscape < Node::Base
-      # @param [String, FalseClass] value
+      # @param [Symbol, FalseClass] value
       # @param [Node::Base] body
       # @param [Integer] lineno
       def initialize(value, body, lineno)

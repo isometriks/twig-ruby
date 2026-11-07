@@ -33,14 +33,21 @@ module Twig
       INTERPOLATION_START_TYPE => 'begin of string interpolation',
       INTERPOLATION_END_TYPE => 'end of string interpolation',
       SYMBOL_TYPE => 'symbol',
+      CLASS_VAR_TYPE => 'instance variable',
     }.freeze
+
+    # @return [Integer, nil] the 0-based offset of the token in the source
+    #   code, or nil for a token that isn't tied to a source position, such as
+    #   one synthesized by a token parser
+    attr_reader :offset
 
     attr_reader :type, :value, :lineno
 
-    def initialize(type, value, lineno)
+    def initialize(type, value, lineno, offset = nil)
       @type = type
       @value = value
       @lineno = lineno
+      @offset = offset
     end
 
     # @param [Symbol | String] type

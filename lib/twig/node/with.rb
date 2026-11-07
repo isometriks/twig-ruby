@@ -20,24 +20,30 @@ module Twig
           write("context.push_stack\n")
 
         if nodes.key?(:variables)
-          if attributes[:only]
-            compiler.write("context.clear\n")
-          end
-
           var_name = compiler.var_name
 
           compiler.
             write("#{var_name} = ").
             subcompile(nodes[:variables]).
             write("\n").
-            write("unless #{var_name}.is_a?(::Hash) || #{var_name} == []\n").
+            write("unless #{var_name}.is_a?(::Hash) || #{var_name}.is_a?(::Enumerable)\n").
             indent.
-            write("raise ::Twig::Error::Syntax.new('Variables passed to the \"with\" tag must be a mapping.',").
+            write("raise ::Twig::Error::Runtime.new('Variables passed to the \"with\" tag must be a mapping.',").
             repr(nodes[:variables].lineno).
             raw(", source_context)\n").
             outdent.
             write("end\n").
-            write("context.merge!(env.globals)\n").
+            # Like PHP's toArray: a sequence gets integer keys and an
+            # enumerable yielding pairs gives its keys and values
+            write("#{var_name} = ::Twig::Runtime::EnumerableHash.from(#{var_name}).to_h ").
+            raw("unless #{var_name}.is_a?(::Hash)\n")
+
+          # The variables are evaluated before only clears the context, so
+          # they can still read it
+          compiler.write("context.clear\n") if attributes[:only]
+
+          compiler.
+            write("context.merge!(env.globals, overwrite: false)\n").
             write("context.merge!(#{var_name})\n")
         end
 

@@ -6,8 +6,10 @@ module Twig
       class Dot < InfixExpressionParser
         include ParsesArguments
 
-        def parse(parser, left, _token)
+        def parse(parser, left, operator)
           stream = parser.stream
+          # foo?.bar gives null instead of reading bar when foo is null
+          null_safe = operator.value == '?.'
           token = stream.current
           lineno = token.lineno
           arguments = Node::Expression::Array.new(AutoHash.new, lineno)
@@ -24,35 +26,44 @@ module Twig
               attribute = Node::Expression::Constant.new(token.value, token.lineno)
             else
               raise Error::Syntax.new(
-                "Expected name or number, got value \"#{token.value}\" of type #{token.type}.",
+                "Expected name or number, got value \"#{token.value}\" of type \"#{token.to_english}\".",
                 token.lineno,
                 stream.source
               )
             end
           end
 
+          macro_target = left.is_a?(Node::Expression::Name) && (
+            parser.imported_symbol(:template, left.attributes[:name]) || left.attributes[:name] == '_self'
+          )
+
           if stream.test(Token::OPERATOR_TYPE, '(')
             type = Template::METHOD_CALL
-            arguments = parse_callable_arguments(parser, token.lineno)
+            arguments = parse_callable_arguments(parser, token.lineno, preserve_names: macro_target)
           end
 
-          if left.is_a?(Node::Expression::Name) && (
-            parser.imported_symbol(:template, left.attributes[:name]) ||
-              (left.attributes[:name] == '_self' && attribute.is_a?(Node::Expression::Constant))
-          )
-            return Node::Expression::MacroReference.new(
-              Node::Expression::Variable::Template.new(left.attributes[:name], left.lineno),
-              "macro_#{attribute.attributes[:value]}",
+          if macro_target
+            reference = Node::Expression::MacroReference.new(
+              Node::Expression::Variable::Macro.new(left.attributes[:name], left.lineno),
+              # macros.(name)() calls the macro named by the value of name
+              attribute.is_a?(Node::Expression::Constant) ? attribute.attributes[:value].to_s : attribute,
               arguments,
               left.lineno
             )
+            reference.call_parentheses = type == Template::METHOD_CALL
+
+            return reference
           end
 
-          Node::Expression::GetAttribute.new(left, attribute, arguments, type, token.lineno)
+          Node::Expression::GetAttribute.new(left, attribute, arguments, type, token.lineno, null_safe:)
         end
 
         def name
           '.'
+        end
+
+        def aliases
+          ['?.']
         end
 
         def description

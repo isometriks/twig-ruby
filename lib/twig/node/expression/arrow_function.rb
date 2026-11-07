@@ -25,10 +25,13 @@ module Twig
           super({ expr:, names: }, {}, lineno)
         end
 
+        # Like a PHP closure, which gets a copy of the context, the function sees
+        # the variables there were when it was made, and its arguments and any
+        # assignments in it stay inside it: each call works on its own copy.
         def compile(compiler)
           compiler.
             add_debug_info(self).
-            raw('-> (')
+            raw('->(context) { ->(')
 
           first = true
           nodes[:names].each_value do |name|
@@ -37,7 +40,7 @@ module Twig
             first = false
           end
 
-          compiler.raw(') { ')
+          compiler.raw(') { ->(context) { ')
 
           nodes[:names].nodes.each_value do |name|
             compiler.
@@ -47,7 +50,7 @@ module Twig
 
           compiler.
             subcompile(nodes[:expr]).
-            raw('}')
+            raw(' }.call(context.dup) } }.call(context.dup)')
         end
       end
     end

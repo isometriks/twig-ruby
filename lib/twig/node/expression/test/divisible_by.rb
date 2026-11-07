@@ -9,6 +9,8 @@ module Twig
         #  {{ var is divisible by(3) }}
         class DivisibleBy < Test::Base
           def compile(compiler)
+            reject_spread
+
             compiler.
               raw('(').
               subcompile(nodes[:node]).

@@ -9,11 +9,15 @@ module Twig
           paths: %w[./ app/views/],
           debug: ::Rails.env.development?,
           allow_helper_methods: true,
-          cache: ::Rails.root.join('tmp/cache/twig').to_s,
+          # One directory per environment, so the dev server and the test
+          # workers don't keep replacing each other's compiled templates.
+          cache: ::Rails.root.join('tmp/cache/twig', ::Rails.env).to_s,
           charset: 'UTF-8',
           strict_variables: true,
-          autoescape: :name,
-          auto_reload: nil,
+          autoescape: ->(name) { ::Twig::Rails::EscapingStrategy.guess(name) },
+          # The compiled cache outlives the process, so check it against the
+          # templates everywhere but production, test included.
+          auto_reload: !::Rails.env.production?,
           loader: lambda do
             ::Twig::Loader::Filesystem.new(
               current.root,

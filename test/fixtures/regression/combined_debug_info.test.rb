@@ -8,11 +8,6 @@ class Data
           foo: 'foo',
         },
         config: {},
-        gsub: {
-          exception: [
-            %w[string String],
-          ],
-        },
       },
     ]
   end

@@ -15,15 +15,25 @@ module Twig
             compiler.
               raw('(').
               subcompile(nodes[:node]).
-              raw(' == ::Twig::Extension::Core.constant(')
+              raw(' == ')
 
-            compiler.
-              subcompile(nodes[:arguments].nodes[0])
-
-            if nodes[:arguments].nodes.key?(1)
+            if spread?
+              # Unpacked at runtime, as PHP unpacks constant(...['X'])
+              compiler.raw('::Twig::Runtime::ArgumentSpreader.new(::Twig::Extension::Core.method(:constant)).call(')
+              nodes[:arguments].nodes.each_value.with_index do |node, index|
+                compiler.raw(', ') unless index.zero?
+                compiler.subcompile(node)
+              end
+            else
+              compiler.raw('::Twig::Extension::Core.constant(')
               compiler.
-                raw(', ').
-                subcompile(nodes[:arguments].nodes[1])
+                subcompile(nodes[:arguments].nodes[0])
+
+              if nodes[:arguments].nodes.key?(1)
+                compiler.
+                  raw(', ').
+                  subcompile(nodes[:arguments].nodes[1])
+              end
             end
 
             compiler.raw('))')

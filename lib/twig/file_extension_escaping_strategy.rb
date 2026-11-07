@@ -17,10 +17,7 @@ module Twig
         name = name[0...-5]
       end
 
-      # Get file extension
-      extension = File.extname(name)[1..]
-
-      case extension
+      case extension(name)
       when 'js', 'json'
         :js
       when 'css'
@@ -30,6 +27,18 @@ module Twig
       else
         :html
       end
+    end
+
+    # The extension of a file name, as PHP's pathinfo gives it: what follows
+    # the last dot of the base name, even when the name starts with it, so
+    # ".js" has the extension "js", where File.extname gives none.
+    #
+    # @param [String] name
+    # @return [String]
+    def self.extension(name)
+      base = name.rpartition('/').last
+
+      base.include?('.') ? base.rpartition('.').last : ''
     end
   end
 end

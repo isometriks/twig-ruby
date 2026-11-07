@@ -4,12 +4,15 @@ module Twig
   module Node
     class For < Node::Base
       def initialize(key_target, value_target, seq, if_expr, body, else_expr, lineno)
-        unless if_expr.nil?
-          body = If.new(Nodes.new(AutoHash.new.add(if_expr, body)), nil, lineno)
-        end
+        @loop = ForLoop.new(lineno)
+        @loop.attributes[:else_expr] = !else_expr.nil?
+        body = Nodes.new(AutoHash.new.add(body, @loop))
 
-        loop = ForLoop.new(lineno)
-        body = Nodes.new(AutoHash.new.add(body, loop))
+        # Wrap the loop marker too, so the loop only counts as iterated when
+        # the condition lets an item through and the else clause still renders
+        unless if_expr.nil?
+          body = If.new(Nodes.new(AutoHash.new.add(if_expr, body)), nil, lineno, plain_cast: true)
+        end
 
         nodes = {
           key_target:,
@@ -44,8 +47,13 @@ module Twig
             raw("iterator, parent, blocks, recurse, depth)\n")
         end
 
+        # Like PHP's $iterated, the else flag is a local of this loop's lambda
+        # rather than a template variable; a fresh name keeps a nested loop's
+        # lambda, which closes over this one, from sharing it
         if nodes.key?(:else_expr)
-          compiler.write("context[:_iterated] = false\n")
+          iterated_var = compiler.var_name
+          @loop.attributes[:iterated_var] = iterated_var
+          compiler.write("#{iterated_var} = false\n")
         end
 
         key_var = compiler.var_name
@@ -66,7 +74,7 @@ module Twig
 
         if nodes.key?(:else_expr)
           compiler.
-            write("unless context[:_iterated]\n").
+            write("unless #{iterated_var}\n").
             indent.
             subcompile(nodes[:else_expr]).
             outdent.
@@ -74,8 +82,8 @@ module Twig
         end
 
         compiler.
-          write("context.remove!(:#{nodes[:key_target].attributes[:name]}, ").
-          raw(":#{nodes[:value_target].attributes[:name]}")
+          write("context.remove!(#{nodes[:key_target].attributes[:name].to_sym.inspect}, ").
+          raw(nodes[:value_target].attributes[:name].to_sym.inspect)
 
         if attributes[:with_loop]
           compiler.raw(', :loop')

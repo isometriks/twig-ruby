@@ -5,7 +5,7 @@ module Twig
     class Rails < Extension::Base
       def filters
         [
-          TwigFilter.new('striptags', method(:strip_tags)),
+          TwigFilter.new('striptags', method(:strip_tags), argument_names: { tags: 'allowable_tags' }),
         ]
       end
 

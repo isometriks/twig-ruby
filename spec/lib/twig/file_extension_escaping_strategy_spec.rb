@@ -20,5 +20,15 @@ RSpec.describe Twig::FileExtensionEscapingStrategy do
     it 'returns html by default' do
       expect(described_class.guess('foo.asdf.twig')).to eq(:html)
     end
+
+    # PHP's pathinfo gives "js" as the extension of ".js", where File.extname
+    # gives none
+    it 'reads the extension of a dotfile like pathinfo' do
+      expect(described_class.guess('.js.twig')).to eq(:js)
+      expect(described_class.guess('foo/.css.twig')).to eq(:css)
+      expect(described_class.guess('x/.json')).to eq(:js)
+      expect(described_class.guess('.txt')).to eq(false)
+      expect(described_class.guess('a.b/c.twig')).to eq(:html)
+    end
   end
 end

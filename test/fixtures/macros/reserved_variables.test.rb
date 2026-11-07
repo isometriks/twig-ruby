@@ -4,9 +4,7 @@ class Data
   def self.examples
     [
       {
-        data: {
-          this: 'foo',
-        },
+        data: { 'blocks' => 'foo' },
         config: {},
       },
     ]

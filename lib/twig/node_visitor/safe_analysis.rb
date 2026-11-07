@@ -13,7 +13,13 @@ module Twig
       def initialize
         super
 
-        @data = {}
+        reset
+      end
+
+      # Forgets every analyzed node. The analysis is shared by every template
+      # compiled by an environment, so it must not hold on to their nodes.
+      def reset
+        @data = {}.compare_by_identity
         @safe_vars = []
       end
 
@@ -62,23 +68,7 @@ module Twig
 
       # @param [Node::Base] node
       def safe(node)
-        hash = node.object_id
-
-        unless data.key?(hash)
-          return []
-        end
-
-        data[hash].each do |bucket|
-          next unless bucket[:key] == node
-
-          if bucket[:value].include?(:html_attr)
-            bucket[:value] << :html
-          end
-
-          return bucket[:value]
-        end
-
-        []
+        Runtime::Escaped.with_implied(data.fetch(node, []))
       end
 
       # @param [Array<String>] safe_vars
@@ -88,7 +78,7 @@ module Twig
 
       private
 
-      # @return [Hash{Integer => Array}]
+      # @return [Hash{Node::Base => Array}]
       attr_reader :data
 
       # @return [Array<String>]
@@ -97,20 +87,8 @@ module Twig
       # @param [Node::Base] node
       # @param [Array] safe
       def set_safe(node, safe)
-        hash = node.object_id
-        found = data.fetch(hash, []).detect { |bucket| bucket[:key] == node }
-
-        if found
-          found[:value] = safe
-
-          return
-        end
-
-        @data[hash] ||= []
-        @data[hash] << {
-          key: node,
-          value: safe,
-        }
+        # Strategies can be given as strings, e.g. by escape('js')
+        data[node] = safe.map { |strategy| strategy.is_a?(String) ? strategy.to_sym : strategy }
       end
 
       # @param [Array<String>] a

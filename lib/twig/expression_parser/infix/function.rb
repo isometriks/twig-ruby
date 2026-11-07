@@ -11,7 +11,7 @@ module Twig
 
           unless left.is_a?(Node::Expression::Variable::Context)
             raise Error::Syntax.new(
-              "Function name must be an identifier. got #{left.inspect}",
+              'Function name must be an identifier.',
               line,
               parser.stream.source
             )
@@ -23,7 +23,7 @@ module Twig
             return Node::Expression::MacroReference.new(
               aliased[:node].nodes[:var],
               aliased[:name],
-              parse_callable_arguments(parser, line, parse_open_parenthesis: false),
+              parse_callable_arguments(parser, line, parse_open_parenthesis: false, preserve_names: true),
               line
             )
           end

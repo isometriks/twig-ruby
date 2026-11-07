@@ -16,7 +16,7 @@ module Twig
 
           def compile(compiler)
             compiler.
-              raw('(::Twig::Extension::Core.bool(').
+              raw('(::Twig::Runtime::Truthiness.true?(').
               subcompile(nodes[:test]).
               raw(') ? (').
               subcompile(nodes[:left]).

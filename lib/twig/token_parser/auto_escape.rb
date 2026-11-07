@@ -11,16 +11,13 @@ module Twig
           value = :html
         else
           expr = parser.parse_expression
+          value = expr.attributes[:value] if expr.is_a?(Node::Expression::Constant)
 
-          unless expr.is_a?(Node::Expression::Constant)
-            raise Error::Syntax.new(
-              'An escaping strategy must be a string or false.',
-              stream.current.lineno,
-              stream.source
-            )
+          # a symbol (:html) names a strategy too, as a Ruby extension
+          unless expr.is_a?(Node::Expression::Constant) && [String, Symbol, FalseClass].any? { |type| value.is_a?(type) }
+            raise Error::Syntax.new('An escaping strategy must be a string or false.', expr.lineno, stream.source)
           end
 
-          value = expr.attributes[:value]
           value = value.to_sym if value.is_a?(String)
         end
 

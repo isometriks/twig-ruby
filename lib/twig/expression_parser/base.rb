@@ -25,6 +25,15 @@ module Twig
       def aliases
         []
       end
+
+      # The operator tokens the lexer recognizes for this parser and the
+      # names it is looked up by: its name and aliases, unless it handles
+      # no operator at all.
+      #
+      # @return [Array<String>]
+      def operator_tokens
+        [name, *aliases]
+      end
     end
   end
 end

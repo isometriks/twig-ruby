@@ -7,13 +7,13 @@ module Twig
         class Boolean < Binary::Base
           def compile(compiler)
             compiler.
-              raw('(::Twig::Extension::Core.bool(').
+              raw('(::Twig::Runtime::Truthiness.true?(').
               subcompile(nodes[:left]).
               raw(') ')
 
             operator(compiler)
 
-            compiler.raw(' ::Twig::Extension::Core.bool(').
+            compiler.raw(' ::Twig::Runtime::Truthiness.true?(').
               subcompile(nodes[:right]).
               raw('))')
           end

@@ -14,6 +14,7 @@ Implementation of [Twig](https://twig.symfony.com/) in Ruby.
 - [Rails Integration](#rails-integration)
 - [Advanced Features](#advanced-features)
 - [Configuration](#configuration)
+- [Things to Know](#things-to-know)
 - Advanced Docs
   - [Loaders](doc/loaders.md)
   - [Extensions](doc/extensions.md)
@@ -141,11 +142,11 @@ Rails.application.configure do
   config.twig.paths = %w[/ app/views/] # Used for default Filesystem Loader
   config.twig.debug = ::Rails.env.development?
   config.twig.allow_helper_methods = true
-  config.twig.cache = ::Rails.root.join('tmp/cache/twig').to_s
+  config.twig.cache = ::Rails.root.join('tmp/cache/twig', ::Rails.env).to_s
   config.twig.charset = 'UTF-8'
   config.twig.strict_variables = true
-  config.twig.autoescape = :name
-  config.twig.auto_reload = nil
+  config.twig.autoescape = ->(name) { ::Twig::Rails::EscapingStrategy.guess(name) }
+  config.twig.auto_reload = !::Rails.env.production?
   config.twig.loader = lambda do
     ::Twig::Loader::Filesystem.new(
       current.root,
@@ -177,7 +178,13 @@ hash keys, arguments, etc.
 {{ name[:first] }}
 {{ user_func(:first, :second) }}
 {% set hash = { key: :value } %}
+{{ admin ? :yes : :no }}
 ```
+
+A `? :` with a symbol after it is a ternary when a `:` for its other branch follows, as in
+`admin ? :yes : :no`. Without one, `admin ? :yes` is the `? :` alias of `?:`, as in Twig PHP,
+so it reads `admin ?: yes`. A ternary that the `? :` is inside keeps its own `:`, so
+`c ? admin ? :yes : 'z'` reads `c ? (admin ?: yes) : 'z'`.
 
 Since Ruby has the concept of blocks, a new tag is introduced call `yield` it
 can be used with helpers like `form_with`
@@ -194,6 +201,29 @@ Rails helpers can also be called. Parenthesis is only required when passing argu
 {{ stylesheet_link_tag(:app, "data-turbo-track": "reload") }}
 {{ javascript_importmap_tags }}
 ```
+
+Macros work the same way, so `{{ forms.button }}` and `{{ _self.hello }}` call the macro
+with no arguments, where Twig PHP requires `forms.button()`.
+
+Names can end in `?` like Ruby predicates, so these helpers can be called bare too:
+
+```twig
+{% if user_signed_in? and not current_user.admin? %}...{% endif %}
+{% if current_page?(root_path) %}...{% endif %}
+```
+
+The `?` stays on the name when what follows it couldn't start an expression: the end of
+the tag, `)`, `]`, `}`, `,`, `|`, a `:` that isn't a symbol, another `?`, or an operator
+like `and` or `==`.
+Anything else makes it the ternary operator, as in Twig PHP, so `{{ ready?1:2 }}`,
+`{{ ready? 'yes' : 'no' }}` and `{{ ready? :yes : :no }}` are ternaries on `ready`, and
+`ready?:b` and `ready??b` are still the `?:` and `??` operators.
+
+A mapping key keeps its `?` before the colon, so `{open?: true}` has the key `open?`.
+An attribute keeps it before `-`, `+`, `[` or `(`, which could go on with the attribute, so
+`user.admin? - 1` and `user.roles?[0]` read `admin?` and `roles?`. Write
+`user.admin ? -1` if you mean a ternary there. Arrow function and macro arguments can't end
+in `?`.
 
 ### Cache Tag
 
@@ -224,3 +254,81 @@ Twig Ruby (Both versions work)
   <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}" size="{{ size }}"/>
 {% endmacro %}
 ```
+
+## Things to Know
+
+These all work as intended, most of them just as in Twig PHP, but they can still catch you out.
+
+**A newline straight after a tag is removed.** `{{ name }}{% if address %}` followed by a
+newline and `{{ address }}{% endif %}` renders the two values with nothing between them.
+Whitespace control can only take whitespace away, never add it, so leave a blank line after
+the tag (the second newline is kept) or print one with `{{ "\n" }}`.
+
+**`empty` is a test, not a filter.** Write `{% if items is not empty %}`; `items|empty` is a
+syntax error. The test also handles `nil`, where `items.any?` would raise "Impossible to
+access an attribute on a null variable".
+
+**`matches` takes a delimited pattern, as in Twig PHP.** Write `{{ code matches '/^\d+$/' }}`
+or `'#^a#i'`; a bare `'\d+'` is a syntax error. The `i`, `x` and `s` modifiers work, and
+`A` anchors the match to the start. Patterns run on Ruby's regexp engine, where `^` and `$`
+always match at line breaks too, so use `\A` and `\z` to anchor to the whole string. `m` no
+longer makes `.` match newlines (use `s`), and a `nil` subject is matched as an empty string.
+Matching is always by character, as if `u` were set; a subject that is not valid UTF-8 raises
+only when the pattern has `u`.
+
+**`?.` is the null-safe operator, even straight after a name.** `{{ user?.name }}` prints
+nothing when `user` is `nil` instead of raising, and in `user?.address.city` a `nil` user cuts
+the rest of the chain short, as in Twig PHP. So `user.admin?.label` reads `label` on
+`user.admin`, not on the predicate `admin?`; wrap the predicate to go on from its result:
+`{{ (user.admin?).to_s }}`.
+
+**Concatenating a safe value keeps it safe, as Rails' `SafeBuffer` does.** In
+`{{ include('card') ~ note }}` or `{{ html|raw ~ note }}`, the safe half is printed as is and
+only `note` is escaped. Twig PHP escapes the whole concatenation instead, so the safe half is
+escaped too unless the concatenation itself is marked `|raw`. Either way an unsafe value is
+never printed unescaped.
+
+**What `escape` returns isn't escaped again for its strategy.** `{% set y = x|e %}{{ y }}` and
+`{{ x|e(strategy) }}` print `x` escaped once, like the output of Rails' `h`, and output
+escaped for `html_attr` counts as escaped for `html` too. Twig PHP's `escape` returns a plain
+string, so autoescaping escapes it a second time. Output escaped for another strategy, such
+as `js` in an HTML template, is still escaped for the template's strategy.
+
+**`strict_variables` raises on missing keys.** The Rails config turns it on, so
+`{{ params[:page] }}` raises when there's no `page` param. `??` and `default` are the way
+to allow for it:
+
+```twig
+{{ params[:page] ?? 1 }}
+{{ params[:q]|default('') }}
+```
+
+**Controller methods need `helper_method`.** A name that isn't in the template's context is
+looked up on the view, which only sees public helpers. A controller method a template calls
+has to be exposed the same way it would be for ERB:
+
+```ruby
+class ApplicationController < ActionController::Base
+  helper_method :current_account
+end
+```
+
+**Text templates aren't escaped in Rails.** The default `autoescape` picks a strategy from
+the template name: HTML for `.html.twig`, JavaScript for `.js.twig` and `.json.twig`, CSS
+for `.css.twig`, and none for `.text.twig` (Rails' name for plain text, as in a mailer's
+`welcome.text.twig`) or `.txt.twig`. Set `config.twig.autoescape = :name` to use Twig PHP's
+own guess, which only knows `txt`.
+
+**Clear `tmp/cache/twig` after editing your own `autoescape` lambda.** Escaping is decided
+when a template is compiled. The compiled cache is keyed by the template's name, the gem's
+version and source, the extensions, and the `debug`, `strict_variables`,
+`allow_helper_methods` and `autoescape` options, so upgrading the gem or changing those
+options compiles every template again. A lambda is keyed by the file and line it's defined
+on, though, so when you change what your lambda returns without moving it, a template
+compiled under the old one keeps its escaping until its cache file is removed.
+
+**Compiled templates are checked for edits everywhere but production.** They're cached in
+`tmp/cache/twig/<env>`, which outlives the process, so `auto_reload` is on in development
+and test, and a test run after an edit picks the edit up. Each environment has its own
+directory, so a test run never replaces what the dev server compiled. In production the
+cache is trusted without a check, so start each deploy with an empty `tmp/cache/twig`.

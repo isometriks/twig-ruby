@@ -5,7 +5,10 @@ module Twig
     class StringLoader < Extension::Base
       def functions
         [
-          TwigFunction.new('template_from_string', static(:template_from_string), needs_environment: true),
+          TwigFunction.new(
+            'template_from_string', static(:template_from_string),
+            needs_environment: true, argument_names: { string: 'template' }
+          ),
         ]
       end
 

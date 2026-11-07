@@ -6,11 +6,17 @@ module Twig
       class GetAttribute < Expression::Base
         include SupportDefinedTest
 
-        def initialize(node, attribute, arguments, type, lineno)
+        # @param [Boolean] null_safe Whether the attribute is read with ?., which gives nil
+        #   instead of reading it on nil
+        def initialize(node, attribute, arguments, type, lineno, null_safe: false)
           nodes = { node:, attribute: }
           nodes[:arguments] = arguments if arguments
 
-          super(nodes, { type:, ignore_strict_check: false }, lineno)
+          super(
+            nodes,
+            { type:, ignore_strict_check: false, null_safe:, is_short_circuited: false, var_name: nil },
+            lineno
+          )
         end
 
         def enable_defined_test
@@ -19,15 +25,35 @@ module Twig
         end
 
         def compile(compiler)
-          compiler.
-            raw('::Twig::Extension::Core.get_attribute(env, source_context, ')
-
           if attributes[:ignore_strict_check]
             nodes[:node].attributes[:ignore_strict_check] = true
           end
 
+          # In foo?.bar.baz a nil foo short-circuits the whole chain, so the outermost access
+          # tests the object of the nearest ?. and the accesses in between read it from there
+          null_safe = attributes[:null_safe]
+          null_safe_node = null_safe ? self : nearest_null_safe_node
+          short_circuited = false
+
+          if null_safe_node && !null_safe_node.attributes[:is_short_circuited]
+            compiler.
+              raw("((#{null_safe_node.var_name(compiler)} = ").
+              subcompile(null_safe_node.nodes[:node]).
+              raw(').nil? ? nil : ')
+
+            null_safe_node.attributes[:is_short_circuited] = true
+            short_circuited = true
+          end
+
+          compiler.raw('::Twig::Extension::Core.get_attribute(env, source_context, ')
+
+          if null_safe
+            compiler.raw(var_name(compiler))
+          else
+            compiler.subcompile(nodes[:node])
+          end
+
           compiler.
-            subcompile(nodes[:node]).
             raw(', ').
             subcompile(nodes[:attribute]).
             raw(', ').
@@ -51,11 +77,41 @@ module Twig
 
           compiler.
             raw(', lineno: ').
-            repr(lineno).
+            repr(nodes[:node].lineno).
             raw(')')
+
+          return unless short_circuited
+
+          compiler.raw(')')
+
+          # The default filter and ?? compile the same node more than once (a dup shares its
+          # attributes), so each compilation gets its own temporary and its own nil test
+          null_safe_node.attributes[:is_short_circuited] = false
+          null_safe_node.attributes[:var_name] = nil
+        end
+
+        # The temporary that holds the object of a null-safe access
+        #
+        # @param [Compiler] compiler
+        # @return [String]
+        def var_name(compiler)
+          attributes[:var_name] ||= compiler.var_name
         end
 
         private
+
+        # @return [GetAttribute, nil]
+        def nearest_null_safe_node
+          node = nodes[:node]
+
+          while node.is_a?(GetAttribute)
+            return node if node.attributes[:null_safe]
+
+            node = node.nodes[:node]
+          end
+
+          nil
+        end
 
         # @param [GetAttribute] node]
         def change_ignore_strict_check(node)

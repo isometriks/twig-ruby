@@ -2,6 +2,11 @@
 
 module Twig
   class Environment
+    # Compiled template classes are constants shared by every environment, and
+    # a recompile replaces them, so loads are serialised across environments.
+    LOAD_LOCK = Monitor.new
+    private_constant :LOAD_LOCK
+
     # @return [Cache::Base]
     attr_reader :cache, :charset
 
@@ -29,6 +34,7 @@ module Twig
       self.cache = @options[:cache]
 
       @loaded_templates = {}
+      @loaded_at = {}
       @globals = {}
       @runtimes = {}
       @runtime_loaders = []
@@ -40,16 +46,43 @@ module Twig
       add_extension(Extension::Escaper.new(@options[:autoescape]))
     end
 
+    # A copy would share the extension set, loaded templates and runtimes of
+    # this environment while its templates still point back to the original.
+    def initialize_copy(_source)
+      raise Error::Logic, 'Cloning a Twig environment is not supported; build a new environment instead.'
+    end
+
     def template_class(name, index = nil)
-      key = loader.get_cache_key(name)
+      key = loader.get_cache_key(name) + options_hash
 
       "Compiled::Template_#{::Digest::SHA256.hexdigest(key)}#{"___#{index}" if index}"
+    end
+
+    # A digest of the gem's own Ruby source. Twig::VERSION only changes with a
+    # release, but the shape of compiled templates changes with the compiler,
+    # so a gem used from a path or a git branch must not load cache entries
+    # an earlier checkout of it compiled.
+    #
+    # @return [String]
+    def self.source_signature
+      @source_signature ||= begin
+        lib = File.expand_path('..', __dir__)
+        digest = ::Digest::SHA256.new
+
+        Dir.glob('**/*.rb', base: lib).sort.each do |file|
+          digest << file << "\0" << File.binread(File.join(lib, file))
+        end
+
+        digest.hexdigest
+      end
     end
 
     # @param [String, Twig::TemplateWrapper] name
     # @return [Twig::TemplateWrapper]
     def load(name)
       if name.is_a?(Twig::TemplateWrapper)
+        name.unwrap(self)
+
         return name
       end
 
@@ -70,7 +103,7 @@ module Twig
 
       names.each do |name|
         if name.is_a?(Twig::TemplateWrapper)
-          return name
+          return load(name)
         end
 
         unless count == 1 || loader.exists?(name)
@@ -83,49 +116,91 @@ module Twig
       raise Error::Loader, "Unable to find one of the following templates: \"#{names.join('", "')}\"."
     end
 
+    # Every load initializes the runtime, as in Twig, whether the template
+    # was compiled or came from the cache, so add_global behaves the same
+    # either way
+    #
     # @param [String] cls The class name to load
     # @param [String] name The template name
     # @param [Integer, nil] index Index for embedded templates
     # @return [Twig::Template]
     def load_template(cls, name, index: nil)
-      main_cls = cls
+      template = load_template_instance(cls, name, index)
+      extension_set.init_runtime!
 
-      if index
-        cls += "___#{index}"
-      end
+      template
+    end
 
+    def load_template_instance(cls, name, index)
+      # Template#load passes its own class name, which starts with Twig::
+      main_cls = cls.delete_prefix('Twig::')
+      cls = index ? "#{main_cls}___#{index}" : main_cls
+
+      # Embedded templates are compiled with their parent, whose own load has
+      # just brought them up to date
       if !index.nil? && Twig.const_defined?(cls)
         return @loaded_templates[cls] = Twig.const_get(cls).new(self)
       end
 
-      cache_key = cache.generate_key(name, main_cls)
-
-      # If not auto_reloading just use whatever is in the cache
-      if !@auto_reload || template_fresh?(name, cache.timestamp(cache_key))
-        if @loaded_templates.key?(cls)
-          return @loaded_templates[cls]
-        end
-
-        @cache.load(cache_key)
-
-        if Twig.const_defined?(cls)
-          return @loaded_templates[cls] = Twig.const_get(cls).new(self)
-        end
+      if !@auto_reload && @loaded_templates.key?(cls)
+        return @loaded_templates[cls]
       end
 
-      # No caches have fresh template at this point, so write it now
-      code = render_ruby(name)
+      LOAD_LOCK.synchronize do
+        # Freshness is judged by when this process evaluated the template, not
+        # by the cache entry: another process sharing the cache may have
+        # recompiled the template since, leaving an entry newer than the edit
+        # while this process still holds the code from before it.
+        if @loaded_templates.key?(cls) && @loaded_at.key?(main_cls)
+          return @loaded_templates[cls] unless @auto_reload
 
-      # File cache loader won't rely on eval
-      @cache.write(cache_key, code)
-      @cache.load(cache_key)
+          # A new instance each time, since the constructor loads the templates
+          # this one uses as traits and they get no freshness check otherwise.
+          # It comes from the class this environment loaded, not the constant,
+          # which another environment's compile may have replaced since.
+          if template_fresh?(name, @loaded_at[main_cls])
+            return @loaded_templates[cls] = @loaded_templates[cls].class.new(self)
+          end
+        end
 
-      # Finally just eval the generated code if cache doesn't
-      # create the class
-      Twig.module_eval(code) unless Twig.const_defined?(cls)
+        cache_key = cache.generate_key(name, main_cls)
+        cached_at = cache.timestamp(cache_key)
 
-      @loaded_templates[cls] = Twig.const_get(cls).new(self)
+        if !@auto_reload || template_fresh?(name, cached_at)
+          remove_template_class(main_cls)
+
+          # Whether the class is defined now says if the entry loaded, since
+          # PHP's load returns nothing and a cache ported from it may too
+          @cache.load(cache_key)
+
+          if Twig.const_defined?(cls)
+            @loaded_at[main_cls] = cached_at
+
+            return @loaded_templates[cls] = Twig.const_get(cls).new(self)
+          end
+        end
+
+        # No caches have fresh template at this point, so write it now. The
+        # entry is stamped with the moment before the source was read, so a
+        # save made while compiling still looks newer than it. The clock is
+        # one that time travel in tests leaves alone, so an entry is never
+        # stamped in the future.
+        compiled_at = Process.clock_gettime(Process::CLOCK_REALTIME, :second)
+        code = render_ruby(name)
+        write_cache(cache_key, code, compiled_at)
+
+        # Evaluate what was just compiled rather than loading the cache entry
+        # back, which another process may have replaced in the meantime. This
+        # also brings an already defined class up to date when nothing is
+        # cached.
+        remove_template_class(main_cls)
+        Twig.module_eval(code, cache_key.empty? ? "(twig #{name})" : cache_key, 1)
+        @loaded_at[main_cls] = compiled_at
+
+        @loaded_templates[cls] = Twig.const_get(cls).new(self)
+      end
     end
+    private :load_template_instance
 
     # @return [Twig::Template]
     def create_template(template, name = nil)
@@ -160,6 +235,7 @@ module Twig
     # @param [Extension::Base] extension
     def add_extension(extension)
       extension_set.add(extension)
+      @options_hash = nil
     end
 
     def runtime(klass)
@@ -188,6 +264,27 @@ module Twig
       extension_set.expression_parsers
     end
 
+    # @return [Hash{String => TwigFilter}] the filters the extensions define,
+    #   by name
+    def filters
+      extension_set.filters
+    end
+
+    # @return [Hash{String => TwigFunction}]
+    def functions
+      extension_set.functions
+    end
+
+    # @return [Hash{String => TwigTest}]
+    def tests
+      extension_set.tests
+    end
+
+    # @return [Hash{Symbol => TokenParser::Base}] the token parsers by tag
+    def token_parsers
+      extension_set.token_parsers
+    end
+
     # @return [TwigFilter, nil]
     def filter(name)
       extension_set.filter(name)
@@ -208,17 +305,66 @@ module Twig
       extension_set.token_parser(name)
     end
 
+    # Each of these registers a callable that gets the name of a filter,
+    # function, test or tag no extension defines, and returns the TwigFilter,
+    # TwigFunction, TwigTest or token parser to use for it, or false or nil
+    # when it has none.
+    #
+    # @param [#call, nil] callable
+    def register_undefined_filter_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:filter, callable || block)
+    end
+
+    # @see #register_undefined_filter_callback
+    def register_undefined_function_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:function, callable || block)
+    end
+
+    # @see #register_undefined_filter_callback
+    def register_undefined_test_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:test, callable || block)
+    end
+
+    # @see #register_undefined_filter_callback
+    def register_undefined_token_parser_callback(callable = nil, &block)
+      extension_set.register_undefined_callback(:token_parser, callable || block)
+    end
+
     # @return [Array<NodeVisitor::Base>]
     def node_visitors
       extension_set.node_visitors
     end
 
+    # New globals can be added before a template is compiled or rendered;
+    # after that, only the existing ones can be changed, as in Twig.
     def add_global(name, value)
-      @globals[name] = value
+      key = global_key(name)
+
+      if extension_set.initialized? && !globals.key?(key)
+        raise Error::Logic, "Unable to add global \"#{name}\" as the runtime or the extensions " \
+                            'have already been initialized.'
+      end
+
+      if @resolved_globals
+        @resolved_globals[key] = value
+      else
+        @globals[key] = value
+      end
     end
 
+    # The extensions' globals and then the environment's, which win, as in
+    # Twig's array_merge. The keys are Symbols, as in a Runtime::Context, so
+    # 'g' and :g are the same global. They are kept once the extensions are
+    # initialized.
+    #
+    # @return [Hash{Symbol => Object}]
     def globals
-      @resolved_globals ||= extension_set.globals.merge(@globals)
+      return @resolved_globals if @resolved_globals
+
+      resolved = extension_set.globals.transform_keys { |key| global_key(key) }.merge(@globals)
+      @resolved_globals = resolved if extension_set.initialized?
+
+      resolved
     end
 
     # @param [Source] source
@@ -243,6 +389,13 @@ module Twig
     rescue Error::Base => e
       e.source_context = source
       raise e
+    rescue RuntimeError => e
+      raise Error::Syntax.new(
+        "An exception has been thrown during the compilation of a template (\"#{e.message}\").",
+        -1,
+        source,
+        e
+      )
     end
 
     # @return [String]
@@ -254,8 +407,7 @@ module Twig
     # @param [String] name
     # @param [Integer] time
     def template_fresh?(name, time)
-      # @todo check extension set last modified
-      loader.fresh?(name, time)
+      extension_set.last_modified <= time && loader.fresh?(name, time)
     end
 
     def cache=(cache)
@@ -288,6 +440,11 @@ module Twig
     # @return [ExtensionSet]
     attr_reader :extension_set
 
+    # A global's name as a Runtime::Context key
+    def global_key(name)
+      name.respond_to?(:to_sym) ? name.to_sym : name
+    end
+
     # @return [RuntimeLoader::Base]
     attr_reader :default_runtime_loader
 
@@ -297,10 +454,71 @@ module Twig
     # @return [Hash{String => Object}]
     attr_reader :runtimes
 
+    # Everything besides the template that changes the code it compiles to,
+    # so environments with different options never share a compiled class or
+    # a cache entry
+    #
+    # @return [String]
+    def options_hash
+      @options_hash ||= [
+        extension_set.signature,
+        *RUBY_VERSION.split('.').first(2),
+        VERSION,
+        self.class.source_signature,
+        debug? ? 1 : 0,
+        strict_variables? ? 1 : 0,
+        allow_helper_methods? ? 1 : 0,
+        autoescape_signature,
+      ].join(':')
+    end
+
+    # The autoescape option picks each template's escaping when it compiles.
+    # A lambda is named by where it's defined, since its inspect holds an
+    # address that changes with every process and no entry would be reused.
+    #
+    # @return [String]
+    def autoescape_signature
+      strategy = @options[:autoescape]
+
+      if strategy.is_a?(Proc)
+        strategy.source_location.to_a.join(':')
+      else
+        strategy.inspect
+      end
+    end
+
     def render_ruby(name)
       compile_source(
         loader.get_source_context(name)
       )
+    end
+
+    # A cache written for PHP's two-argument write still works, but its
+    # entries are stamped when they're written instead
+    #
+    # @param [String] key
+    # @param [String] code
+    # @param [Integer] mtime
+    def write_cache(key, code, mtime)
+      if @cache.method(:write).parameters.any? { |type, param| type == :keyrest || param == :mtime }
+        @cache.write(key, code, mtime:)
+      else
+        @cache.write(key, code)
+      end
+    end
+
+    # Loading or evaluating a template's code reopens its class when it is
+    # already defined, so methods the new source no longer has (a deleted
+    # macro, the get_parent of a removed extends) would survive the recompile.
+    # Only the main class is removed: embedded templates get a new random index
+    # on every compile, and a render running in another thread may still be
+    # looking theirs up. Instances made from the old class keep working.
+    #
+    # @param [String] main_cls
+    def remove_template_class(main_cls)
+      base = main_cls.delete_prefix('Compiled::')
+
+      Twig::Compiled.send(:remove_const, base) if Twig::Compiled.const_defined?(base, false)
     end
 
     def lexer

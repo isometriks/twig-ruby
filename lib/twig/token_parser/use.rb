@@ -43,7 +43,7 @@ module Twig
 
         parser.add_trait(Node::Nodes.new({ template:, targets: Node::Nodes.new(targets) }))
 
-        Node::Empty.new(token.lineno)
+        Node::Config.new(token.lineno)
       end
 
       def tag
