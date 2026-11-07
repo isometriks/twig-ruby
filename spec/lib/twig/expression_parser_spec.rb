@@ -348,6 +348,38 @@ module Twig
       end
     end
 
+    # The lexer reads [1:a as a symbol, but a starts the slice's length
+    context 'with a slice length that starts with a name' do
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ list[1:a + 1]|join }}',
+            '{{ list[1:a ? 1 : 2]|join }}',
+            '{{ list[1:a|abs]|join }}',
+            '{{ list[1:a ?? 2]|join }}',
+            '{{ list[a:a]|join }}',
+            '{{ list[0:null]|join }}',
+            '{{ list[1:h.n]|join }}',
+            '{{ list[a:h.n * 2]|join }}',
+            '{{ list[1:not a ? 1 : 2]|join }}',
+            "{{ list[1:not\na ? 1 : 2]|join }}",
+            '{{ list[0:not(f) ? 2 : 1]|join }}',
+            '{{ list[0:not[a] ? 2 : 3]|join }}',
+            '{{ list[0:not{a: a} ? 2 : 3]|join }}',
+            '{{ list[1:not]|join }}',
+          ]
+        end
+
+        let(:outputs) do
+          %w[23 2 2 2 2 12345 23 2345 23 23 12 123 123 234]
+        end
+
+        let(:locals) do
+          { a: 1, f: false, not: 3, list: [1, 2, 3, 4, 5], h: { 'n' => 2 } }
+        end
+      end
+    end
+
     # A ternary open before a spaced ? : keeps its :, so the ? : is the ?:
     # alias, as in Twig PHP: c ? (a ?: x) : 'z'
     context 'with a spaced ? : inside a ternary' do

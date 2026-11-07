@@ -76,6 +76,14 @@ module Twig
       current.test(primary, secondary) ? self.next : nil
     end
 
+    # Replaces the current token, for a parser that reads it differently
+    # from the lexer.
+    #
+    # @param [Token] token
+    def replace_current(token)
+      tokens[@current] = token
+    end
+
     def eof?
       current.type == Token::EOF_TYPE
     end
