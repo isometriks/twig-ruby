@@ -30,42 +30,30 @@ module Twig
           end
         end
 
-        OPERATORS = {
-          BitwiseOr: '|',
-          BitwiseXor: '^',
-          BitwiseAnd: '&',
+        # Operators that compare or calculate as PHP does, through a runtime
+        # method, instead of with Ruby's operators
+        RUNTIME_OPERATORS = {
+          Equal: 'Comparison.equal?',
+          NotEqual: 'Comparison.not_equal?',
+          Spaceship: 'Comparison.compare',
+          Less: 'Comparison.less?',
+          Greater: 'Comparison.greater?',
+          LessEqual: 'Comparison.less_equal?',
+          GreaterEqual: 'Comparison.greater_equal?',
 
-          Add: '+',
-          Sub: '-',
-          Mul: '*',
+          BitwiseOr: 'Arithmetic.bitwise_or',
+          BitwiseXor: 'Arithmetic.bitwise_xor',
+          BitwiseAnd: 'Arithmetic.bitwise_and',
+          Add: 'Arithmetic.add',
+          Sub: 'Arithmetic.subtract',
+          Mul: 'Arithmetic.multiply',
         }.freeze
 
-        # Lots of simple operator classes can just be generated dynamically
-        OPERATORS.each do |name, operation|
-          const_set(name.to_s, Class.new(Binary::Base) do
-            def operator(compiler)
-              compiler.raw(self.class.const_get('OPERATOR'))
-            end
-          end).const_set('OPERATOR', operation)
-        end
-
-        # The comparison operators compare values as PHP does, through
-        # Runtime::Comparison, instead of with Ruby's operators
-        COMPARISONS = {
-          Equal: :equal?,
-          NotEqual: :not_equal?,
-          Spaceship: :compare,
-          Less: :less?,
-          Greater: :greater?,
-          LessEqual: :less_equal?,
-          GreaterEqual: :greater_equal?,
-        }.freeze
-
-        COMPARISONS.each do |name, method|
+        RUNTIME_OPERATORS.each do |name, method|
           const_set(name.to_s, Class.new(Binary::Base) do
             def compile(compiler)
               compiler.
-                raw("::Twig::Runtime::Comparison.#{self.class.const_get('METHOD')}(").
+                raw("::Twig::Runtime::#{self.class.const_get('METHOD')}(").
                 subcompile(nodes[:left]).
                 raw(', ').
                 subcompile(nodes[:right]).

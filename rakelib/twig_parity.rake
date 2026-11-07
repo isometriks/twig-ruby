@@ -34,8 +34,6 @@ module TwigParity
     filters/date_interval.test
     filters/date_immutable.test
     filters/date_modify.test
-    operators/not_precedence.test
-    operators/concat_vs_add_sub.test
     tags/macro/colon_not_supported_as_default_separator.test
     macros/call_without_parentheses.test
     macros/dynamic_call_without_parentheses.test

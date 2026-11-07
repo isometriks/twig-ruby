@@ -6,13 +6,12 @@ module Twig
       module Binary
         class FloorDiv < Binary::Base
           def compile(compiler)
-            compiler.raw('(')
-            super
-            compiler.raw(').floor.to_i')
-          end
-
-          def operator(compiler)
-            compiler.raw('/')
+            compiler.
+              raw('::Twig::Runtime::Division.floor_divide(').
+              subcompile(nodes[:left]).
+              raw(', ').
+              subcompile(nodes[:right]).
+              raw(')')
           end
         end
       end
