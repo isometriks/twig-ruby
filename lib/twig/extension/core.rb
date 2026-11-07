@@ -682,23 +682,48 @@ module Twig
         value[..-2].join(glue) + and_glue.to_s + value[-1].to_s
       end
 
+      # Like Twig's split, which passes the value, the delimiter and the limit
+      # to PHP functions that convert them as PHP does, or raise a TypeError:
+      # true is "1", a sequence isn't a string, and the limit is an int
       def self.split(charset, value, delimiter, limit: nil)
-        value = value.to_s
-        delimiter = delimiter.to_s
+        value = '' if value.nil?
 
-        return explode(delimiter, value, limit) unless delimiter == ''
+        unless delimiter == ''
+          delimiter = Util::PhpCast.string_param(delimiter, 'explode(): Argument #1 ($separator)')
+          raise ArgumentError, 'explode(): Argument #1 ($separator) cannot be empty' if delimiter.empty?
 
-        if limit.nil? || limit <= 1
+          value = Util::PhpCast.string_param(value, 'explode(): Argument #2 ($string)')
+          limit = Util::PhpCast.int_param(limit, 'explode(): Argument #3 ($limit)') unless limit.nil?
+
+          return explode(delimiter, value, limit)
+        end
+
+        number = limit.is_a?(String) ? Util::PhpCast.numeric(limit) || limit : limit
+
+        if php_compare(number, 1) <= 0
+          value = Util::PhpCast.string_param(value, 'mb_str_split(): Argument #1 ($string)')
+
           return split_into_characters(value, 'split')
         end
 
-        length = value.length
+        value = Util::PhpCast.string_param(value, 'mb_strlen(): Argument #1 ($string)')
+        return [value] if php_compare(number, value.length).positive?
 
-        if limit.nil? || length < limit
-          return [value]
+        size = Util::PhpCast.int_param(limit, 'mb_substr(): Argument #3 ($length)', '?int')
+
+        (0...value.length).step(number).map { |i| value[i.to_i, size] }
+      end
+
+      # Compares a limit of any type with an integer the way PHP compares
+      # mixed types: null and booleans as booleans, a string that isn't
+      # numeric as a string, and a sequence as greater than any number
+      def self.php_compare(limit, integer)
+        case limit
+        when nil, true, false then (limit ? 1 : 0) <=> (integer.zero? ? 0 : 1)
+        when Array, Hash then 1
+        when String then limit <=> integer.to_s
+        else limit <=> integer
         end
-
-        (0...length).step(limit).map { |i| value[i, limit] }
       end
 
       # Splits like PHP's explode, which String#split doesn't: it keeps

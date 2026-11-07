@@ -50,6 +50,52 @@ module Twig
         end
       end
 
+      # A value passed to a string parameter of a PHP function, which takes
+      # anything but an array
+      #
+      # @param [String] parameter What PHP's TypeError names, such as
+      #   "explode(): Argument #2 ($string)"
+      # @return [String]
+      def string_param(value, parameter)
+        return to_string(value) unless value.is_a?(Hash) || value.is_a?(Array)
+
+        raise ArgumentError, "#{parameter} must be of type string, array given"
+      end
+
+      # A value passed to an int parameter of a PHP function: a float is
+      # truncated, and a string must be numeric
+      #
+      # @param [String] parameter What PHP's TypeError names
+      # @param [String] type The type PHP's TypeError names, such as "?int"
+      # @return [Integer]
+      def int_param(value, parameter, type = 'int')
+        number = case value
+                 when true, false then value ? 1 : 0
+                 when String then numeric(value)
+                 when Numeric then value
+                 end
+        number = number.to_f if number.is_a?(Numeric) && !number.is_a?(Integer)
+
+        if number.nil? || (number.is_a?(Float) && !(number.finite? && number.abs < 2**63))
+          given = value.is_a?(Hash) || value.is_a?(Array) ? 'array' : Extension::Core.php_type(value)
+
+          raise ArgumentError, "#{parameter} must be of type #{type}, #{given} given"
+        end
+
+        number.to_i
+      end
+
+      # The number a numeric string is, with whitespace around it allowed,
+      # or nil for a string that isn't numeric
+      #
+      # @return [Integer, Float, nil]
+      def numeric(string)
+        number = string.match(/\A[ \t\n\r\v\f]*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)[ \t\n\r\v\f]*\z/)&.[](1)
+        return unless number
+
+        number.match?(/\A[+-]?\d+\z/) ? number.to_i : number.to_f
+      end
+
       # An integer as a 64-bit one
       def wrap(integer)
         ((integer - LONG_MIN) % LONG_RANGE) + LONG_MIN

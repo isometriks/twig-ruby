@@ -177,4 +177,39 @@ RSpec.describe Twig::Extension::Core do
         to eq('{"c":"\\u00e9/<"}|{"c":"é\\/<"}')
     end
   end
+
+  describe 'split' do
+    def error(message)
+      "An exception has been thrown during the rendering of a template (\"#{message}\") in \"index\" at line 1."
+    end
+
+    it 'converts the value and the delimiter like PHP' do
+      expect(render("{{ true|split(',')|join('|') }}|{{ 'a1b'|split(true)|join('|') }}")).to eq('1|a|b')
+      expect(render("{{ 1e20|split('E')|join('|') }}")).to eq('1.0|+20')
+      expect(render("{{ false|split('')|join('|') }}|{{ 'abc'|split(',', false)|join('|') }}")).to eq('|abc')
+    end
+
+    it 'raises for a sequence or an empty delimiter, like explode' do
+      expect { render("{{ ['a', 'b']|split(',') }}") }.to raise_error(
+        Twig::Error::Runtime, error('explode(): Argument #2 ($string) must be of type string, array given')
+      )
+      expect { render("{{ 'abc'|split(null) }}") }.
+        to raise_error(Twig::Error::Runtime, error('explode(): Argument #1 ($separator) cannot be empty'))
+    end
+
+    it 'casts the limit to an int like PHP' do
+      expect(render("{{ 'a,b'|split(',', '1')|join('|') }}|{{ 'a,b,c'|split(',', -1.5)|join('|') }}")).to eq('a,b|a|b')
+      expect(render("{{ 'a,b,c'|split(',', ' 2 ')|join('|') }}|{{ 'abcde'|split('', '2')|join('|') }}")).
+        to eq('a|b,c|ab|cd|e')
+      expect(render("{{ 'abcde'|split('', 2.5)|join('|') }}|{{ 'abcde'|split('', true)|join('|') }}")).
+        to eq('ab|cd|a|b|c|d|e')
+      expect { render("{{ 'a,b'|split(',', 'abc') }}") }.
+        to raise_error(Twig::Error::Runtime, error('explode(): Argument #3 ($limit) must be of type int, string given'))
+    end
+
+    it 'compares a limit that is not numeric like PHP' do
+      expect(render("{{ 'abcde'|split('', 'x')|join('|') }}|{{ 'abcde'|split('', [1])|join('|') }}")).
+        to eq('abcde|abcde')
+    end
+  end
 end
