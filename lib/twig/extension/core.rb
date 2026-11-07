@@ -136,7 +136,7 @@ module Twig
           TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
           TwigFilter.new('batch', static(:batch), argument_names: { count: 'size' }),
-          TwigFilter.new('column', static(:column), argument_names: { column: 'name' }),
+          TwigFilter.new('column', static(:column)),
           TwigFilter.new('filter', static(:filter), argument_names: { proc: 'arrow' }),
           TwigFilter.new('map', static(:map), argument_names: { proc: 'arrow' }),
           TwigFilter.new('reduce', static(:reduce), argument_names: { proc: 'arrow' }),
@@ -662,10 +662,64 @@ module Twig
         rows.map { |row| row.is_a?(Hash) ? array_from_hash(row) : row }
       end
 
-      def self.column(object, column)
-        object = to_array(object)
-        object = object.values if object.is_a?(Hash)
-        object.map { |o| o[column] }
+      # The values of a column of the rows, like PHP's array_column: a row
+      # without the column is left out, and with an index the values are keyed
+      # by that column of their row, or added after the others when the row
+      # has none. A name of null takes the whole rows.
+      def self.column(object, name, index = nil)
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"column\" filter expects a sequence or a mapping, got \"#{debug_type(object)}\"."
+        end
+
+        result = AutoHash.new
+        Runtime::EnumerableHash.traversable(object).each do |_key, row| # rubocop:disable Style/HashEachMethods
+          value = name.nil? ? row : column_value(row, name)
+          next if value.equal?(KEY_NOT_FOUND)
+
+          key = index.nil? ? KEY_NOT_FOUND : column_value(row, index)
+          key.equal?(KEY_NOT_FOUND) ? result.add(value) : result[column_key(key)] = value
+        end
+
+        array_from_hash(result)
+      end
+
+      # A row's value for a column of column, or KEY_NOT_FOUND. PHP reads an
+      # object's public property, which for an object without [] is a public
+      # reader of its own taking no arguments, such as a Data member or an
+      # attr_reader, but not a method every object has, such as hash.
+      def self.column_value(row, name)
+        if row.is_a?(Hash) || row.is_a?(Array)
+          key = subscript_key(row, name)
+
+          return key.equal?(KEY_NOT_FOUND) ? key : row[key]
+        end
+
+        scalar = [nil, true, false].include?(row) ||
+                 [String, Symbol, Numeric, Proc, Method].any? { |type| row.is_a?(type) }
+        return KEY_NOT_FOUND if scalar
+        return row[name] if row.respond_to?(:[])
+
+        column_reader?(row, name) ? row.public_send(name) : KEY_NOT_FOUND
+      end
+
+      def self.column_reader?(row, name)
+        return false unless (name.is_a?(String) || name.is_a?(Symbol)) && row.respond_to?(name)
+
+        reader = row.method(name)
+        [0, -1].include?(reader.arity) && ![Object, Kernel, BasicObject].include?(reader.owner)
+      end
+
+      # The key PHP makes of a value: true is 1, false 0, null "", a float is
+      # truncated and a decimal string is its integer
+      def self.column_key(value)
+        case value
+        when true then 1
+        when false then 0
+        when nil then ''
+        when Float then value.to_i
+        when String then Runtime::MappingKey.integer?(value) ? value.to_i : value
+        else value
+        end
       end
 
       # PHP's array_filter keeps the keys of an array, so a sequence with

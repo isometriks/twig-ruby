@@ -446,6 +446,86 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the column filter' do
+    # array_column, with its index argument
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {% for k, v in [{a: 1, id: "x"}, {a: 3, id: "y"}]|column("a", "id") %}{{ k }}={{ v }} {% endfor %}
+          {{ [{a: 1}, {b: 2}]|column("a")|length }}|{{ [{"a": null}, {"a": 2}]|column("a")|json_encode|raw }}
+          {{ [{"a": 1, "id": 5}, {"a": 2}, {"a": 3, "id": null}, {"a": 4, "id": "7"}]|column("a", "id")|json_encode|raw }}
+          {{ {x: {"a": 1}, y: {"a": 2}}|column("a")|json_encode|raw }}
+          {{ [{"a": 1, "id": true}, {"a": 2, "id": 1.5}]|column("a", "id")|json_encode|raw }}
+          {{ [{"a": 1, "id": "k"}]|column(null, "id")|json_encode|raw }}|{{ [[1, 2], [3, 4]]|column(1)|json_encode|raw }}
+          {{ [{"a": 1}, 5, "s"]|column("a")|json_encode|raw }}|{{ [{"a": 1, "i": 3}]|column("a", index="i")|json_encode|raw }}
+        INPUTS
+      end
+
+      let(:outputs) do
+        [
+          'x=1 y=3 ',
+          '1|[null,2]',
+          '{"5":1,"6":2,"":3,"7":4}',
+          '[1,2]',
+          '{"1":2}',
+          '{"k":{"a":1,"id":"k"}}|[2,4]',
+          '[1]|{"3":1}',
+        ]
+      end
+    end
+
+    pair_sequences.each do |name, pairs|
+      context "with #{name} of pairs" do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) { ['{{ pairs|column(1)|join(",") }}', '{{ pairs|column(1, 0)|json_encode|raw }}'] }
+          let(:outputs) { ['2,4', '{"1":2,"3":4}'] }
+          let(:locals) { { pairs: } }
+        end
+      end
+    end
+
+    context 'with objects for rows' do
+      # PHP reads a public property, which is a public reader in Ruby
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          [
+            '{{ po|column("name")|join(",") }}',
+            '{{ da|column("name", "id")|json_encode|raw }}',
+            '{{ da|column("id", "name")|json_encode|raw }}',
+            '{{ po|column("nope")|json_encode|raw }}',
+            '{{ po|column("secret")|json_encode|raw }}',
+            '{{ po|column("hash")|json_encode|raw }}',
+          ]
+        end
+        let(:outputs) { ['a,b', '{"1":"a","2":"b"}', '{"a":1,"b":2}', '[]', '[]', '[]'] }
+        let(:locals) do
+          po_class = Class.new do
+            attr_reader :name
+
+            def initialize(name)
+              @name = name
+            end
+
+            private
+
+            def secret = 's'
+          end
+          da_class = Data.define(:name, :id)
+
+          { po: [po_class.new('a'), po_class.new('b')], da: [da_class.new('a', 1), da_class.new('b', 2)] }
+        end
+      end
+    end
+
+    it_behaves_like 'render_and_raise' do
+      let(:template) { '{{ null|column("a") }}' }
+      let(:error) { Twig::Error::Runtime }
+      let(:message) do
+        'The "column" filter expects a sequence or a mapping, got "null" in "template.twig" at line 1.'
+      end
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do

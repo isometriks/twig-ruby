@@ -53,8 +53,8 @@ RSpec.describe 'Twig argument names of the core callables' do
       '12,30',
     ],
     'column' => [
-      '{{ [{"a": 1}, {"a": 2}]|column(name: "a")|join }}',
-      '12',
+      '{{ [{"a": 1, "id": "x"}, {"a": 2, "id": "y"}]|column(name: "a", index: "id")|json_encode|raw }}',
+      '{"x":1,"y":2}',
     ],
     'filter' => [
       '{{ [1, 2, 3]|filter(arrow: v => v > 1)|join }}',
@@ -201,13 +201,13 @@ RSpec.describe 'Twig argument names of the core callables' do
   it 'still takes the Ruby names of the arguments Twig names differently' do
     template = environment.create_template(
       '{{ 1234.5|number_format(thousands_separator: " ") }}|{{ "<b>a</b>"|striptags(tags: "<b>")|raw }}|' \
-      '{{ [1, 2, 3]|batch(count: 2)|length }}|{{ [{"a": 1}]|column(column: "a")|join }}|' \
+      '{{ [1, 2, 3]|batch(count: 2)|length }}|' \
       '{{ [1, 2]|map(proc: v => v * 2)|join }}|{{ [1, 2, 3]|join(and_glue: " and ") }}|' \
       '{{ constant("FOO", holder, defined_test: true) ? "yes" }}|' \
       '{{ include(template_from_string(string: "x")) }}'
     )
 
-    expect(template.render({ holder: })).to eq('1 235|<b>a</b>|2|1|24|12 and 3|yes|x')
+    expect(template.render({ holder: })).to eq('1 235|<b>a</b>|2|24|12 and 3|yes|x')
   end
 
   it 'covers every core filter and function' do
