@@ -30,9 +30,9 @@ hey</h1>"|nl2br }}',
     end
 
     let(:outputs) do
-      %W[
-        <h1><br>\nhey</h1>
-        &lt;h1&gt;<br>\nhey&lt;/h1&gt;
+      [
+        "<h1><br />\nhey</h1>",
+        "&lt;h1&gt;<br />\nhey&lt;/h1&gt;",
       ]
     end
 

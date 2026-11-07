@@ -591,8 +591,9 @@ module Twig
         original.is_a?(Runtime::Escaped) ? Runtime::Escaped.new(string, original.strategy) : string.html_safe
       end
 
+      # Like PHP's nl2br, which inserts <br /> before each \r\n, \n\r, \n or \r
       def self.nl2br(string)
-        string.gsub("\n", "<br>\n")
+        bytewise((string || '').to_s) { |subject| subject.gsub(/\r\n|\n\r|\n|\r/, '<br />\0') }
       end
 
       # The singular form, or the word as it is for a count other than 1, as
