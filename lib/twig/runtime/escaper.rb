@@ -19,7 +19,10 @@ module Twig
 
       STRATEGIES = %i[html js url css html_attr html_attr_relaxed].freeze
 
-      def escape(string, strategy = :html, charset = nil, autoescape = false)
+      # charset and autoescape are keywords so that a template can name one
+      # without the arguments before it, as in e(autoescape: true), which
+      # Twig fills with their defaults
+      def escape(string, strategy = :html, charset: nil, autoescape: false)
         strategy = strategy.to_sym
 
         # Markup (an html_safe string such as a capture, a macro result or a

@@ -70,7 +70,7 @@ RSpec.describe Twig::Node::Expression::Call do
     it_behaves_like 'render_and_raise' do
       let(:template) { '{{ [{a:"a"}, {a:"b"}]|column }}' }
       let(:error) { Twig::Error::Syntax }
-      let(:message) { /value for argument "column" is required for filter "column"/i }
+      let(:message) { /Value for argument "name" is required for filter "column"/ }
     end
   end
 

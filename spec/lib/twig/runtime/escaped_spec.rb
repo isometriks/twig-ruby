@@ -96,7 +96,7 @@ RSpec.describe Twig::Runtime::Escaped do
     result = escaped.upcase
 
     expect(result).to be_an_instance_of(String)
-    expect(escaper.escape(result, :html_attr, nil, true)).to eq('A&amp;&#x23;X20&#x3B;B')
+    expect(escaper.escape(result, :html_attr, autoescape: true)).to eq('A&amp;&#x23;X20&#x3B;B')
   end
 
   it 'is no longer html_safe when changed in place by an unsafe method' do
@@ -104,7 +104,7 @@ RSpec.describe Twig::Runtime::Escaped do
     copy.upcase!
 
     expect(copy).not_to be_html_safe
-    expect(escaper.escape(copy, :html_attr, nil, true)).to eq('A&amp;&#x23;X20&#x3B;B')
+    expect(escaper.escape(copy, :html_attr, autoescape: true)).to eq('A&amp;&#x23;X20&#x3B;B')
   end
 
   it 'is Markup when marked html_safe, like the raw filter does' do

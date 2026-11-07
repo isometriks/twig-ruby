@@ -27,7 +27,7 @@ module Twig
       end
 
       class Escaper < Twig::Runtime::Escaper
-        def escape(string, strategy = :html, charset = nil, autoescape = false)
+        def escape(string, strategy = :html, charset: nil, autoescape: false)
           # return "#{string} - #{string.class.name}"
           case string
           when TrueClass

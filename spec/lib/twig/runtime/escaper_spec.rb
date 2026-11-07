@@ -16,7 +16,7 @@ RSpec.describe Twig::Runtime::Escaper do
   it 'returns an html_safe string as is when autoescaping for html' do
     string = '<b>'.html_safe
 
-    expect(escaper.escape(string, :html, nil, true)).to be(string)
+    expect(escaper.escape(string, :html, autoescape: true)).to be(string)
   end
 
   # Like Twig, which returns a Markup as is under autoescape
@@ -24,7 +24,7 @@ RSpec.describe Twig::Runtime::Escaper do
     string = '<b c>'.html_safe
 
     strategies.each do |strategy|
-      expect(escaper.escape(string, strategy, nil, true)).to be(string)
+      expect(escaper.escape(string, strategy, autoescape: true)).to be(string)
     end
   end
 
@@ -45,9 +45,9 @@ RSpec.describe Twig::Runtime::Escaper do
 
   # Twig's escape returns a plain string, which autoescaping escapes again
   it 'escapes output escaped for html again when autoescaping for another strategy' do
-    expect(escaper.escape(escaper.escape('a b'), :html_attr, nil, true)).to eq('a&#x20;b')
-    expect(escaper.escape(escaper.escape('<'), :js, nil, true)).to eq('\u0026lt\u003B')
-    expect(escaper.escape(escaper.escape('<', :js), :html_attr, nil, true)).to eq('&#x5C;u003C')
+    expect(escaper.escape(escaper.escape('a b'), :html_attr, autoescape: true)).to eq('a&#x20;b')
+    expect(escaper.escape(escaper.escape('<'), :js, autoescape: true)).to eq('\u0026lt\u003B')
+    expect(escaper.escape(escaper.escape('<', :js), :html_attr, autoescape: true)).to eq('&#x5C;u003C')
   end
 
   it 'returns escaped output as is when autoescaping for a strategy it is safe for' do
@@ -62,7 +62,7 @@ RSpec.describe Twig::Runtime::Escaper do
       escaped = escaper.escape('a b<', strategy)
 
       strategies.each do |autoescape|
-        result = escaper.escape(escaped, autoescape, nil, true)
+        result = escaper.escape(escaped, autoescape, autoescape: true)
 
         if safe_for.include?(autoescape)
           expect(result).to be(escaped)

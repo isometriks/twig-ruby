@@ -107,7 +107,9 @@ module Twig
           TwigFilter.new('date', method(:format_date)),
           TwigFilter.new('format', static(:sprintf)),
           TwigFilter.new('replace', static(:replace)),
-          TwigFilter.new('number_format', method(:number_format)),
+          TwigFilter.new('number_format', method(:number_format), {
+            argument_names: { thousands_separator: 'thousand_sep' },
+          }),
           TwigFilter.new('abs', static(:abs)),
           TwigFilter.new('round', static(:round)),
 
@@ -121,7 +123,7 @@ module Twig
           TwigFilter.new('capitalize', static(:capitalize)),
           TwigFilter.new('upper', static(:upper)),
           TwigFilter.new('lower', static(:lower)),
-          TwigFilter.new('striptags', static(:strip_tags)),
+          TwigFilter.new('striptags', static(:strip_tags), argument_names: { tags: 'allowable_tags' }),
           TwigFilter.new('trim', static(:trim)),
           TwigFilter.new('nl2br', static(:nl2br), { pre_escape: :html, is_safe: [:html] }),
           TwigFilter.new('plural', static(:pluralize)),
@@ -133,12 +135,12 @@ module Twig
           TwigFilter.new('split', static(:split), needs_charset: true),
           TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
-          TwigFilter.new('batch', static(:batch)),
-          TwigFilter.new('column', static(:column)),
-          TwigFilter.new('filter', static(:filter)),
-          TwigFilter.new('map', static(:map)),
-          TwigFilter.new('reduce', static(:reduce)),
-          TwigFilter.new('find', static(:find)),
+          TwigFilter.new('batch', static(:batch), argument_names: { count: 'size' }),
+          TwigFilter.new('column', static(:column), argument_names: { column: 'name' }),
+          TwigFilter.new('filter', static(:filter), argument_names: { proc: 'arrow' }),
+          TwigFilter.new('map', static(:map), argument_names: { proc: 'arrow' }),
+          TwigFilter.new('reduce', static(:reduce), argument_names: { proc: 'arrow' }),
+          TwigFilter.new('find', static(:find), argument_names: { proc: 'arrow' }),
 
           # Arrays / Hashes filters
           TwigFilter.new('reverse', static(:reverse)),
@@ -175,7 +177,7 @@ module Twig
           TwigFunction.new('max', static(:max)),
           TwigFunction.new('min', static(:min)),
           TwigFunction.new('range', static(:range)),
-          TwigFunction.new('constant', static(:constant)),
+          TwigFunction.new('constant', static(:constant), argument_names: { defined_test: 'check_defined' }),
           TwigFunction.new('cycle', static(:cycle)),
           TwigFunction.new('random', static(:random), needs_charset: true),
           TwigFunction.new('date', method(:convert_date)),
@@ -774,7 +776,9 @@ module Twig
         callable.call(*, **)
       end
 
-      def self.random(charset, values = nil, max = nil)
+      # max is a keyword so that a template can name it without values, as in
+      # random(max: 5), which Twig fills with the default of values
+      def self.random(charset, values = nil, max: nil)
         if values.nil?
           return max.nil? ? rand : rand(0..max.to_i)
         end
