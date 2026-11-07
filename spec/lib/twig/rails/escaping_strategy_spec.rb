@@ -60,7 +60,7 @@ RSpec.describe Twig::Rails::EscapingStrategy do
 
     it 'still escapes an html template' do
       expect(environment.load('mailer/welcome.html.twig').render({ message: "It's <b>" })).
-        to eq("It&#39;s &lt;b&gt;\n")
+        to eq("It&#039;s &lt;b&gt;\n")
     end
   end
 end

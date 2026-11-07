@@ -128,6 +128,20 @@ RSpec.describe Twig::Runtime::Escaper do
     end
   end
 
+  # Like Twig, which uses htmlspecialchars with ENT_QUOTES
+  it "escapes ' as &#039; for html" do
+    expect(escaper.escape(%q('"&<>), :html)).to eq('&#039;&quot;&amp;&lt;&gt;')
+    expect(escaper.escape('&#39;', :html)).to eq('&amp;#39;')
+  end
+
+  it "escapes ' as &#039; when autoescaping" do
+    environment = Twig::Environment.new(Twig::Loader::Hash.new({
+      'index' => "{{ x }}|{{ x|e }}|{{ x|e('html') }}",
+    }))
+
+    expect(environment.load('index').render({ 'x' => "it's" })).to eq('it&#039;s|it&#039;s|it&#039;s')
+  end
+
   # Like Twig, which uses rawurlencode (RFC 3986) where CGI.escape gives +
   it 'escapes urls with a space as %20' do
     expect(escaper.escape("a b+c~*'()!/?&=", :url)).to eq('a%20b%2Bc~%2A%27%28%29%21%2F%3F%26%3D')

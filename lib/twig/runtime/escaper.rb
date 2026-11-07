@@ -44,7 +44,7 @@ module Twig
 
         case strategy
         when :html
-          CGI.escapeHTML(string.to_s)
+          escape_html(string.to_s)
         when :html_attr
           escape_html_attr(string.to_s, charset || @charset)
         when :html_attr_relaxed
@@ -59,6 +59,14 @@ module Twig
           raise Error::Runtime, "Invalid escaping strategy \"#{strategy}\" " \
                                 "(valid ones: \"#{STRATEGIES.join('", "')}\")."
         end.html_safe
+      end
+
+      # Like htmlspecialchars with ENT_QUOTES, which writes ' as &#039;,
+      # where CGI.escapeHTML writes &#39;
+      def escape_html(string)
+        string = CGI.escapeHTML(string)
+
+        string.include?('&#39;') ? string.gsub('&#39;', '&#039;') : string
       end
 
       def escape_html_attr(string, charset)
