@@ -579,14 +579,31 @@ module Twig
         end
       end
 
+      # Merges like PHP's [...$a, ...$b], into a new sequence or mapping, so
+      # what the filter is applied to stays as it is: string keys are kept,
+      # a later value replacing an earlier one, and integer keys are
+      # renumbered after the items so far, so {1: 'a'}|merge({1: 'b'}) is
+      # ['a', 'b'] and [1]|merge({a: 2}) is {0: 1, a: 2}.
       def self.merge(first, *rest)
-        if first.is_a?(Hash)
-          [first, *rest].reduce(&:merge)
-        else
-          [first, *rest].reduce do |array, current|
-            array.concat(current.respond_to?(:values) ? current.values : current)
-          end
+        arrays = [first, *rest]
+        arrays.each_with_index do |array, index|
+          next if array.respond_to?(:each)
+
+          type = [true, false].include?(array) ? 'bool' : php_type(array)
+          raise Error::Runtime, "The \"merge\" filter expects a sequence or a mapping, got \"#{type}\" " \
+                                "for argument #{index + 1}."
         end
+
+        merged = Runtime::Spread.sequence(*arrays.map { |array| Runtime::Spread.new(array) })
+        return merged unless merged.is_a?(Hash)
+
+        # PHP has one key for :a and "a", so a later one replaces the value
+        # where the first one is, under its name, as a HashWithIndifferentAccess
+        # does, and the result is of the first one's class
+        names = {}
+        merged = merged.transform_keys { |key| names[key.is_a?(Symbol) ? key.to_s : key] ||= key }
+
+        first.is_a?(Hash) && !first.instance_of?(Hash) ? first.class[merged] : merged
       end
 
       # @param [Array, Hash] object
