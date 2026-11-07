@@ -82,8 +82,8 @@ module Twig
         end
 
         compiler.
-          write("context.remove!(:#{nodes[:key_target].attributes[:name]}, ").
-          raw(":#{nodes[:value_target].attributes[:name]}")
+          write("context.remove!(#{nodes[:key_target].attributes[:name].to_sym.inspect}, ").
+          raw(nodes[:value_target].attributes[:name].to_sym.inspect)
 
         if attributes[:with_loop]
           compiler.raw(', :loop')

@@ -30,8 +30,10 @@ module Twig
 
           compiler.add_debug_info(self)
 
-          check = "context.has?(:#{name})"
-          get = "context.get(:#{name})"
+          # inspect quotes a name that isn't a bare Ruby symbol, such as one
+          # with U+007F in it
+          check = "context.has?(#{name.to_sym.inspect})"
+          get = "context.get(#{name.to_sym.inspect})"
 
           if define_test_enabled?
             if attributes[:always_defined] || SPECIAL_VARS.key?(name)
