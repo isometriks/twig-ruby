@@ -382,6 +382,11 @@ module Twig
 
       # A sequence, as PHP's range() returns an array, so a range works
       # everywhere a sequence does: reverse, slice, [i], merge, json_encode
+      # The type name PHP's get_debug_type gives a value
+      def self.debug_type(value)
+        [true, false].include?(value) ? 'bool' : php_type(value)
+      end
+
       def self.range(low, high, step: 1)
         Range.new(low, high).step(step).to_a
       end
@@ -610,8 +615,7 @@ module Twig
         arrays.each_with_index do |array, index|
           next if array.respond_to?(:each)
 
-          type = [true, false].include?(array) ? 'bool' : php_type(array)
-          raise Error::Runtime, "The \"merge\" filter expects a sequence or a mapping, got \"#{type}\" " \
+          raise Error::Runtime, "The \"merge\" filter expects a sequence or a mapping, got \"#{debug_type(array)}\" " \
                                 "for argument #{index + 1}."
         end
 
@@ -693,23 +697,19 @@ module Twig
         end
       end
 
+      # Calls the arrow with the accumulator, then each value and its key, as
+      # Twig does. A PHP closure ignores extra arguments, so the arrow can take
+      # only the accumulator and the value, or only the accumulator.
       def self.reduce(object, proc, initial = nil)
-        accumulator = initial
-
-        case proc.arity
-        when 2
-          (object.is_a?(Hash) ? object.values : object).each do |value|
-            accumulator = proc.call(accumulator, value)
-          end
-        when 3
-          (object.is_a?(Hash) ? object : object.each_with_index).each do |key, value|
-            accumulator = proc.call(accumulator, value, key)
-          end
-        else
-          raise Error::Runtime, "Reduce takes 2 or 3 arguments, given #{proc.arity}."
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"reduce\" filter expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        accumulator
+        arity = proc.arity.between?(0, 3) ? proc.arity : 3
+
+        Runtime::EnumerableHash.traversable(object).reduce(initial) do |accumulator, (key, value)|
+          proc.call(*[accumulator, value, key].first(arity))
+        end
       end
 
       def self.array_every?(object, proc)

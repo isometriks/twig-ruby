@@ -191,6 +191,50 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the reduce filter' do
+    # The arrow gets the accumulator, the value and the key, or fewer of them
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {{ [1, 2, 3]|reduce((c, v, k) => c + k, 0) }}
+          {{ [1, 2, 3]|reduce((c, v, k) => c ~ k ~ v, "") }}
+          {{ [5, 6, 7]|reduce((c, v, k) => c ~ k, "") }}
+          {{ [1, 2]|reduce(c => c + 1, 0) }}
+          {{ {a: 1, b: 2}|reduce((c, v, k) => c ~ k ~ v, "") }}
+          {{ items|reduce((c, v, k) => c ~ k ~ v, "") }}
+          {{ []|reduce((c, v) => c + v, 7) }}
+        INPUTS
+      end
+
+      let(:outputs) { %w[3 011223 012 2 a1b2 011223 7] }
+      let(:locals) { { items: [1, 2, 3].each } }
+    end
+
+    pair_sequences.each do |name, pairs|
+      context "with #{name} of pairs" do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) do
+            [
+              '{{ pairs|reduce((c, v) => c ~ v|join("-") ~ ";", "") }}',
+              '{{ pairs|reduce((c, v, k) => c ~ k ~ ":" ~ v|join("-") ~ ";", "") }}',
+              '{{ yielded|reduce((c, v, k) => c ~ k ~ v, "") }}',
+            ]
+          end
+          let(:outputs) { ['1-2;3-4;', '0:1-2;1:3-4;', 'a1b2'] }
+          let(:locals) { { pairs:, yielded: } }
+        end
+      end
+    end
+
+    it_behaves_like 'render_and_raise' do
+      let(:template) { '{{ null|reduce((c, v) => c, 1) }}' }
+      let(:error) { Twig::Error::Runtime }
+      let(:message) do
+        'The "reduce" filter expects a sequence or a mapping, got "null" in "template.twig" at line 1.'
+      end
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do
