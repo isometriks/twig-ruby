@@ -598,10 +598,11 @@ module Twig
 
         if arrow.nil?
           object.is_a?(Hash) ? object.sort { |a, b| a[1] <=> b[1] }.to_h : object.sort
+        elsif object.is_a?(Hash)
+          # PHP's uasort compares the values and keeps their keys
+          object.sort { |(_, a), (_, b)| arrow.call(a, b) }.to_h
         else
-          object.sort { |a, b| arrow.call(a, b) }.then do |sorted|
-            object.is_a?(Hash) ? sorted.to_h : sorted
-          end
+          object.sort { |a, b| arrow.call(a, b) }
         end
       end
 

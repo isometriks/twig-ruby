@@ -241,7 +241,7 @@ RSpec.describe Twig::Extension::Core do
           Hello {{ include("include.twig") }}
           {{ [1, 2]|sort((a, b) => (b - a)) }}
           {{ [3, 2, 1]|sort }}
-          {{ { a: 2, b: 1 }|sort((a, b) => (a[1] - b[1])) }}
+          {{ { a: 2, b: 1 }|sort((a, b) => (a - b)) }}
           {{ { b: 2, a: 1 }|sort }}
           {{ [1, 2, 3]|join }}
           {{ [1, 2, 3]|join(", ") }}

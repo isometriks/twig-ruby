@@ -287,6 +287,22 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the sort filter with an arrow on a mapping' do
+    # The arrow compares the values, which keep their keys
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {% for k, v in {b: 2, a: 3, c: 1}|sort((a, b) => a <=> b) %}{{ k }}={{ v }} {% endfor %}
+          {{ {b: 2, a: 3, c: 1}|sort((a, b) => b <=> a)|join(",") }}
+          {{ {"x": {"n": 2}, "y": {"n": 1}}|sort((a, b) => a.n <=> b.n)|keys|join }}
+          {{ {a: 2, b: 1}|sort((a, b) => a - b)|json_encode|raw }}
+        INPUTS
+      end
+
+      let(:outputs) { ['c=1 b=2 a=3 ', '3,2,1', 'yx', '{"b":1,"a":2}'] }
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do
