@@ -427,14 +427,14 @@ module Twig
           constant = "#{klass.name}::#{constant}"
         end
 
-        defined = begin
-          !klass.nil? && klass.const_defined?(name)
+        holder = begin
+          constant_holder(klass, name) unless klass.nil?
         rescue NameError
-          false
+          nil
         end
 
-        return defined if defined_test
-        return klass.const_get(name) if defined
+        return !holder.nil? if defined_test
+        return holder.const_get(name) if holder
 
         if constant.downcase.end_with?('::class')
           raise Error::Runtime, "You cannot use the Twig function \"constant\" to access \"#{constant}\". " \
@@ -443,6 +443,21 @@ module Twig
         end
 
         raise Error::Runtime, "Constant \"#{constant}\" is undefined."
+      end
+
+      # The class or module that holds klass::name as Ruby finds it: klass or
+      # one of its ancestors, but not Object unless klass is Object, as PHP
+      # finds only a class's own and inherited constants. A constant without
+      # a class (klass is Kernel) is a global one.
+      #
+      # @return [Module, nil]
+      def self.constant_holder(klass, name)
+        return klass.const_defined?(name) ? klass : nil if klass.equal?(Kernel)
+
+        stop = klass.equal?(Object) ? nil : Object
+        klass.ancestors.take_while { |ancestor| !ancestor.equal?(stop) }.find do |ancestor|
+          ancestor.const_defined?(name, false)
+        end
       end
 
       # @return [Module, nil]

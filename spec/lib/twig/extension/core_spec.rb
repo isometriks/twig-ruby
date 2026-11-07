@@ -320,6 +320,9 @@ RSpec.describe Twig::Extension::Core do
     before do
       stub_const('Holder', Class.new)
       stub_const('Holder::FOO', 'foo')
+      stub_const('HolderMixin', Module.new)
+      stub_const('HolderMixin::BAR', 'bar')
+      stub_const('SubHolder', Class.new(Holder) { include HolderMixin })
     end
 
     it_behaves_like 'render_and_assert' do
@@ -330,11 +333,19 @@ RSpec.describe Twig::Extension::Core do
           "{{ constant('FOO', object) ?? 'KO' }}",
           "{{ constant('NOPE', object) ?? 'KO' }}",
           "{{ constant('Holder::FOO') ?? 'KO' }}",
+          # A class's own and inherited constants, but not the global ones
+          "{{ constant('FOO', sub) }}",
+          "{{ constant('BAR', sub) }}",
+          "{{ constant('SubHolder::BAR') }}",
+          "{{ constant('String', object) is defined ? 'yes' : 'no' }}",
+          "{{ constant('Holder::String') is defined ? 'yes' : 'no' }}",
+          "{{ constant('HolderMixin::String') is defined ? 'yes' : 'no' }}",
+          "{{ constant('RUBY_ENGINE') }}",
         ]
       end
 
-      let(:outputs) { %w[Holder yes foo KO foo] }
-      let(:locals) { { object: Holder.new } }
+      let(:outputs) { %w[Holder yes foo KO foo foo bar bar no no no ruby] }
+      let(:locals) { { object: Holder.new, sub: SubHolder.new } }
     end
 
     {
@@ -342,6 +353,8 @@ RSpec.describe Twig::Extension::Core do
       "constant('NOPE', object)" => 'Constant "Holder::NOPE" is undefined',
       "constant('Nope::NOPE')" => 'Constant "Nope::NOPE" is undefined',
       "constant('NOPE')" => 'Constant "NOPE" is undefined',
+      "constant('String', object)" => 'Constant "Holder::String" is undefined',
+      "constant('Holder::RUBY_ENGINE')" => 'Constant "Holder::RUBY_ENGINE" is undefined',
       "constant('Holder::class')" => 'You cannot use the Twig function "constant" to access "Holder::class". ' \
                                      'You could provide an object and call constant("class", $object) or use ' \
                                      'the class name directly as a string',
