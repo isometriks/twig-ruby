@@ -33,9 +33,9 @@ module Twig
 
             compiler.
               add_debug_info(self).
-              raw("(#{var} = ::Twig::Runtime::Destructuring.object(").
+              raw("(#{var} = ").
               subcompile(nodes[:right]).
-              raw('); [')
+              raw('; [')
 
             @mappings.each_with_index do |mapping, i|
               compiler.raw(', ') if i.positive?

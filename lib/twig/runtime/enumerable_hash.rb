@@ -11,25 +11,17 @@ module Twig
 
       def self.from(object)
         if object.is_a?(Array)
-          new(AutoHash.new.add(*object), keyed: true)
+          new(AutoHash.new.add(*object))
         elsif object.is_a?(Hash)
-          new(object.to_h, keyed: true)
+          new(object.to_h)
         else
           new(object)
         end
       end
 
       # @param [Object] wrapped
-      # @param [Boolean] keyed whether it came from an Array or a Hash, whose
-      #   keys PHP keeps for an array, rather than from any other enumerable,
-      #   which PHP reads as a Traversable, by position
-      def initialize(wrapped, keyed: false)
+      def initialize(wrapped)
         @wrapped = wrapped
-        @keyed = keyed
-      end
-
-      def keyed?
-        @keyed
       end
 
       def each(...)
@@ -53,7 +45,21 @@ module Twig
       end
 
       def filter
-        self.class.new(super, keyed: @keyed)
+        self.class.new(super)
+      end
+
+      # The array PHP's iterator_to_array makes of a Traversable: its pairs,
+      # as an Array when the keys are 0, 1, 2... in order, as PHP calls such
+      # an array a list, or else as a Hash. Without preserve_keys, the values.
+      #
+      # @return [Array, Hash]
+      def to_array(preserve_keys: true)
+        return values unless preserve_keys
+
+        hash = to_h
+        list = hash.each_key.with_index.all? { |key, index| key.is_a?(Integer) && key == index }
+
+        list ? hash.values : hash
       end
     end
   end

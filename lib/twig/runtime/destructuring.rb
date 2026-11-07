@@ -23,12 +23,6 @@ module Twig
           mapping(context, names, value)
 
           value
-        when EnumerableHash
-          # PHP's filter keeps the keys of an array, which destructuring then
-          # reads by key, but returns a Traversable for anything else
-          value.keyed? ? mapping(context, names, value.to_h) : each_item(context, names, value)
-
-          value
         else
           # PHP's array_pad fails on anything that is neither an array nor
           # Traversable, so a scalar or null is an error rather than nulls
@@ -40,16 +34,6 @@ module Twig
 
           value
         end
-      end
-
-      # What `{a, b} = value` reads its keys from. What filter returns for an
-      # Array or a Hash is the array PHP's filter returns, so it is read as a
-      # mapping by key; anything else is read as it is.
-      #
-      # @param [Object] value
-      # @return [Object]
-      def self.object(value)
-        value.is_a?(EnumerableHash) && value.keyed? ? value.to_h : value
       end
 
       # Reads the items by key, as PHP reads an array. PHP pads a shorter array
@@ -80,8 +64,8 @@ module Twig
       end
 
       # An EnumerableHash (what filter returns for an enumerable that is not an
-      # Array or a Hash) yields key and value pairs; take the value, as a for
-      # loop over it does
+      # Array or a Hash, which PHP reads as a Traversable, by position) yields
+      # key and value pairs; take the value, as a for loop over it does
       def self.each_value(value, &)
         if value.is_a?(EnumerableHash)
           value.each { |_key, item| yield item } # rubocop:disable Style/HashEachMethods

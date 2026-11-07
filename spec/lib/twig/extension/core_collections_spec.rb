@@ -6,6 +6,111 @@ require 'active_support/hash_with_indifferent_access'
 
 # The sequence and mapping filters, with expected values from Twig PHP
 RSpec.describe Twig::Extension::Core do
+  describe 'what the filter filter returns' do
+    # An array, keeping the keys of a sequence, which works wherever one does
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {{ [1, 2, 3]|filter(v => v > 1)|json_encode|raw }}
+          {{ [1, 2, 3]|filter(v => v > 0)|json_encode|raw }}
+          {{ {a: 1, b: 2}|filter(v => v > 1)|json_encode|raw }}
+          {{ [1, 2, 3]|filter(v => v > 1)|first }}
+          {{ [1, 2, 3]|filter(v => v > 1)|last }}
+          {{ [3, 1, 2]|filter(v => v > 0)|sort|join(",") }}
+          {{ [1, 2, 3]|filter(v => v > 5) is empty ? "e" : "ne" }}
+          {{ ([1, 2, 3]|filter(v => v > 1))[1] }}
+          {{ max([1, 2, 3]|filter(v => v > 1)) }}
+          {{ [1, 2, 3]|filter(v => v > 1)|reduce((c, v) => c ~ v, "") }}
+          {{ [1, 2, 3]|filter(v => v > 1)|reverse|join }}
+          {{ [1, 2, 3]|filter(v => v > 1)|merge([4])|join }}
+          {{ [1, 2, 3]|filter(v => v > 1)|keys|join }}
+          {{ [{"a": 1}, {"a": 2}]|filter(r => r.a > 1)|column("a")|join }}
+          {{ [1, 2, 3]|filter(v => v > 1) is sequence ? "s" : "m" }}
+          {{ cycle(["a", "b"]|filter(v => true), 1) }}
+          {{ cycle(["a", "b", "c"]|filter(v => v != "a"), 1) }}
+          {{ max({a: 1, b: 5}|filter(v => v < 5)) }}
+          {{ min([3, 1, 2]|filter(v => v > 1)) }}
+          {% do [a, b] = [1, 2, 3]|filter(x => x > 1)|filter(x => true) %}{{ a ?? "null" }},{{ b ?? "null" }}
+          {% do [a, b] = (1..5)|filter(x => x > 3) %}{{ a ?? "null" }},{{ b ?? "null" }}
+          {% do [a, b] = range(1, 5)|filter(x => x > 3) %}{{ a ?? "null" }},{{ b ?? "null" }}
+        INPUTS
+      end
+
+      let(:outputs) do
+        <<~OUTPUTS
+          {"1":2,"2":3}
+          [1,2,3]
+          {"b":2}
+          2
+          3
+          1,2,3
+          e
+          2
+          3
+          23
+          32
+          234
+          12
+          2
+          m
+          b
+          b
+          1
+          2
+          null,2
+          null,null
+          null,null
+        OUTPUTS
+      end
+    end
+
+    context 'with an Enumerable' do
+      # A Traversable in PHP, which the filters read through iterator_to_array
+      it_behaves_like 'render_and_assert' do
+        let(:inputs) do
+          <<~INPUTS
+            {{ items|filter(v => v > 1)|first }}|{{ items|filter(v => v > 1)|last }}|{{ items|filter(v => v > 1)|join }}
+            {{ items|filter(v => v > 1)|reverse|join }}|{{ items|filter(v => v > 1)|slice(0, 1)|join }}
+            {{ items|filter(v => v > 1)|sort|join }}|{{ items|filter(v => v > 1)|merge([5])|join }}
+            {{ items|filter(v => v > 1)|keys|join }}|{{ items|filter(v => v > 5) is empty ? "e" : "ne" }}
+            {{ items|filter(v => v > 1)|batch(1)|length }}|{{ items|filter(v => v > 1)|shuffle|length }}
+            {% do [a, b] = items|filter(x => x > 1) %}{{ a }},{{ b }}
+          INPUTS
+        end
+
+        let(:outputs) do
+          <<~OUTPUTS
+            2|3|23
+            32|2
+            23|235
+            12|e
+            2|2
+            2,3
+          OUTPUTS
+        end
+
+        let(:locals) { { items: [1, 2, 3].each } }
+      end
+
+      {
+        '{{ cycle(items|filter(v => true), 1) }}' =>
+          'The "cycle" function expects an array or "ArrayAccess" as first argument in "template.twig" at line 1.',
+        '{{ max(items|filter(v => true)) }}' =>
+          'An exception has been thrown during the rendering of a template ("max(): Argument #1 ($value) must be ' \
+          'of type array, Twig::Runtime::EnumerableHash given") in "template.twig" at line 1.',
+      }.each do |template, message|
+        context "with #{template}" do
+          it 'raises as for a Traversable' do
+            environment = Twig::Environment.new(Twig::Loader::Hash.new({ 'template.twig' => template }))
+
+            expect { environment.load('template.twig').render({ items: [1, 2].each }) }.
+              to raise_error(Twig::Error::Runtime, message)
+          end
+        end
+      end
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do

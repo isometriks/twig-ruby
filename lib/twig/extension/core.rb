@@ -339,7 +339,9 @@ module Twig
         return [value, *values] unless values.empty?
 
         args = value.is_a?(Hash) ? value.values : value
-        args = args.to_a if args.is_a?(Enumerable)
+        # What filter returns for an Enumerable is a Traversable, which PHP's
+        # max and min reject, rather than an array of its key/value pairs
+        args = args.to_a if args.is_a?(Enumerable) && !args.is_a?(Runtime::EnumerableHash)
 
         unless args.is_a?(Array)
           raise ArgumentError, "#{name}(): Argument #1 ($value) must be of type array, #{php_type(args)} given"
@@ -411,8 +413,10 @@ module Twig
       end
 
       def self.cycle(values, position)
-        # A range or other sequence without [] is an array in PHP Twig
-        values = values.to_a if values.is_a?(Enumerable) && !values.respond_to?(:[])
+        # A range or other sequence without [] is an array in PHP Twig, but
+        # what filter returns for an Enumerable is a Traversable, which isn't
+        values = values.to_a if values.is_a?(Enumerable) && !values.respond_to?(:[]) &&
+                                !values.is_a?(Runtime::EnumerableHash)
 
         # Like PHP's array or ArrayAccess: a String or number has [] in Ruby,
         # but isn't a sequence to cycle through
@@ -570,6 +574,8 @@ module Twig
 
       # @param [Hash, Array, Enumerable] object
       def self.sort(object, arrow = nil)
+        object = to_array(object)
+
         if arrow.nil?
           object.is_a?(Hash) ? object.sort { |a, b| a[1] <=> b[1] }.to_h : object.sort
         else
@@ -613,6 +619,7 @@ module Twig
       def self.batch(object, count, fill: nil, preserve_keys: true)
         return if object.nil?
 
+        object = to_array(object)
         hash = object.is_a?(Array) ? object.each_with_index.to_h { |k, v| [v, k] } : object
         size = count.ceil
         last_key = 0
@@ -642,11 +649,23 @@ module Twig
       end
 
       def self.column(object, column)
+        object = to_array(object)
+        object = object.values if object.is_a?(Hash)
         object.map { |o| o[column] }
       end
 
+      # PHP's array_filter keeps the keys of an array, so a sequence with
+      # items taken out is a mapping of the indexes that are left, as in
+      # [1, 2, 3]|filter(v => v > 1), which is {1: 2, 2: 3}. Anything else is
+      # filtered as a Traversable, an EnumerableHash.
       def self.filter(object, proc)
-        enumerable_function(object, :filter, proc)
+        result = enumerable_function(object, :filter, proc)
+
+        case object
+        when Hash then result.to_h
+        when Array then result.to_array
+        else result
+        end
       end
 
       def self.map(object, proc)
@@ -724,6 +743,8 @@ module Twig
 
       def self.reverse(object, preserve_keys: false)
         return if object.nil?
+
+        object = to_array(object)
         # String#reverse raises a bare ArgumentError on invalid bytes
         return split_into_characters(object, 'reverse').reverse.join if object.is_a?(String)
 
@@ -731,6 +752,7 @@ module Twig
       end
 
       def self.shuffle(object)
+        object = to_array(object)
         return split_into_characters(object, 'shuffle').shuffle.join if object.is_a?(String)
 
         object.is_a?(Hash) ? object.values.shuffle : object.shuffle
@@ -745,6 +767,8 @@ module Twig
       end
 
       def self.slice(object, start, length = nil, preserve_keys: false)
+        object = to_array(object)
+
         if object.is_a?(Hash)
           object, keys = [object.values, object.keys]
           preserve_keys = true
@@ -761,6 +785,8 @@ module Twig
 
       def self.first(object)
         return if object.nil?
+
+        object = to_array(object)
         return object[0] if object.is_a?(String)
 
         (object.is_a?(Hash) ? object.values : object).first
@@ -768,6 +794,8 @@ module Twig
 
       def self.last(object)
         return if object.nil?
+
+        object = to_array(object)
         return object[-1] if object.is_a?(String)
 
         (object.is_a?(Hash) ? object.values : object).last
@@ -888,6 +916,21 @@ module Twig
       # Whether value is a string with a byte its encoding doesn't allow.
       def self.invalid_string?(value)
         value.is_a?(String) && !value.valid_encoding?
+      end
+
+      # The array PHP's toArray makes of a value: what filter returns for an
+      # enumerable that is not an Array or a Hash, the Traversable of PHP,
+      # becomes an Array or a Hash; without preserve_keys, a mapping becomes
+      # its values. Anything else is returned as it is, so an Enumerable such
+      # as a lazy query keeps its own first or sort.
+      #
+      # @return [Object]
+      def self.to_array(value, preserve_keys: true)
+        case value
+        when Runtime::EnumerableHash then value.to_array(preserve_keys:)
+        when Hash then preserve_keys ? value : value.values
+        else value
+        end
       end
 
       def self.ensure_hash(value)
@@ -1270,6 +1313,8 @@ module Twig
       end
 
       def self.test_empty?(object)
+        object = to_array(object)
+
         object.nil? ||
           (object == false) ||
           (object.respond_to?(:empty?) && object.empty?) ||
