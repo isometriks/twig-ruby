@@ -72,6 +72,8 @@ RSpec.describe Twig::TokenParser::With do
       "{% set g = 'local' %}{% with {a: 1} %}{{ g }}{% endwith %}" => 'local',
       "{% set g = 'local' %}{% with {a: 1} only %}{{ g }}{% endwith %}" => 'global',
       "{% set g = 'local' %}{% with {g: 'with'} %}{{ g }}{% endwith %}" => 'with',
+      "{% set t = 'Hi' %}{% with {a: t, b: g} only %}{{ a }}{{ b }}{{ t is defined ? 'leak' }}{% endwith %}" =>
+        'Higlobal',
     }.each do |source, output|
       context "with #{source.inspect}" do
         let(:template) { source }

@@ -20,10 +20,6 @@ module Twig
           write("context.push_stack\n")
 
         if nodes.key?(:variables)
-          if attributes[:only]
-            compiler.write("context.clear\n")
-          end
-
           var_name = compiler.var_name
 
           compiler.
@@ -40,7 +36,13 @@ module Twig
             # Like PHP's toArray: a sequence gets integer keys and an
             # enumerable yielding pairs gives its keys and values
             write("#{var_name} = ::Twig::Runtime::EnumerableHash.from(#{var_name}).to_h ").
-            raw("unless #{var_name}.is_a?(::Hash)\n").
+            raw("unless #{var_name}.is_a?(::Hash)\n")
+
+          # The variables are evaluated before only clears the context, so
+          # they can still read it
+          compiler.write("context.clear\n") if attributes[:only]
+
+          compiler.
             write("context.merge!(env.globals, overwrite: false)\n").
             write("context.merge!(#{var_name})\n")
         end
