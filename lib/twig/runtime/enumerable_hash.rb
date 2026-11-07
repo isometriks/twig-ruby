@@ -19,12 +19,28 @@ module Twig
         end
       end
 
+      # Reads an Enumerable as PHP reads a Traversable, by what it yields: an
+      # item yielded on its own, even an Array such as a pair of a Set or of
+      # [[1, 2]].each, is a value keyed by its position, and a key and a
+      # value yielded together are a pair. An Array, a Hash or a filter
+      # result is read as from reads it.
+      def self.traversable(object)
+        return from(object) if object.is_a?(Array) || object.is_a?(Hash) || object.is_a?(EnumerableHash)
+
+        new(object, by_position: true)
+      end
+
       # @param [Object] wrapped
-      def initialize(wrapped)
+      # @param [Boolean] by_position whether an Array yielded on its own is an
+      #   item, rather than a key and a value
+      def initialize(wrapped, by_position: false)
         @wrapped = wrapped
+        @by_position = by_position
       end
 
       def each(...)
+        return each_by_position(...) if @by_position
+
         key = 0
         @wrapped&.each do |k, v = MISSING_KEY| # rubocop:disable Style/HashEachMethods
           if v == MISSING_KEY
@@ -60,6 +76,20 @@ module Twig
         list = hash.each_key.with_index.all? { |key, index| key.is_a?(Integer) && key == index }
 
         list ? hash.values : hash
+      end
+
+      private
+
+      def each_by_position
+        key = 0
+        @wrapped.each do |*item|
+          if item.length > 1
+            yield(item[0], item[1])
+          else
+            yield(key, item[0])
+            key += 1
+          end
+        end
       end
     end
   end

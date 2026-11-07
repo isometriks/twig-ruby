@@ -6,6 +6,22 @@ require 'active_support/hash_with_indifferent_access'
 
 # The sequence and mapping filters, with expected values from Twig PHP
 RSpec.describe Twig::Extension::Core do
+  # Enumerables of arrays, which PHP reads as a Traversable by position,
+  # such as an ArrayIterator of [[1, 2], [3, 4]]
+  pair_sequences = { 'a Set' => Set[[1, 2], [3, 4]], 'an Enumerator' => [[1, 2], [3, 4]].each }
+
+  # Yields a key and a value together, as a PHP generator yields 'a' => 1
+  let(:yielded) do
+    Class.new do
+      include Enumerable
+
+      def each
+        yield 'a', 1
+        yield 'b', 2
+      end
+    end.new
+  end
+
   describe 'what the filter filter returns' do
     # An array, keeping the keys of a sequence, which works wherever one does
     it_behaves_like 'render_and_assert' do
@@ -105,6 +121,70 @@ RSpec.describe Twig::Extension::Core do
 
             expect { environment.load('template.twig').render({ items: [1, 2].each }) }.
               to raise_error(Twig::Error::Runtime, message)
+          end
+        end
+      end
+    end
+  end
+
+  describe 'a scalar given to a sequence filter or test' do
+    # PHP casts it to a string, or to a number for abs and the % of even/odd
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {{ 123|first }}|{{ 123|last }}|{{ 123|reverse }}|{{ 1.5|first }}|{{ true|first }}|{{ false|first }}
+          {{ null|keys|length }}|{{ 5|keys|length }}|{{ "abc"|keys|length }}|{{ items|keys|join }}
+          {{ "-3"|abs }}|{{ null|abs }}|{{ true|abs }}|{{ "-2.5"|abs }}|{{ " 3"|abs }}|{{ "-0"|abs }}
+          {{ null is even ? 1 : 0 }}{{ "2" is even ? 1 : 0 }}{{ 2.5 is even ? 1 : 0 }}
+          {{ "3" is odd ? 1 : 0 }}{{ null is odd ? 1 : 0 }}{{ 3.5 is odd ? 1 : 0 }}
+        INPUTS
+      end
+
+      let(:outputs) do
+        <<~OUTPUTS
+          1|3|321|1|1|
+          0|0|0|012
+          3|0|1|2.5|3|0
+          111
+          101
+        OUTPUTS
+      end
+
+      let(:locals) { { items: [1, 2, 3].each } }
+    end
+
+    context 'with a float' do
+      # PHP's (string) gives 14 significant digits and no ".0" for a whole one
+      it_behaves_like 'render_and_assert' do
+        let(:input) do
+          '{{ 12.0|last }}|{{ 2.0|reverse }}|{{ 12.0|first }}|{{ (0.1 + 0.2)|reverse }}|{{ 1.0e20|last }}|' \
+            '{{ (-0.0)|first }}|{{ (1/3)|last }}|{{ 1.5e-7|reverse }}|{{ 123456789012345.0|last }}'
+        end
+        let(:output) { '2|2|1|3.0|0|-|3|7-E5.1|4' }
+      end
+    end
+
+    pair_sequences.each do |name, pairs|
+      context "with the keys of #{name} of pairs" do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) { ['{{ pairs|keys|join(",") }}', '{{ yielded|keys|join(",") }}'] }
+          let(:outputs) { ['0,1', 'a,b'] }
+          let(:locals) { { pairs:, yielded: } }
+        end
+      end
+    end
+
+    {
+      '{{ "abc"|abs }}' => 'abs(): Argument #1 ($num) must be of type int|float, string given',
+      '{{ "a" is odd }}' => 'Unsupported operand types: string % int',
+    }.each do |template, message|
+      context "with #{template}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { template }
+          let(:error) { Twig::Error::Runtime }
+          let(:message) do
+            "An exception has been thrown during the rendering of a template (\"#{message}\") " \
+              'in "template.twig" at line 1.'
           end
         end
       end

@@ -304,8 +304,23 @@ module Twig
         )
       end
 
+      PHP_NUMERIC_STRING = /\A[ \t\n\r\v\f]*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?[ \t\n\r\v\f]*\z/
+
+      # PHP's abs takes an int or a float: null and false are 0, true is 1 and a
+      # numeric string such as " -2.5" is its number, but any other string raises
       def self.abs(number)
-        number.abs
+        case number
+        when nil, false then 0
+        when true then 1
+        when String
+          unless number.match?(PHP_NUMERIC_STRING)
+            raise TypeError, 'abs(): Argument #1 ($num) must be of type int|float, string given'
+          end
+
+          (number.match?(/[.eE]/) ? number.to_f : number.to_i).abs
+        else
+          number.abs
+        end
       end
 
       def self.round(value, precision: 0, method: :common)
@@ -744,7 +759,7 @@ module Twig
       def self.reverse(object, preserve_keys: false)
         return if object.nil?
 
-        object = to_array(object)
+        object = scalar_to_string(to_array(object))
         # String#reverse raises a bare ArgumentError on invalid bytes
         return split_into_characters(object, 'reverse').reverse.join if object.is_a?(String)
 
@@ -786,7 +801,7 @@ module Twig
       def self.first(object)
         return if object.nil?
 
-        object = to_array(object)
+        object = scalar_to_string(to_array(object))
         return object[0] if object.is_a?(String)
 
         (object.is_a?(Hash) ? object.values : object).first
@@ -795,16 +810,20 @@ module Twig
       def self.last(object)
         return if object.nil?
 
-        object = to_array(object)
+        object = scalar_to_string(to_array(object))
         return object[-1] if object.is_a?(String)
 
         (object.is_a?(Hash) ? object.values : object).last
       end
 
+      # The keys of a sequence, a mapping or another Enumerable, and none for
+      # anything else, such as a string or a number, as in PHP
       def self.keys(object)
         return object.keys if object.respond_to?(:keys)
+        return (0...object.length).to_a if object.is_a?(Array)
+        return [] unless object.respond_to?(:each)
 
-        (0...object.length).to_a
+        Runtime::EnumerableHash.traversable(object).keys
       end
 
       def self.values(object)
@@ -931,6 +950,33 @@ module Twig
         when Hash then preserve_keys ? value : value.values
         else value
         end
+      end
+
+      # What first, last and reverse read of a number, a boolean or a symbol:
+      # the string PHP casts it to
+      def self.scalar_to_string(value)
+        case value
+        when true then '1'
+        when false then ''
+        when Float then php_float_string(value)
+        when Numeric, Symbol then value.to_s
+        else value
+        end
+      end
+
+      # A float as PHP's (string) casts it, to 14 significant digits: 12.0 is
+      # "12", 0.1 + 0.2 is "0.3" and 1e20 is "1.0E+20"
+      def self.php_float_string(value)
+        return 'NAN' if value.nan?
+        return value.positive? ? 'INF' : '-INF' if value.infinite?
+
+        string = format('%.14G', value)
+        return string unless string.include?('E')
+
+        mantissa, exponent = string.split('E')
+        mantissa += '.0' unless mantissa.include?('.')
+
+        "#{mantissa}E#{exponent[0]}#{exponent[1..].to_i}"
       end
 
       def self.ensure_hash(value)
