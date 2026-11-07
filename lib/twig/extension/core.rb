@@ -1085,22 +1085,39 @@ module Twig
         Runtime::Comparison.compare(a, b)
       end
 
+      # Whether value is in object, as Twig's CoreExtension::inFilter decides:
+      # a substring of a string, or equal to one of the values of a sequence
+      # or mapping as == compares them, never one of its keys
       def self.in_filter(value, object)
-        return false unless object.respond_to?(:include?)
-
         if object.is_a?(String)
+          return false unless [String, Symbol, Integer, Float].any? { |type| value.is_a?(type) }
+
           return bytewise(object, value.to_s) { |haystack, needle| haystack.include?(needle) }
         end
 
-        unless object.respond_to?(:any?)
-          return false
+        values = case object
+                 when Hash, Runtime::EnumerableHash then object.values
+                 when Enumerable then object
+                 else return false
+                 end
+
+        # An object is only found as the same object
+        unless compared_in?(value)
+          return values.any? { |item| Runtime::Identity.same?(value, item) }
         end
 
-        object.any? do |k, v|
-          (!v.nil? && compare(value, v).zero?) ||
-            compare(value, k).zero?
-        end ||
-          object.any? { |v| compare(value, v).zero? }
+        values.any? { |item| compare(value, item).zero? }
+      end
+
+      # Whether in compares value with ==, as it does a PHP scalar or array
+      def self.compared_in?(value)
+        case value
+        when nil, true, false, Numeric, String, Symbol, Array, Hash, Runtime::EnumerableHash, ::Range,
+             Enumerator::ArithmeticSequence
+          true
+        else
+          false
+        end
       end
 
       PCRE_BRACKET_DELIMITERS = { '(' => ')', '[' => ']', '{' => '}', '<' => '>' }.freeze
