@@ -235,6 +235,58 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the has some and has every tests' do
+    # The arrow gets the value and the key of a sequence too
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {{ [1, 2] has some ((v, k) => k == 1) ? "y" : "n" }}
+          {{ [1, 2] has every ((v, k) => k < 1) ? "y" : "n" }}
+          {{ [1, 2] has every ((v, k) => k < 5) ? "y" : "n" }}
+          {{ [1, 2] has some (v => v > 1) ? "y" : "n" }}
+          {{ {"a": 1} has every ((v, k) => k == "a") ? "y" : "n" }}
+          {{ items has some ((v, k) => k == 2) ? "y" : "n" }}
+          {{ [] has every (v => false) ? "y" : "n" }}
+          {{ [1, 2]|filter(v => v > 1) has some ((v, k) => k == 1) ? "y" : "n" }}
+        INPUTS
+      end
+
+      let(:outputs) { %w[y n y y y y y y] }
+      let(:locals) { { items: [1, 2, 3].each } }
+    end
+
+    pair_sequences.each do |name, pairs|
+      context "with #{name} of pairs" do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) do
+            [
+              '{{ pairs has some (v => v[0] == 3) ? "y" : "n" }}',
+              '{{ pairs has every (v => v|length == 2) ? "y" : "n" }}',
+              '{{ pairs has some ((v, k) => k == 1) ? "y" : "n" }}',
+              '{{ pairs has every ((v, k) => k < 1) ? "y" : "n" }}',
+              '{{ yielded has some ((v, k) => k == "b") ? "y" : "n" }}',
+            ]
+          end
+          let(:outputs) { %w[y y y n y] }
+          let(:locals) { { pairs:, yielded: } }
+        end
+      end
+    end
+
+    { 'some' => ['"abc"', 'string'], 'every' => %w[null null] }.each do |test, (value, type)|
+      context "with {{ #{value} has #{test} v => true }}" do
+        it_behaves_like 'render_and_raise' do
+          let(:template) { "{{ #{value} has #{test} v => true }}" }
+          let(:error) { Twig::Error::Runtime }
+          let(:message) do
+            "The \"has #{test}\" test expects a sequence or a mapping, got \"#{type}\" " \
+              'in "template.twig" at line 1.'
+          end
+        end
+      end
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do

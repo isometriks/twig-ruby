@@ -705,51 +705,35 @@ module Twig
           raise Error::Runtime, "The \"reduce\" filter expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        arity = proc.arity.between?(0, 3) ? proc.arity : 3
-
         Runtime::EnumerableHash.traversable(object).reduce(initial) do |accumulator, (key, value)|
-          proc.call(*[accumulator, value, key].first(arity))
+          call_arrow(proc, accumulator, value, key)
         end
       end
 
+      # Calls an arrow as PHP calls a closure, which ignores the arguments it
+      # doesn't take
+      def self.call_arrow(proc, *arguments)
+        arguments = arguments.first(proc.arity) if proc.arity.between?(0, arguments.length)
+
+        proc.call(*arguments)
+      end
+
+      # Whether the arrow is true for every value, which it gets with its key
       def self.array_every?(object, proc)
-        unless object.respond_to?(:all?)
-          raise Error::Runtime, "The \"has every\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"has every\" test expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        if object.is_a?(Hash)
-          object.each do |k, v|
-            if proc.arity == 1
-              return false unless proc.call(v)
-            elsif !proc.call(v, k)
-              return false
-            end
-          end
-
-          true
-        else
-          object.all?(&proc)
-        end
+        Runtime::EnumerableHash.traversable(object).all? { |key, value| call_arrow(proc, value, key) }
       end
 
+      # Whether the arrow is true for a value, which it gets with its key
       def self.array_some?(object, proc)
-        unless object.respond_to?(:any?)
-          raise Error::Runtime, "The \"has some\" test expects a sequence or a mapping, got \"#{object.class.name}\"."
+        unless object.respond_to?(:each)
+          raise Error::Runtime, "The \"has some\" test expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        if object.is_a?(Hash)
-          object.each do |k, v|
-            if proc.arity == 1
-              return true if proc.call(v)
-            elsif proc.call(v, k)
-              return true
-            end
-          end
-
-          false
-        else
-          object.any?(&proc)
-        end
+        Runtime::EnumerableHash.traversable(object).any? { |key, value| call_arrow(proc, value, key) }
       end
 
       def self.find(object, proc)
