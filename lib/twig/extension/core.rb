@@ -310,23 +310,28 @@ module Twig
       end
 
       # Like PHP's number_format, which casts what isn't a number to a float,
-      # rounds half up, to tens, hundreds and so on for negative decimals, and
-      # drops the sign of a number that rounds to 0. A number is kept as it
-      # is, so a BigDecimal or a large Integer keeps its digits.
+      # rounds half up, to tens, hundreds and so on for negative decimals,
+      # prints the rounded float with all its binary digits, as %.*f does,
+      # and drops the sign of a number that rounds to 0. A number is kept as
+      # it is, so a BigDecimal or a large Integer keeps its digits.
       def number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
         number = Util::PhpCast.to_float(number) unless number.is_a?(Numeric)
-        decimal ||= @number_format[0]
+        decimal = Util::PhpCast.int_param(decimal || @number_format[0], 'number_format(): Argument #2 ($decimals)')
         decimal_point ||= @number_format[1]
         thousands_separator ||= @number_format[2]
 
         return number.nan? ? 'nan' : 'inf' if number.is_a?(Float) && !number.finite?
 
         if decimal.negative?
+          float = number.is_a?(Float)
           number = number.round(decimal, half: :up)
+          number = number.to_f if float
           decimal = 0
         end
 
-        whole, fraction = self.class.number_to_rounded(number.abs, precision: decimal).split('.')
+        rounded = self.class.number_to_rounded(number.abs, precision: decimal)
+        rounded = Util::PhpSprintf.fixed(Float(rounded), decimal) if number.is_a?(Float)
+        whole, fraction = rounded.split('.')
         whole = whole.gsub(/\d(?=(?:\d{3})+\z)/) { |digit| "#{digit}#{thousands_separator}" }
         negative = number.negative? && "#{whole}#{fraction}".match?(/[1-9]/)
 

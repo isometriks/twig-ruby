@@ -136,6 +136,24 @@ RSpec.describe Twig::Extension::Core do
     it 'drops the sign of a number that rounds to 0' do
       expect(render('{{ -0.4|number_format }}|{{ -0.004|number_format(2) }}')).to eq('0|0.00')
     end
+
+    it 'casts the decimals to an integer, like PHP' do
+      expect(render("{{ 1234.5|number_format('2') }}|{{ 1234.5|number_format(' 1') }}")).to eq('1,234.50|1,234.5')
+      expect(render("{{ 1234.5|number_format('-2') }}")).to eq('1,200')
+      expect(render('{{ 1234.5|number_format(true) }}|{{ 1234.5|number_format(2.7) }}')).to eq('1,234.5|1,234.50')
+      expect { render("{{ 1234.5|number_format('abc') }}") }.to raise_error(
+        Twig::Error::Runtime,
+        'An exception has been thrown during the rendering of a template ' \
+        '("number_format(): Argument #2 ($decimals) must be of type int, string given") in "index" at line 1.'
+      )
+    end
+
+    it 'prints a float with its exact binary digits, like %.*f' do
+      expect(render('{{ 0.1|number_format(20) }}|{{ 1.1|number_format(17) }}|{{ 2.675|number_format(2) }}')).
+        to eq('0.10000000000000000555|1.10000000000000009|2.68')
+      expect(render('{{ 1e22|number_format }}|{{ 1e23|number_format(-2) }}')).
+        to eq('10,000,000,000,000,000,000,000|99,999,999,999,999,991,611,392')
+    end
   end
 
   describe 'url_encode' do
