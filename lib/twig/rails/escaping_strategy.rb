@@ -16,7 +16,7 @@ module Twig
       def self.guess(name)
         name = name.sub(VARIANT, '')
 
-        return false if File.extname(name.delete_suffix('.twig')) == '.text'
+        return false if ::Twig::FileExtensionEscapingStrategy.extension(name.delete_suffix('.twig')) == 'text'
 
         ::Twig::FileExtensionEscapingStrategy.guess(name)
       end

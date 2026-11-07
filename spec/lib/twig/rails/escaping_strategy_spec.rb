@@ -25,6 +25,11 @@ RSpec.describe Twig::Rails::EscapingStrategy do
       expect(described_class.guess('welcome/index.html+phone.twig')).to eq(:html)
     end
 
+    it 'reads the extension of a dotfile like the core guess' do
+      expect(described_class.guess('mailer/.text.twig')).to be(false)
+      expect(described_class.guess('.js+phone.twig')).to eq(:js)
+    end
+
     it 'keeps the core strategies for other formats' do
       expect(described_class.guess('data.json.twig')).to eq(:js)
       expect(described_class.guess('app.js+phone.twig')).to eq(:js)
