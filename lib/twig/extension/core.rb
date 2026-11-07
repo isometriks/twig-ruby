@@ -363,8 +363,10 @@ module Twig
         end
       end
 
+      # A sequence, as PHP's range() returns an array, so a range works
+      # everywhere a sequence does: reverse, slice, [i], merge, json_encode
       def self.range(low, high, step: 1)
-        Range.new(low, high).step(step)
+        Range.new(low, high).step(step).to_a
       end
 
       # @param [String] constant

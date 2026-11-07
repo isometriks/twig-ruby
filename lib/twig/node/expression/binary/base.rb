@@ -42,7 +42,6 @@ module Twig
           LessEqual: '<=',
           GreaterEqual: '>=',
 
-          Range: '..',
           Add: '+',
           Sub: '-',
           Mul: '*',
