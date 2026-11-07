@@ -26,7 +26,7 @@ module Twig
             raise Error::Syntax.new(
               "Expected endmacro for macro \"#{name}\" (but \"#{value}\" given).",
               stream.current.lineno,
-              stream.source_context
+              stream.source
             )
           end
         end

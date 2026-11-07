@@ -138,4 +138,14 @@ RSpec.describe Twig::TokenParser::Macro do
       end
     end
   end
+
+  it 'raises a syntax error for an endmacro with another name' do
+    loader = Twig::Loader::Hash.new({ 'index' => "{% macro a() %}\n{% endmacro\n b %}" })
+
+    expect { Twig::Environment.new(loader).load('index') }.
+      to raise_error(
+        Twig::Error::Syntax,
+        'Expected endmacro for macro "a" (but "b" given) in "index" at line 3.'
+      )
+  end
 end

@@ -23,7 +23,11 @@ module Twig
           body = parser.subparse(method(:decide_block_end), drop_needle: true)
 
           if (token = stream.next_if(Token::NAME_TYPE)) && token.value != name
-            raise "Expected end block for #{name}, given #{token.value}"
+            raise Error::Syntax.new(
+              "Expected endblock for block \"#{name}\" (but \"#{token.value}\" given).",
+              stream.current.lineno,
+              stream.source
+            )
           end
         else
           body = Node::Nodes.new({

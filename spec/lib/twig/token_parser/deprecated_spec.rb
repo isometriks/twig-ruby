@@ -16,4 +16,11 @@ RSpec.describe Twig::TokenParser::Deprecated do
         to_stdout
     )
   end
+
+  it 'raises a syntax error for an unknown option' do
+    loader = Twig::Loader::Hash.new({ 'index' => "{% deprecated 'x' foo = 'b' %}" })
+
+    expect { Twig::Environment.new(loader).load('index') }.
+      to raise_error(Twig::Error::Syntax, 'Unknown "foo" option in "index" at line 1.')
+  end
 end
