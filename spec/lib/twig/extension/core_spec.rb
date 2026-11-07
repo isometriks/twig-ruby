@@ -181,7 +181,7 @@ RSpec.describe Twig::Extension::Core do
           OK
           OK
           OK
-          Hello World! How are you?
+          Hello World!How are you?
           <h1>Hello World!</h1>How are you?
           a or b
           a - b

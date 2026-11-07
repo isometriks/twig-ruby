@@ -123,7 +123,7 @@ module Twig
           TwigFilter.new('capitalize', static(:capitalize)),
           TwigFilter.new('upper', static(:upper)),
           TwigFilter.new('lower', static(:lower)),
-          TwigFilter.new('striptags', static(:strip_tags), argument_names: { tags: 'allowable_tags' }),
+          TwigFilter.new('striptags', static(:strip_tags)),
           TwigFilter.new('trim', static(:trim)),
           TwigFilter.new('nl2br', static(:nl2br), { pre_escape: :html, is_safe: [:html] }),
           TwigFilter.new('plural', static(:pluralize)),
@@ -559,11 +559,10 @@ module Twig
         string.chars.chunk(&:valid_encoding?).map { |valid, chars| valid ? yield(chars.join) : chars.join }.join
       end
 
-      # Sanitize reads characters, so a byte that isn't one becomes U+FFFD.
-      def self.strip_tags(string, tags: [])
-        string = string.scrub if invalid_string?(string)
-
-        Sanitize.fragment(string || '', elements: tags)
+      # Like PHP's strip_tags, which leaves the text between tags as it is.
+      # The tags to keep are a string such as "<p><a>" or a sequence of names.
+      def self.strip_tags(string, allowable_tags = nil)
+        Util::PhpStripTags.call((string || '').to_s, allowable_tags)
       end
 
       def self.trim(string, character_mask: DEFAULT_TRIM_CHARS, side: :both)
