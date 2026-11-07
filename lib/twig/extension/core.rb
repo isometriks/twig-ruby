@@ -1501,6 +1501,11 @@ module Twig
       # @param [Environment] environment
       # @param [Context] context
       def self.include(environment, context, template, variables = {}, with_context: true, ignore_missing: false)
+        # PHP's array_merge takes only an array
+        variables = Runtime::Context.variables(variables) do |type|
+          ::TypeError.new("array_merge(): Argument #2 must be of type array, #{type} given")
+        end
+
         variables = if with_context
                       context.merge(variables)
                     else

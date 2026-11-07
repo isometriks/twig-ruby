@@ -82,18 +82,15 @@ module Twig
 
       # @param [Compiler] compiler
       def add_template_arguments(compiler)
-        if !nodes.key?(:variables)
-          compiler.raw(attributes[:only] == false ? 'context' : 'context.only({})')
-        elsif attributes[:only] == false
+        if nodes.key?(:variables)
+          # Any iterable, as PHP's CoreExtension::merge and toArray take
           compiler.
-            raw('context.merge(').
+            raw(attributes[:only] == false ? 'context.merge(' : 'context.only(').
+            raw('::Twig::Runtime::Context.variables(').
             subcompile(nodes[:variables]).
-            raw(')')
+            raw('))')
         else
-          compiler.
-            raw('context.only(').
-            subcompile(nodes[:variables]).
-            raw(')')
+          compiler.raw(attributes[:only] == false ? 'context' : 'context.only({})')
         end
       end
     end
