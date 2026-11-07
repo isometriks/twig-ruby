@@ -54,7 +54,7 @@ module Twig
         when :css
           escape_css(string.to_s, charset || @charset)
         when :url
-          CGI.escape(string.to_s)
+          Extension::Core.rawurlencode(string)
         else
           raise Error::Runtime, "Invalid escaping strategy \"#{strategy}\" " \
                                 "(valid ones: \"#{STRATEGIES.join('", "')}\")."

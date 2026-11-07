@@ -496,9 +496,14 @@ module Twig
           require 'uri'
           URI.encode_www_form(url || {}).gsub('+', '%20')
         else
-          require 'cgi'
-          CGI.escape(url || '').gsub('+', '%20')
+          rawurlencode(url || '')
         end
+      end
+
+      # PHP's rawurlencode (RFC 3986), which encodes a space as %20, where
+      # CGI.escape uses form encoding and gives +
+      def self.rawurlencode(string)
+        CGI.escape(string.to_s).gsub('+', '%20')
       end
 
       def self.json_encode(object)

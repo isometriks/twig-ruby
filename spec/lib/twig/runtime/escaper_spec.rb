@@ -128,6 +128,20 @@ RSpec.describe Twig::Runtime::Escaper do
     end
   end
 
+  # Like Twig, which uses rawurlencode (RFC 3986) where CGI.escape gives +
+  it 'escapes urls with a space as %20' do
+    expect(escaper.escape("a b+c~*'()!/?&=", :url)).to eq('a%20b%2Bc~%2A%27%28%29%21%2F%3F%26%3D')
+  end
+
+  it 'escapes urls with a space as %20 when autoescaping' do
+    environment = Twig::Environment.new(Twig::Loader::Hash.new({
+      'index' => "{{ x|e('url') }}|{% autoescape 'url' %}{{ y }}{% endautoescape %}|{{ x|url_encode }}",
+    }))
+
+    expect(environment.load('index').render({ 'x' => 'a b~c*d', 'y' => '<b c>' })).
+      to eq('a%20b~c%2Ad|%3Cb%20c%3E|a%20b~c%2Ad')
+  end
+
   it 'escapes css' do
     expect(escaper.escape('div > a { color: blue; }', :css)).to eq(
       'div\20 \3E \20 a\20 \7B \20 color\3A \20 blue\3B \20 \7D '
