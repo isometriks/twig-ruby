@@ -287,22 +287,28 @@ module Twig
         end
       end
 
+      # Like PHP's number_format, which casts what isn't a number to a float,
+      # rounds half up, to tens, hundreds and so on for negative decimals, and
+      # drops the sign of a number that rounds to 0. A number is kept as it
+      # is, so a BigDecimal or a large Integer keeps its digits.
       def number_format(number, decimal: nil, decimal_point: nil, thousands_separator: nil)
-        number = 0 if number.nil? || number == ''
+        number = Util::PhpCast.to_float(number) unless number.is_a?(Numeric)
         decimal ||= @number_format[0]
         decimal_point ||= @number_format[1]
         thousands_separator ||= @number_format[2]
 
-        options = {
-          precision: decimal,
-          delimiter: thousands_separator,
-          separator: decimal_point,
-        }.compact
+        return number.nan? ? 'nan' : 'inf' if number.is_a?(Float) && !number.finite?
 
-        self.class.number_to_delimited(
-          self.class.number_to_rounded(number, options),
-          options
-        )
+        if decimal.negative?
+          number = number.round(decimal, half: :up)
+          decimal = 0
+        end
+
+        whole, fraction = self.class.number_to_rounded(number.abs, precision: decimal).split('.')
+        whole = whole.gsub(/\d(?=(?:\d{3})+\z)/) { |digit| "#{digit}#{thousands_separator}" }
+        negative = number.negative? && "#{whole}#{fraction}".match?(/[1-9]/)
+
+        "#{'-' if negative}#{whole}#{"#{decimal_point}#{fraction}" if decimal.positive?}"
       end
 
       PHP_NUMERIC_STRING = /\A[ \t\n\r\v\f]*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?[ \t\n\r\v\f]*\z/

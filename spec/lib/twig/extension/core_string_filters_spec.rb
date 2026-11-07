@@ -100,4 +100,27 @@ RSpec.describe Twig::Extension::Core do
       )
     end
   end
+
+  describe 'number_format' do
+    it 'rounds to tens, hundreds and so on for negative decimals' do
+      expect(render('{{ 1250|number_format(-2) }}|{{ -1250.5|number_format(-1) }}|{{ 499|number_format(-3) }}')).
+        to eq('1,300|-1,250|0')
+    end
+
+    it 'casts what is not a number to a float, like PHP' do
+      expect(render("{{ true|number_format }}|{{ 'abc'|number_format }}|{{ '12abc'|number_format(1) }}")).
+        to eq('1|0|12.0')
+      expect(render("{{ null|number_format }}|{{ ''|number_format }}|{{ '1e3'|number_format }}")).to eq('0|0|1,000')
+    end
+
+    it 'uses the separators with no decimals' do
+      expect(render("{{ 1250.5|number_format(0, ',', '.') }}|{{ 1250|number_format(-2, ',', '.') }}")).
+        to eq('1.251|1.300')
+      expect(render("{{ 1234567.891|number_format(2, '::', '--') }}")).to eq('1--234--567::89')
+    end
+
+    it 'drops the sign of a number that rounds to 0' do
+      expect(render('{{ -0.4|number_format }}|{{ -0.004|number_format(2) }}')).to eq('0|0.00')
+    end
+  end
 end
