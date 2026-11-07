@@ -1314,9 +1314,50 @@ module Twig
       #
       # @return [String]
       def self.key_not_found_message(object, attribute)
-        keys = object.respond_to?(:keys) ? " with keys \"#{object.keys.join(', ')}\"" : ''
+        keys = if object.is_a?(::Array)
+                 (0...object.length).to_a
+               elsif object.respond_to?(:keys)
+                 object.keys
+               end
+
+        if keys&.empty? && (object.is_a?(::Array) || object.is_a?(::Hash))
+          return "Key \"#{attribute}\" does not exist as the sequence/mapping is empty."
+        end
+
+        keys = keys ? " with keys \"#{keys.join(', ')}\"" : ''
 
         "Key \"#{attribute}\" for sequence/mapping#{keys} does not exist."
+      end
+
+      # The message for an attribute that isn't there, as Twig gives it for a
+      # sequence, mapping or scalar (a "key" for x[k], a "method" for x.m()),
+      # or nil for any other object.
+      #
+      # @return [String, nil]
+      def self.missing_attribute_message(object, attribute, type)
+        action = case type
+                 when Template::ARRAY_CALL then 'access a key'
+                 when Template::METHOD_CALL then 'invoke a method'
+                 else 'access an attribute'
+                 end
+
+        case object
+        when nil
+          "Impossible to #{action} (\"#{attribute}\") on a null variable."
+        when ::Array, ::Hash
+          return key_not_found_message(object, attribute) unless type == Template::METHOD_CALL
+
+          "Impossible to invoke a method (\"#{attribute}\") on a sequence/mapping."
+        when true, false, Integer, Float, String, Symbol
+          value = case object
+                  when true then '1'
+                  when false then ''
+                  else object.to_s
+                  end
+          type_name = [true, false].include?(object) ? 'bool' : php_type(object)
+
+          "Impossible to #{action} (\"#{attribute}\") on a #{type_name} variable (\"#{value}\")."
+        end
       end
 
       # @param [Environment] environment
@@ -1343,7 +1384,7 @@ module Twig
             end
 
             raise Error::Runtime.new(
-              key_not_found_message(object, attribute),
+              missing_attribute_message(object, attribute, type) || key_not_found_message(object, attribute),
               lineno,
               source
             )
@@ -1384,9 +1425,9 @@ module Twig
             return false
           end
 
-          message = if object.nil?
-                      "Impossible to access an attribute (\"#{attribute}\") on a null variable."
-                    elsif object.respond_to?(:[]) && !object.is_a?(String)
+          message = if (missing = missing_attribute_message(object, attribute, type))
+                      missing
+                    elsif object.respond_to?(:[])
                       key_not_found_message(object, attribute)
                     else
                       "Impossible to access an attribute (\"#{attribute}\") on a #{object.class} " \

@@ -752,7 +752,7 @@ RSpec.describe Twig::Extension::Core do
           e.message
         end
         dot = begin
-          attribute_of(object, 'c', strict)
+          described_class.get_attribute(strict, source, object, 'c', Twig::Template::ANY_CALL)
         rescue Twig::Error::Runtime => e
           e.message
         end
@@ -761,8 +761,39 @@ RSpec.describe Twig::Extension::Core do
       end
 
       it 'does not double the space when the object has no keys' do
-        expect { subscript_of(%w[a b], 5, strict) }.
-          to raise_error(Twig::Error::Runtime, %r{sequence/mapping does not exist})
+        expect { subscript_of(Struct.new(:a).new(1), 5, strict) }.
+          to raise_error(Twig::Error::Runtime, %r{Key "5" for sequence/mapping does not exist})
+      end
+
+      # The messages Twig gives for a sequence, a mapping and a scalar
+      {
+        '{{ 5.nope }}' => 'Impossible to access an attribute ("nope") on a int variable ("5").',
+        '{{ 5[1] }}' => 'Impossible to access a key ("1") on a int variable ("5").',
+        '{{ 5.nope() }}' => 'Impossible to invoke a method ("nope") on a int variable ("5").',
+        '{{ 1.5.nope }}' => 'Impossible to access an attribute ("nope") on a float variable ("1.5").',
+        '{{ t.nope }}' => 'Impossible to access an attribute ("nope") on a bool variable ("1").',
+        '{{ f[1] }}' => 'Impossible to access a key ("1") on a bool variable ("").',
+        '{{ s.nope() }}' => 'Impossible to invoke a method ("nope") on a string variable ("abc").',
+        '{{ s[9] }}' => 'Impossible to access a key ("9") on a string variable ("abc").',
+        '{{ n[1] }}' => 'Impossible to access a key ("1") on a null variable.',
+        '{{ n.nope() }}' => 'Impossible to invoke a method ("nope") on a null variable.',
+        '{{ list[5] }}' => 'Key "5" for sequence/mapping with keys "0, 1" does not exist.',
+        '{{ list.nope }}' => 'Key "nope" for sequence/mapping with keys "0, 1" does not exist.',
+        '{{ empty[5] }}' => 'Key "5" does not exist as the sequence/mapping is empty.',
+        '{{ empty_map.nope }}' => 'Key "nope" does not exist as the sequence/mapping is empty.',
+        '{{ list.nope() }}' => 'Impossible to invoke a method ("nope") on a sequence/mapping.',
+        '{{ foo.nope() }}' => 'Impossible to invoke a method ("nope") on a sequence/mapping.',
+      }.each do |template, message|
+        it "reports #{template} as Twig does" do
+          env = Twig::Environment.new(Twig::Loader::Hash.new('index' => template), strict_variables: true)
+          context = {
+            'foo' => { 'bar' => 1 }, 'list' => [1, 2], 't' => true, 'f' => false, 's' => 'abc',
+            'n' => nil, 'empty' => [], 'empty_map' => {}
+          }
+
+          expect { env.load('index').render(context) }.
+            to raise_error(Twig::Error::Runtime, message.sub(/\.\z/, ' in "index" at line 1.'))
+        end
       end
     end
 
