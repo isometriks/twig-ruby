@@ -39,8 +39,8 @@ module Twig
 
       private
 
-      def escape_string(string, strategy, charset)
-        string = StringCast.cast(string)
+      def escape_string(value, strategy, charset)
+        string = StringCast.cast(value)
 
         case strategy
         when :html
@@ -54,11 +54,21 @@ module Twig
         when :css
           escape_css(string.to_s, charset || @charset)
         when :url
-          Extension::Core.rawurlencode(string)
+          escape_url(value)
         else
           raise Error::Runtime, "Invalid escaping strategy \"#{strategy}\" " \
                                 "(valid ones: \"#{STRATEGIES.join('", "')}\")."
         end.html_safe
+      end
+
+      # Like Twig's url strategy, which uses rawurlencode on a string, and
+      # returns null, a boolean or a number as it is, for PHP to print: true
+      # is 1, false is empty, and 1.0E+20 keeps its +
+      def escape_url(value)
+        case value
+        when nil, true, false, Integer, Float then Util::PhpCast.to_string(value)
+        else Extension::Core.rawurlencode(value.to_s)
+        end
       end
 
       # Like htmlspecialchars with ENT_QUOTES, which writes ' as &#039;,

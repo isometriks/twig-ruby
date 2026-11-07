@@ -542,9 +542,10 @@ module Twig
       end
 
       # PHP's rawurlencode (RFC 3986), which encodes a space as %20, where
-      # CGI.escape uses form encoding and gives +
+      # CGI.escape uses form encoding and gives +, of the value cast to a
+      # string as PHP casts it
       def self.rawurlencode(string)
-        CGI.escape(string.to_s).gsub('+', '%20')
+        CGI.escape(Util::PhpCast.to_string(string)).gsub('+', '%20')
       end
 
       # Like PHP's json_encode, which escapes / and characters outside ASCII
@@ -581,7 +582,7 @@ module Twig
       def self.title_case(string)
         title = false
 
-        (string || '').to_s.each_char.map do |char|
+        Util::PhpCast.to_string(string).each_char.map do |char|
           # A byte that isn't valid in the encoding is kept, as by upper
           unless char.valid_encoding?
             title = false
@@ -620,7 +621,7 @@ module Twig
       # Like PHP's strip_tags, which leaves the text between tags as it is.
       # The tags to keep are a string such as "<p><a>" or a sequence of names.
       def self.strip_tags(string, allowable_tags = nil)
-        Util::PhpStripTags.call((string || '').to_s, allowable_tags)
+        Util::PhpStripTags.call(Util::PhpCast.to_string(string), allowable_tags)
       end
 
       def self.trim(string, character_mask: DEFAULT_TRIM_CHARS, side: :both)
@@ -650,7 +651,7 @@ module Twig
 
       # Like PHP's nl2br, which inserts <br /> before each \r\n, \n\r, \n or \r
       def self.nl2br(string)
-        bytewise((string || '').to_s) { |subject| subject.gsub(/\r\n|\n\r|\n|\r/, '<br />\0') }
+        bytewise(Util::PhpCast.to_string(string)) { |subject| subject.gsub(/\r\n|\n\r|\n|\r/, '<br />\0') }
       end
 
       # The singular form, or the word as it is for a count other than 1, as

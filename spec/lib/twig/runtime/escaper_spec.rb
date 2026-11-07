@@ -184,6 +184,12 @@ RSpec.describe Twig::Runtime::Escaper do
       to eq('a%20b~c%2Ad|%3Cb%20c%3E|a%20b~c%2Ad')
   end
 
+  # Like Twig, which returns a scalar as is for PHP to print
+  it 'gives a boolean or a number as PHP prints it for urls' do
+    expect([true, false, nil, 1.0, 1.0e20, 0.1 + 0.2].map { |value| escaper.escape(value, :url) }).
+      to eq(['1', '', '', '1', '1.0E+20', '0.3'])
+  end
+
   it 'escapes css' do
     expect(escaper.escape('div > a { color: blue; }', :css)).to eq(
       'div\20 \3E \20 a\20 \7B \20 color\3A \20 blue\3B \20 \7D '

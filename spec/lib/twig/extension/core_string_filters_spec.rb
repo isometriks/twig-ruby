@@ -24,6 +24,12 @@ RSpec.describe Twig::Extension::Core do
     it 'gives an empty string for null' do
       expect(render('{{ null|nl2br }}')).to eq('')
     end
+
+    it 'casts a value that is not a string like PHP' do
+      template = '{% autoescape false %}{{ true|nl2br }}|{{ 1.0|nl2br }}|{{ (0.1 + 0.2)|nl2br }}{% endautoescape %}'
+
+      expect(render(template)).to eq('1|1|0.3')
+    end
   end
 
   describe 'striptags' do
@@ -50,6 +56,10 @@ RSpec.describe Twig::Extension::Core do
     it 'gives an empty string for null' do
       expect(render('{{ null|striptags }}')).to eq('')
     end
+
+    it 'casts a value that is not a string like PHP' do
+      expect(render('{{ true|striptags }}|{{ (0.1 + 0.2)|striptags }}|{{ 1.0|striptags }}')).to eq('1|0.3|1')
+    end
   end
 
   describe 'title' do
@@ -73,6 +83,10 @@ RSpec.describe Twig::Extension::Core do
 
     it 'gives an empty string for null' do
       expect(render('{{ null|title }}')).to eq('')
+    end
+
+    it 'casts a value that is not a string like PHP' do
+      expect(render('{{ true|title }}|{{ 1.0|title }}|{{ false|title }}')).to eq('1|1|')
     end
   end
 
@@ -133,6 +147,11 @@ RSpec.describe Twig::Extension::Core do
         to eq('a=1.5&b=1.0E%2B20&x%20y%5Bp%20q%5D%5B1%5D=r%20s&0=z')
       expect(render('{{ [1, "a b", [2]]|url_encode|raw }}|{{ {r: 1..2}|url_encode|raw }}')).
         to eq('0=1&1=a%20b&2%5B0%5D=2|r%5B0%5D=1&r%5B1%5D=2')
+    end
+
+    it 'casts a value that is not a string like PHP' do
+      expect(render('{{ true|url_encode }}|{{ false|url_encode }}|{{ 1.0|url_encode }}|{{ 1e20|url_encode }}')).
+        to eq('1||1|1.0E%2B20')
     end
   end
 
