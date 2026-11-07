@@ -253,8 +253,9 @@ module Twig
       def convert_date(date = nil, timezone: self.timezone)
         if date == 'now' || date.nil?
           date = DateTime.now
-        elsif date.is_a?(Integer)
-          date = Time.then { |t| timezone == false ? t : t.zone }.at(date).to_datetime
+        elsif (timestamp = self.class.timestamp(date))
+          # A timestamp is a date in UTC, as Twig reads it with '@'
+          date = Time.at(timestamp).utc.to_datetime
         elsif date.is_a?(String)
           date = Time.then { |t| timezone == false ? t : t.zone }.parse(date)
         end
@@ -264,6 +265,22 @@ module Twig
 
       def timezone
         @timezone ||= Time.zone
+      end
+
+      # The Unix timestamp a date is, as Twig reads an integer, a string of
+      # digits with an optional minus sign, or a string of the form
+      # "@1700000000" or "@1700000000.5". A float is read as a timestamp too.
+      #
+      # @return [Numeric, nil]
+      def self.timestamp(date)
+        case date
+        when Integer then date
+        when Float then date if date.finite?
+        when String
+          return date.to_i if date.match?(/\A-?\d+\z/)
+
+          date[/\A@(-?\d+(?:\.\d+)?)\z/, 1]&.then { |number| number.include?('.') ? number.to_r : number.to_i }
+        end
       end
 
       # Like PHP's sprintf, where Kernel#format differs

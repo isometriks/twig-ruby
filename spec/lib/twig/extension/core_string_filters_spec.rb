@@ -150,4 +150,22 @@ RSpec.describe Twig::Extension::Core do
       expect(render("{{ 'a1'|replace({1: true, 'a': null}) }}")).to eq('1')
     end
   end
+
+  describe 'date' do
+    it 'reads a string of digits or @ and digits as a timestamp' do
+      expect(render("{{ '1700000000'|date('%Y-%m-%d %H:%M:%S') }}|{{ '@1700000000'|date('%Y-%m-%d') }}")).
+        to eq('2023-11-14 22:13:20|2023-11-14')
+      expect(render("{{ '-86400'|date('%Y-%m-%d') }}|{{ '@1700000000.75'|date('%H:%M:%S.%6N') }}")).
+        to eq('1969-12-31|22:13:20.750000')
+    end
+
+    it 'reads a float as a timestamp' do
+      expect(render("{{ 1700000000.5|date('%Y-%m-%d %H:%M:%S.%L') }}")).to eq('2023-11-14 22:13:20.500')
+    end
+
+    it 'gives a timestamp in UTC when the timezone is false, like Twig' do
+      expect(render("{{ '1700000000'|date('%H:%M %:z', false) }}|{{ 0|date('%H:%M %:z', false) }}")).
+        to eq('22:13 +00:00|00:00 +00:00')
+    end
+  end
 end
