@@ -135,4 +135,19 @@ RSpec.describe Twig::Extension::Core do
         to eq('0=1&1=a%20b&2%5B0%5D=2|r%5B0%5D=1&r%5B1%5D=2')
     end
   end
+
+  describe 'replace' do
+    it 'tries the longest key first at each position, like strtr' do
+      expect(render("{{ 'aaa'|replace({'a': 'b', 'aa': 'c'}) }}")).to eq('cb')
+      expect(render("{{ 'hello'|replace({'l': 'L', 'll': 'XX', 'hel': 'H'}) }}")).to eq('HLo')
+    end
+
+    it 'ignores an empty key, like strtr' do
+      expect(render("{{ 'abc'|replace({'': 'x', 'b': 'y'}) }}|{{ 'x'|replace({'': 'y'}) }}")).to eq('ayc|x')
+    end
+
+    it 'converts the replacements like PHP' do
+      expect(render("{{ 'a1'|replace({1: true, 'a': null}) }}")).to eq('1')
+    end
+  end
 end

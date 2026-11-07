@@ -278,7 +278,11 @@ module Twig
           raise Error::Runtime, "The \"replace\" filter expects a sequence or a mapping, got \"#{from.class}\"."
         end
 
-        from = ensure_hash(from).to_h { |key, value| [key.to_s, value.to_s] }
+        # Like strtr, which ignores an empty key and tries the longest key
+        # first at each position
+        from = ensure_hash(from).to_h { |key, value| [Util::PhpCast.to_string(key), Util::PhpCast.to_string(value)] }
+        from = from.reject { |key, _| key.empty? }.sort_by { |key, _| -key.bytesize }.to_h
+        return String.new(string.to_s) if from.empty?
 
         bytewise(string, *from.keys, *from.values) do |subject, *pairs|
           keys = pairs.first(from.length)
