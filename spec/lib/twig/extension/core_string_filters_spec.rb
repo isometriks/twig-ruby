@@ -123,4 +123,16 @@ RSpec.describe Twig::Extension::Core do
       expect(render('{{ -0.4|number_format }}|{{ -0.004|number_format(2) }}')).to eq('0|0.00')
     end
   end
+
+  describe 'url_encode' do
+    it 'builds a query like http_build_query' do
+      expect(render('{{ {a: null, b: true, c: false}|url_encode|raw }}')).to eq('b=1&c=0')
+      expect(render('{{ {c: [1, 2]}|url_encode|raw }}|{{ {c: {d: "e"}}|url_encode|raw }}')).
+        to eq('c%5B0%5D=1&c%5B1%5D=2|c%5Bd%5D=e')
+      expect(render("{{ {a: 1.5, b: 1e20, 'x y': {'p q': [null, 'r s'], e: []}, 0: 'z'}|url_encode|raw }}")).
+        to eq('a=1.5&b=1.0E%2B20&x%20y%5Bp%20q%5D%5B1%5D=r%20s&0=z')
+      expect(render('{{ [1, "a b", [2]]|url_encode|raw }}|{{ {r: 1..2}|url_encode|raw }}')).
+        to eq('0=1&1=a%20b&2%5B0%5D=2|r%5B0%5D=1&r%5B1%5D=2')
+    end
+  end
 end

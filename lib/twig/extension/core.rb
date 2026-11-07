@@ -499,12 +499,24 @@ module Twig
       end
 
       def self.url_encode(url)
-        if url.respond_to?(:map)
-          require 'uri'
-          URI.encode_www_form(url || {}).gsub('+', '%20')
-        else
-          rawurlencode(url || '')
-        end
+        url.respond_to?(:map) ? http_build_query(url) : rawurlencode(url || '')
+      end
+
+      # PHP's http_build_query with PHP_QUERY_RFC3986: a null is left out,
+      # true and false are 1 and 0, and a nested sequence or mapping gives
+      # key[0]= and key[sub]=
+      def self.http_build_query(data, prefix = nil)
+        pairs = data.is_a?(Hash) ? data : data.each_with_index.map { |value, index| [index, value] }
+
+        pairs.filter_map do |key, value|
+          key = prefix ? "#{prefix}[#{key}]" : key.to_s
+
+          if value.is_a?(Enumerable)
+            http_build_query(value, key).then { |query| query unless query.empty? }
+          elsif !value.nil?
+            "#{rawurlencode(key)}=#{rawurlencode(value == false ? '0' : Util::PhpCast.to_string(value))}"
+          end
+        end.join('&')
       end
 
       # PHP's rawurlencode (RFC 3986), which encodes a space as %20, where
