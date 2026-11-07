@@ -7,11 +7,11 @@ module Twig
         class Concat < Binary::Base
           def compile(compiler)
             compiler.
-              raw('(').
+              raw('(::Twig::Runtime::StringCast.cast(').
               subcompile(nodes[:left]).
-              raw(').to_s + (').
+              raw(') + ::Twig::Runtime::StringCast.cast(').
               subcompile(nodes[:right]).
-              raw(').to_s')
+              raw('))')
           end
         end
       end

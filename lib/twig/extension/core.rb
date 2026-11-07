@@ -323,20 +323,35 @@ module Twig
         end
       end
 
+      # PHP's round, ceil and floor give a float. Rounded to decimal places,
+      # this is a Float too, which prints as PHP prints it, -0 included. With
+      # none, it is an Integer while PHP's int can hold it, so the result
+      # works as a range bound, a key, a format argument or a string as in
+      # PHP, where the float would show its .0 in Ruby. A negative value
+      # rounded to zero is then 0, where PHP prints -0.
       def self.round(value, precision: 0, method: :common)
         value = value.to_f
         method = method.to_sym
 
-        return value.round(precision) if method == :common
-
-        unless %i[ceil floor].include?(method)
+        unless %i[common ceil floor].include?(method)
           raise Error::Runtime, 'The "round" filter only supports the "common", "ceil", and "floor" methods'
         end
 
-        rounded = (value * (10.0**precision)).public_send(method) / (10.0**precision)
-        rounded = rounded.to_i unless precision.positive?
+        return value unless value.finite?
 
-        rounded&.zero? ? 0 : rounded
+        rounded = if method == :common
+                    value.round(precision).to_f
+                  else
+                    (value * (10.0**precision)).public_send(method) / (10.0**precision)
+                  end
+
+        if !precision.positive? && rounded.abs < 2.0**63
+          rounded.round
+        elsif rounded.zero? && 1.0.fdiv(value).negative?
+          -0.0
+        else
+          rounded
+        end
       end
 
       # PHP's max and min compare values as its <=> does, and compare the
@@ -472,7 +487,26 @@ module Twig
       end
 
       def self.json_encode(object)
+        object = json_integers(object)
+
         object.respond_to?(:to_json) ? object.to_json : '{}'
+      end
+
+      # PHP's json_encode writes a float that has no fraction, below 1e17, as
+      # an integer, so 3.0 is 3, 0.0 is 0 and -0.0 is -0
+      def self.json_integers(object)
+        case object
+        when Float
+          return JSON::Fragment.new('-0') if object.zero? && 1.0.fdiv(object).negative? && defined?(JSON::Fragment)
+
+          object.finite? && object.abs < 1e17 && object == object.truncate ? object.to_i : object
+        when Hash
+          object.transform_values { |value| json_integers(value) }
+        when Array
+          object.map { |value| json_integers(value) }
+        else
+          object
+        end
       end
 
       def self.convert_encoding(string, to, from)
@@ -558,6 +592,7 @@ module Twig
 
         value = value.values if value.respond_to?(:values)
         value = value.to_a if value.respond_to?(:to_a)
+        value = value.map { |item| item.is_a?(Float) ? Runtime::StringCast.float(item) : item }
 
         return value.join(glue) if and_glue.nil? || and_glue == glue || value.empty?
         return value[0] if value.length == 1
@@ -1092,7 +1127,9 @@ module Twig
         if object.is_a?(String)
           return false unless [String, Symbol, Integer, Float].any? { |type| value.is_a?(type) }
 
-          return bytewise(object, value.to_s) { |haystack, needle| haystack.include?(needle) }
+          needle = Runtime::StringCast.cast(value)
+
+          return bytewise(object, needle) { |haystack, part| haystack.include?(part) }
         end
 
         values = case object
@@ -1234,6 +1271,14 @@ module Twig
       #
       # @return [Object] the matching key, or KEY_NOT_FOUND
       def self.subscript_key(object, attribute)
+        # PHP truncates a float key to an integer, so items[1.5] is items[1],
+        # though a Ruby hash with that float key finds it
+        if attribute.is_a?(Float) && attribute.finite?
+          return attribute if !object.is_a?(Array) && object.respond_to?(:key?) && object.key?(attribute)
+
+          attribute = attribute.to_i
+        end
+
         if object.is_a?(Array)
           return KEY_NOT_FOUND unless attribute.is_a?(Integer)
 

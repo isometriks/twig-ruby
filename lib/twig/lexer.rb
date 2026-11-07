@@ -256,9 +256,10 @@ module Twig
         move_cursor(match.to_s)
       elsif (match = @code.match(REGEX_NUMBER, @cursor))
         # digits alone are a decimal integer, even with leading zeros (010 is
-        # 10), as PHP's 0 + '010' gives; a fraction or an exponent is a float
+        # 10), as PHP's 0 + '010' gives; a fraction or an exponent is a float,
+        # and so is an integer too big for PHP
         value = match.to_s.tr('_', '')
-        value = value.match?(/\A[0-9]+\z/) ? value.to_i : value.to_f
+        value = value.match?(/\A[0-9]+\z/) && value.to_i <= Runtime::Arithmetic::INT_MAX ? value.to_i : value.to_f
         push_token(Token::NUMBER_TYPE, value)
         move_cursor(match.to_s)
       elsif code_at?(0, PUNCTUATION)

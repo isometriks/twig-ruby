@@ -17,6 +17,8 @@ module Twig
     end
 
     def safe_append=(string)
+      string = Runtime::StringCast.float(string) if string.is_a?(Float)
+
       if @decorated
         @decorated.safe_append = string
       else

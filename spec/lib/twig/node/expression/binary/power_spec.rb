@@ -35,11 +35,11 @@ RSpec.describe Twig::Node::Expression::Binary::Power do
         -0.125
         0.01
         0.0625
-        Infinity
-        1.4142135623730951
+        INF
+        1.4142135623731
         6.25
         0.5
-        NaN
+        NAN
         -4
         4
         -0.5

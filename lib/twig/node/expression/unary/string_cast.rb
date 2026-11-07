@@ -7,9 +7,9 @@ module Twig
         class StringCast < Unary::Base
           def compile(compiler)
             compiler.
-              raw('(').
+              raw('::Twig::Runtime::StringCast.cast(').
               subcompile(nodes[:node]).
-              raw('.to_s)')
+              raw(')')
           end
         end
       end

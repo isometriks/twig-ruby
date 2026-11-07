@@ -172,7 +172,7 @@ module Twig
         parsed = parse_number(string)
 
         if parsed.nil?
-          threeway(number.to_s, string.b)
+          threeway(StringCast.cast(number).b, string.b)
         elsif number.is_a?(Integer) && parsed.first.is_a?(Integer)
           threeway(number, parsed.first)
         else

@@ -40,6 +40,8 @@ module Twig
       private
 
       def escape_string(string, strategy, charset)
+        string = StringCast.cast(string)
+
         case strategy
         when :html
           CGI.escapeHTML(string.to_s)
