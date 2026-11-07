@@ -3,15 +3,18 @@
 module Twig
   module Node
     class If < Node::Base
-      def initialize(tests, else_node, lineno)
+      # @param [Boolean] plain_cast Cast the tests with PHP's plain (bool), as
+      #   for ... if does, instead of Twig's TrueTest
+      def initialize(tests, else_node, lineno, plain_cast: false)
         nodes = { tests: }
         nodes[:else] = else_node if else_node
 
-        super(nodes, {}, lineno)
+        super(nodes, { plain_cast: }, lineno)
       end
 
       def compile(compiler)
         compiler.add_debug_info(self)
+        cast = attributes[:plain_cast] ? 'cast?' : 'true?'
 
         (0...nodes[:tests].nodes.length).step(2).each do |i|
           if i.zero?
@@ -25,7 +28,7 @@ module Twig
           end
 
           compiler.
-            raw('::Twig::Extension::Core.bool(').
+            raw("::Twig::Runtime::Truthiness.#{cast}(").
             subcompile(nodes[:tests].nodes[i]).
             raw("))\n").
             indent

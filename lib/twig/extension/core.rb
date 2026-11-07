@@ -727,7 +727,7 @@ module Twig
       # [1, 2, 3]|filter(v => v > 1), which is {1: 2, 2: 3}. Anything else is
       # filtered as a Traversable, an EnumerableHash.
       def self.filter(object, proc)
-        result = enumerable_function(object, :filter, proc)
+        result = enumerable_function(object, :filter, truthy_arrow(proc))
 
         case object
         when Hash then result.to_h
@@ -773,7 +773,9 @@ module Twig
           raise Error::Runtime, "The \"has every\" test expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        Runtime::EnumerableHash.traversable(object).all? { |key, value| call_arrow(proc, value, key) }
+        Runtime::EnumerableHash.traversable(object).all? do |key, value|
+          Runtime::Truthiness.cast?(call_arrow(proc, value, key))
+        end
       end
 
       # Whether the arrow is true for a value, which it gets with its key
@@ -782,11 +784,13 @@ module Twig
           raise Error::Runtime, "The \"has some\" test expects a sequence or a mapping, got \"#{debug_type(object)}\"."
         end
 
-        Runtime::EnumerableHash.traversable(object).any? { |key, value| call_arrow(proc, value, key) }
+        Runtime::EnumerableHash.traversable(object).any? do |key, value|
+          Runtime::Truthiness.cast?(call_arrow(proc, value, key))
+        end
       end
 
       def self.find(object, proc)
-        enumerable_function(object, :find, proc)&.dig(1)
+        enumerable_function(object, :find, truthy_arrow(proc))&.dig(1)
       end
 
       # Reverses like PHP's array_reverse, which keeps string keys, and integer
@@ -1403,15 +1407,9 @@ module Twig
         [:not_found]
       end
 
-      # Zeroes are false in Twig
+      # Whether Twig counts a value as true, as PHP's (bool) cast does
       def self.bool(value)
-        if !value ||
-           (value.respond_to?(:zero?) && value.zero?) ||
-           value == ''
-          false
-        else
-          true
-        end
+        Runtime::Truthiness.true?(value)
       end
 
       # @todo How to post deprecations? Also check if Rails is loaded and deprecate that way
@@ -1558,6 +1556,16 @@ module Twig
         expr.attributes[:is_generator] = true
 
         expr
+      end
+
+      # An arrow that returns whether the given one's result is true, as PHP
+      # casts it to bool, with the same number of arguments
+      def self.truthy_arrow(arrow)
+        case arrow.arity
+        when 1 then ->(value) { Runtime::Truthiness.cast?(arrow.call(value)) }
+        when 2 then ->(value, key) { Runtime::Truthiness.cast?(arrow.call(value, key)) }
+        else arrow
+        end
       end
 
       def self.enumerable_function(object, function, proc)

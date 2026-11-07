@@ -11,7 +11,7 @@ module Twig
         # Wrap the loop marker too, so the loop only counts as iterated when
         # the condition lets an item through and the else clause still renders
         unless if_expr.nil?
-          body = If.new(Nodes.new(AutoHash.new.add(if_expr, body)), nil, lineno)
+          body = If.new(Nodes.new(AutoHash.new.add(if_expr, body)), nil, lineno, plain_cast: true)
         end
 
         nodes = {
