@@ -223,6 +223,7 @@ module Twig
           TokenParser::Do.new,
           TokenParser::Embed.new,
           TokenParser::Extends.new,
+          TokenParser::Flush.new,
           TokenParser::For.new,
           TokenParser::From.new,
           TokenParser::Guard.new,
