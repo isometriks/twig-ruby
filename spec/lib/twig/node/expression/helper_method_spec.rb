@@ -27,4 +27,28 @@ RSpec.describe Twig::Node::Expression::Call do
       OUTPUTS
     end
   end
+
+  describe 'spreading into a helper method' do
+    it_behaves_like 'render_and_assert' do
+      let(:options) { { allow_helper_methods: true, autoescape: false } }
+
+      let(:call_context) do
+        Class.new do
+          def tag(name = 'div', cls: 'c') = "<#{name} class=#{cls}>"
+        end.new
+      end
+
+      let(:inputs) do
+        [
+          '{{ tag(...args) }}',
+          "{{ tag(...['p']) }}",
+          "{{ tag(...{cls: 'x'}) }}",
+          "{{ tag('p', ...opts) }}",
+        ]
+      end
+
+      let(:outputs) { ['<p class=c>', '<p class=c>', '<div class=x>', '<p class=y>'] }
+      let(:locals) { { args: ['p'], opts: { cls: 'y' } } }
+    end
+  end
 end

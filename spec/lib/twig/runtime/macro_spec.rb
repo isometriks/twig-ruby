@@ -33,12 +33,14 @@ RSpec.describe Twig::Runtime::Macro do
       )
   end
 
-  it 'rejects a spread value that is neither a sequence nor a mapping' do
+  it 'rejects a spread value that is not iterable as PHP does' do
     expect { macro.call({ 0 => Twig::Runtime::Spread.new(nil) }, nil, source, 3) }.
-      to raise_error(
-        Twig::Error::Runtime,
-        'Only sequences and mappings can be spread into the arguments of macro "test" in "index.twig" at line 3.'
-      )
+      to raise_error(TypeError, 'Only arrays and Traversables can be unpacked')
+  end
+
+  it 'takes a quoted decimal key of a spread mapping as positional' do
+    args = macro.call({ 0 => Twig::Runtime::Spread.new({ '0' => 2, 'b' => 1 }) }, nil, source, 1)
+    expect(args).to eq({ 'a' => 2, 'b' => 1 })
   end
 
   it 'collects extra arguments in the variadic argument' do

@@ -9,6 +9,8 @@ module Twig
         #  {{ var is same as(other) }}
         class SameAs < Test::Base
           def compile(compiler)
+            reject_spread
+
             compiler.
               raw('::Twig::Runtime::Identity.same?(').
               subcompile(nodes[:node]).

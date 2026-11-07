@@ -73,37 +73,29 @@ module Twig
 
       private
 
-      # Spreads are expanded in place, like PHP's array unpacking: a sequence adds positional
-      # arguments, and a mapping adds a positional argument for each integer key and a named
-      # one for any other key.
+      # Spreads are expanded in place, like PHP's array unpacking: a sequence or any other
+      # iterable adds positional arguments, and a mapping adds a positional argument for each
+      # integer key, or quoted decimal key such as "0", and a named one for any other key
+      # (see Spread#each_argument).
       #
       # @return [Array(Array, Hash)]
       def split_arguments(arguments, source, lineno)
         positional = []
         named = {}
-        add = lambda do |key, value|
-          if key.is_a?(Integer)
+        add = lambda do |name, value|
+          if name.nil?
             check_positional(named, source, lineno)
             positional << value
           else
-            named[key.to_s] = value
+            named[name.to_s] = value
           end
         end
 
         arguments.each do |key, value|
-          if !value.is_a?(Spread)
-            add.call(key, value)
-          elsif value.value.is_a?(::Hash) || value.value.is_a?(EnumerableHash)
-            value.value.each { |k, v| add.call(k, v) }
-          elsif value.value.is_a?(Enumerable)
-            check_positional(named, source, lineno)
-            positional.concat(value.value.to_a)
+          if value.is_a?(Spread)
+            value.each_argument { |name, item| add.call(name, item) }
           else
-            raise Error::Runtime.new(
-              "Only sequences and mappings can be spread into the arguments of macro \"#{@name}\".",
-              lineno,
-              source
-            )
+            add.call(key.is_a?(Integer) ? nil : key, value)
           end
         end
 

@@ -18,8 +18,12 @@ module Twig
           if has_spread
             compiler.
               raw('::Twig::Runtime::ArgumentSpreader.new(').
-              raw(callable_method).
-              raw(').call')
+              raw(callable_method)
+
+            # A Twig callable binds a name unpacked from a spread to its parameter, as PHP does
+            compiler.raw(', {}') if attributes.key?(:twig_callable)
+
+            compiler.raw(').call')
           else
             compiler.
               raw(callable_method).

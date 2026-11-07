@@ -238,7 +238,6 @@ module Twig
 
       def node_visitors
         [
-          NodeVisitor::Spreader.new,
           NodeVisitor::Correctness.new,
         ]
       end
@@ -1163,48 +1162,19 @@ module Twig
             return true
           end
 
-          # attribute() passes its arguments as a sequence, not as the keyed
-          # hash a method call compiles to
-          arguments = arguments.each_with_index.to_h { |v, i| [i, v] } if arguments.is_a?(::Array)
-          arguments ||= {}
-
-          positional = []
-          arguments.each do |k, v|
-            if !v.is_a?(Runtime::Spread) && k.is_a?(Integer)
-              positional << v
-            elsif v.is_a?(Runtime::Spread) && v.array?
-              positional = [*positional, *v.value]
-            end
-          end
-
-          kwargs = {}
-          arguments.each do |k, v|
-            if !v.is_a?(Runtime::Spread) && !k.is_a?(Integer)
-              kwargs[k] = v
-            elsif v.is_a?(Runtime::Spread) && v.hash?
-              kwargs = kwargs.merge(v.value)
-            end
-          end
-
-          kwargs = kwargs.transform_keys(&:to_sym)
+          # A method call compiles its arguments to a Hash keyed by position or
+          # name, and attribute() passes them as a sequence or a mapping, which
+          # is unpacked like a spread. Spreads are unpacked as PHP unpacks the
+          # argument array it calls the method with.
+          arguments = [Runtime::Spread.new(arguments)] unless arguments.nil? || arguments.is_a?(::Hash)
+          positional, kwargs = Runtime::Spread.split_arguments(arguments || {}, overwrite: true)
 
           # public_send, not send: respond_to? above already excludes private and
           # protected methods, but an object with a loose respond_to_missing?
           # can report true for one. Templates only reach the public interface.
-          if positional.length.positive? && kwargs.empty?
-            object.public_send(attribute, *positional, &)
-          elsif positional.empty? && kwargs.length.positive?
-            object.public_send(attribute, **kwargs, &)
-          elsif positional.length.positive? && kwargs.length.positive?
-            object.public_send(attribute, *positional, **kwargs, &)
-          else
-            # Reached only when the object responds to the attribute and the
-            # key/index lookup above did not match, so subscripting a Hash or
-            # Array here could only ever miss — it raised TypeError on arrays
-            # ({{ list.any? }}) and returned nil on hashes, silently rendering
-            # nothing. Collections dispatch methods like any other object.
-            object.public_send(attribute, &)
-          end
+          # Collections dispatch methods like any other object: this is reached
+          # only when the key/index lookup above did not match.
+          object.public_send(attribute, *positional, **kwargs.transform_keys(&:to_sym), &)
         # Constant could be nil but we should return if we find it
         elsif (constant = get_constant(object, attribute.to_s)) && constant[0] == :found
           constant[1]

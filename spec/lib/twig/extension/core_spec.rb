@@ -71,8 +71,8 @@ RSpec.describe Twig::Extension::Core do
           {{ madeup.foo|default("Hello World!") }}
           {{ class.attribute(...args) }}
           {{ class.attribute("Hello", ...args2) }}
-          {{ class.attribute(sep: "-", ...args) }}
-          {{ class.attribute(...{ sep: "*" }, ...args) }}
+          {{ class.attribute(...args, ...{ sep: "-" }) }}
+          {{ class.attribute(...[...args, ...{ sep: "*" }]) }}
           {{ class.attribute_hash(arg1: "Hello", arg2: "World!") }}
           {{ class.attribute_hash(...args_hash) }}
           {{ [...[1, 2, 3], ...[4, 5]]|join(", ") }}

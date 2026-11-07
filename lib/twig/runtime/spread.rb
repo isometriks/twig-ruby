@@ -79,30 +79,81 @@ module Twig
         result
       end
 
+      # Splits arguments into the positional and named arguments PHP 8.1
+      # passes for them, unpacking each Spread as PHP unpacks an array or a
+      # Traversable into a call: its integer keys, and quoted decimal keys
+      # such as "0", are positional and its string keys are named. Raises
+      # PHP's errors for a positional argument after a named one, for a name
+      # given twice and for a value that isn't iterable.
+      #
+      # @param [Array<Object, Spread>, Hash{Integer, String, Symbol => Object}]
+      #   arguments positional arguments and spreads, or a Hash of them keyed
+      #   by position, with named arguments keyed by their name
+      # @param [Boolean] overwrite whether a name given again replaces the
+      #   value, as for a method call, whose arguments PHP gathers in an array
+      #   before it unpacks them
+      # @return [Array(Array, Hash{String => Object})]
+      def self.split_arguments(arguments, overwrite: false)
+        positional = []
+        named = {}
+        name = lambda do |key, value|
+          if !overwrite && named.key?(key)
+            raise ArgumentError, "Named parameter $#{key} overwrites previous argument"
+          end
+
+          named[key] = value
+        end
+
+        arguments = arguments.each_with_index.map { |value, index| [index, value] } if arguments.is_a?(::Array)
+
+        arguments.each do |key, value|
+          if value.is_a?(Spread)
+            value.each_argument do |item_key, item|
+              if item_key.nil?
+                if named.any?
+                  raise ArgumentError, 'Cannot use positional argument after named argument during unpacking'
+                end
+
+                positional << item
+              else
+                name.call(item_key, item)
+              end
+            end
+          elsif MappingKey.integer?(key)
+            raise ArgumentError, 'Cannot use positional argument after named argument during unpacking' if named.any?
+
+            positional << value
+          else
+            name.call(key.to_s, value)
+          end
+        end
+
+        [positional, named]
+      end
+
       # Yields what a spread adds to a sequence: the key and value of each pair
-      # of a mapping or a filter result, and a nil key with each item of
-      # anything else, which is splatted as Ruby splats it
+      # of a mapping or a filter result, and the position of each item of
+      # anything else that is iterable
       def self.each_item(value, &)
+        value = value.to_hash if !value.is_a?(::Hash) && value.respond_to?(:to_hash)
+
         case value
         when ::Hash, EnumerableHash
           value.each(&)
         else
-          [*value].each { |item| yield nil, item }
+          new(value).each_argument { |_, item| yield nil, item }
         end
       end
 
       def self.each_pair(value, &)
+        value = value.to_hash if !value.is_a?(::Hash) && value.respond_to?(:to_hash)
+
         case value
-        when nil
-          nil
         when ::Hash, EnumerableHash
           value.each(&)
-        when ::Array
-          value.each_with_index { |item, index| yield index, item }
         else
-          raise TypeError, "no implicit conversion of #{value.class} into Hash" unless value.respond_to?(:to_hash)
-
-          value.to_hash.each(&)
+          index = -1
+          new(value).each_argument { |_, item| yield index += 1, item }
         end
       end
 
@@ -112,12 +163,42 @@ module Twig
         @value = value
       end
 
-      def array?
-        value.is_a?(Array) || value.is_a?(Range)
+      # Splits the value into the positional and named arguments PHP 8.1
+      # unpacks from it, raising PHP's error for a positional argument after a
+      # named one
+      #
+      # @return [Array(Array, Hash{String => Object})]
+      def arguments
+        self.class.split_arguments([self])
       end
 
-      def hash?
-        value.is_a?(Hash)
+      # Yields each argument PHP 8.1 unpacks from the value, with nil as the
+      # name of a positional one. A Hash or a filter result is walked pair by
+      # pair: an integer key, or a quoted decimal key such as "0", which PHP
+      # stores as an integer, is positional, and a string or symbol key is a
+      # name. Any other Enumerable (a sequence, a range, a Set, an Enumerator)
+      # is positional. Anything else raises the TypeError PHP raises.
+      #
+      # @yieldparam [String, nil] name
+      # @yieldparam [Object] item
+      def each_argument
+        pairs = value.respond_to?(:to_hash) ? value.to_hash : value
+
+        if pairs.is_a?(::Hash) || pairs.is_a?(EnumerableHash)
+          pairs.each do |key, item|
+            if MappingKey.integer?(key)
+              yield nil, item
+            elsif key.is_a?(String) || key.is_a?(Symbol)
+              yield key.to_s, item
+            else
+              raise TypeError, 'Keys must be of type int|string during argument unpacking'
+            end
+          end
+        elsif value.is_a?(Enumerable)
+          value.each { |item| yield nil, item }
+        else
+          raise TypeError, 'Only arrays and Traversables can be unpacked'
+        end
       end
     end
   end
