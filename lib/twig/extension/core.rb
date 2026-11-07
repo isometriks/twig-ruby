@@ -590,8 +590,13 @@ module Twig
         string.gsub("\n", "<br>\n")
       end
 
+      # The singular form, or the word as it is for a count other than 1, as
+      # plural gives the word as it is for a count of 1. ActiveSupport's
+      # singularize takes a locale, not a count.
       def self.singularize(string, count = nil)
-        string.singularize(count)
+        return string unless count.nil? || count == 1
+
+        bytewise(string, &:singularize)
       end
 
       def self.pluralize(string, count = nil)

@@ -316,6 +316,23 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  # The singular form, or the word as it is for a count other than 1, as
+  # plural gives the word as it is for a count of 1
+  context 'with the singular filter' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ 'apples'|singular }}",
+          "{{ 'people'|singular }}",
+          "{{ 'apples'|singular(1) }}",
+          "{{ 'apples'|singular(2) }}",
+        ]
+      end
+
+      let(:outputs) { %w[apple person apple apples] }
+    end
+  end
+
   context 'with the constant function' do
     before do
       stub_const('Holder', Class.new)
