@@ -34,13 +34,6 @@ module Twig
           BitwiseOr: '|',
           BitwiseXor: '^',
           BitwiseAnd: '&',
-          Equal: '==',
-          NotEqual: '!=',
-          Spaceship: '<=>',
-          Less: '<',
-          Greater: '>',
-          LessEqual: '<=',
-          GreaterEqual: '>=',
 
           Add: '+',
           Sub: '-',
@@ -54,6 +47,31 @@ module Twig
               compiler.raw(self.class.const_get('OPERATOR'))
             end
           end).const_set('OPERATOR', operation)
+        end
+
+        # The comparison operators compare values as PHP does, through
+        # Runtime::Comparison, instead of with Ruby's operators
+        COMPARISONS = {
+          Equal: :equal?,
+          NotEqual: :not_equal?,
+          Spaceship: :compare,
+          Less: :less?,
+          Greater: :greater?,
+          LessEqual: :less_equal?,
+          GreaterEqual: :greater_equal?,
+        }.freeze
+
+        COMPARISONS.each do |name, method|
+          const_set(name.to_s, Class.new(Binary::Base) do
+            def compile(compiler)
+              compiler.
+                raw("::Twig::Runtime::Comparison.#{self.class.const_get('METHOD')}(").
+                subcompile(nodes[:left]).
+                raw(', ').
+                subcompile(nodes[:right]).
+                raw(')')
+            end
+          end).const_set('METHOD', method)
         end
       end
     end

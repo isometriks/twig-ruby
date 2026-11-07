@@ -339,12 +339,18 @@ module Twig
         rounded&.zero? ? 0 : rounded
       end
 
+      # PHP's max and min compare values as its <=> does, and compare the
+      # elements of one array the other way round from several arguments
       def self.max(value, *values)
-        extremum_values('max', value, values).max
+        args = extremum_values('max', value, values)
+
+        values.empty? ? Runtime::Comparison.max_of(args) : Runtime::Comparison.max(args)
       end
 
       def self.min(value, *values)
-        extremum_values('min', value, values).min
+        args = extremum_values('min', value, values)
+
+        values.empty? ? Runtime::Comparison.min_of(args) : Runtime::Comparison.min(args)
       end
 
       # PHP's max and min take a single array, or several values, and reject
@@ -597,7 +603,11 @@ module Twig
         object = to_array(object)
 
         if arrow.nil?
-          object.is_a?(Hash) ? object.sort { |a, b| a[1] <=> b[1] }.to_h : object.sort
+          if object.is_a?(Hash)
+            Runtime::Comparison.sort(object.to_a, &:last).to_h
+          else
+            Runtime::Comparison.sort(object.to_a)
+          end
         elsif object.is_a?(Hash)
           # PHP's uasort compares the values and keeps their keys
           object.sort { |(_, a), (_, b)| arrow.call(a, b) }.to_h
@@ -1070,72 +1080,9 @@ module Twig
         Float(value, exception: false)
       end
 
+      # Twig's CoreExtension::compare, which is PHP 8's <=>
       def self.compare(a, b)
-        trim_var = ->(value) { trim(value, character_mask: " \t\n\r\v\f") }
-
-        if a.is_a?(Integer) && b.is_a?(String)
-          b_trim = trim_var.call(b)
-
-          unless numeric?(b_trim)
-            return a.to_s <=> b
-          end
-
-          if b_trim.to_i.to_s == b_trim
-            return a <=> b_trim.to_i
-          else
-            return a.to_f <=> b_trim.to_f
-          end
-        end
-
-        if a.is_a?(String) && b.is_a?(Integer)
-          a_trim = trim_var.call(a)
-
-          unless numeric?(a_trim)
-            return a <=> b.to_s
-          end
-
-          if a_trim.to_i.to_s == a_trim
-            return a_trim.to_i <=> b
-          else
-            return a_trim.to_f <=> b.to_f
-          end
-        end
-
-        if (a.is_a?(Float) || a.is_a?(Complex)) && b.is_a?(String)
-          if a.is_a?(Complex)
-            return 1
-          end
-
-          b_trim = trim_var.call(b)
-          unless numeric?(b_trim)
-            return a.to_s <=> b
-          end
-
-          return a <=> b_trim.to_f
-        end
-
-        if a.is_a?(String) && (b.is_a?(Float) || b.is_a?(Complex))
-          if b.is_a?(Complex)
-            return 1
-          end
-
-          a_trim = trim_var.call(a)
-          unless numeric?(a_trim)
-            return a <=> b.to_s
-          end
-
-          return a_trim.to_f <=> b
-        end
-
-        if a.is_a?(String) && b.is_a?(Symbol)
-          return a <=> b.to_s
-        end
-
-        if a.is_a?(Symbol) && b.is_a?(String)
-          return a.to_s <=> b
-        end
-
-        a <=> b
+        Runtime::Comparison.compare(a, b)
       end
 
       def self.in_filter(value, object)
@@ -1150,13 +1097,10 @@ module Twig
         end
 
         object.any? do |k, v|
-          (!v.nil? && compare(value, v)&.zero?) ||
-            compare(value, k)&.zero?
+          (!v.nil? && compare(value, v).zero?) ||
+            compare(value, k).zero?
         end ||
-          object.any? { |v| compare(value, v)&.zero? } ||
-          (value == false && in_filter(0, object)) ||
-          (value == [] && in_filter(false, object)) ||
-          (value == true && in_filter(1, object))
+          object.any? { |v| compare(value, v).zero? }
       end
 
       PCRE_BRACKET_DELIMITERS = { '(' => ')', '[' => ']', '{' => '}', '<' => '>' }.freeze
