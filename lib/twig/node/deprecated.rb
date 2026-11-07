@@ -7,46 +7,29 @@ module Twig
         super({ expr: }, {}, lineno)
       end
 
+      # Reports the deprecation as Twig's DeprecatedNode does, with
+      # trigger_deprecation(package, version, '%s in "%s" at line %d.')
       def compile(compiler)
-        compiler.add_debug_info(self)
+        compiler.
+          add_debug_info(self).
+          write('::Twig::Extension::Core.trigger_deprecation(')
 
-        expr = nodes[:expr]
+        %i[package version].each do |name|
+          if (node = nodes.fetch(name, nil))
+            compiler.subcompile(node)
+          else
+            compiler.raw("''")
+          end
 
-        unless expr.is_a?(Expression::Constant)
-          var_name = compiler.var_name
-          compiler.
-            write("#{var_name} = ").
-            subcompile(expr).
-            raw("\n")
-        end
-
-        compiler.write('::Twig::Extension::Core.deprecation_notice(')
-
-        if expr.is_a?(Expression::Constant)
-          compiler.subcompile(expr)
-        else
-          compiler.write(var_name)
+          compiler.raw(', ')
         end
 
         compiler.
-          raw(', ').
-          repr(template_name).
-          raw(', ').
-          repr(lineno)
-
-        if (package = nodes.fetch(:package, nil))
-          compiler.
-            raw(', package: ').
-            subcompile(package)
-        end
-
-        if (version = nodes.fetch(:version, nil))
-          compiler.
-            raw(', version: ').
-            subcompile(version)
-        end
-
-        compiler.raw(")\n")
+          raw('(').
+          subcompile(nodes[:expr]).
+          raw(').to_s + ').
+          string(" in \"#{template_name}\" at line #{lineno}.").
+          raw(")\n")
       end
     end
   end

@@ -1459,14 +1459,6 @@ module Twig
         Runtime::Truthiness.true?(value)
       end
 
-      # @todo How to post deprecations? Also check if Rails is loaded and deprecate that way
-      def self.deprecation_notice(message, template, line, package: nil, version: nil)
-        package = package ? " (Package: #{package})" : ''
-        version = version ? " (Version: #{version})" : ''
-
-        report_deprecation("#{message} in #{template} on line #{line}#{package}#{version}")
-      end
-
       # Reports a deprecation as Symfony's trigger_deprecation does for Twig:
       # the message comes after "Since package version: ".
       def self.trigger_deprecation(package, version, message)
