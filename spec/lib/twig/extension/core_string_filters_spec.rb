@@ -75,4 +75,29 @@ RSpec.describe Twig::Extension::Core do
       expect(render('{{ null|title }}')).to eq('')
     end
   end
+
+  describe 'format' do
+    it 'formats like PHP sprintf' do
+      expect(render(%q({{ '%e'|format(12345.678) }}|{{ "%'*10s"|format('hi') }}|{{ '%u'|format(-3) }}))).
+        to eq('1.234568e+4|********hi|18446744073709551613')
+      expect(render("{{ '%d'|format('12abc') }}|{{ '%d'|format(null) }}|{{ '%F'|format(1.5) }}")).
+        to eq('12|0|1.500000')
+      expect(render("{{ '%05.2f|%b|%x|%2$s %1$s'|format(3.14159, 5, 255) }}")).to eq('03.14|101|ff|5 3.14159')
+      expect(render("{{ '%s %s'|format(1.0, true) }}|{{ '%s'|format(0.1 + 0.2) }}")).to eq('1 1|0.3')
+      expect(render("{{ '%.2f'|format(2.675) }}|{{ '%.1f'|format(0.35) }}|{{ '%s'|format(7.05017039081155) }}")).
+        to eq('2.67|0.3|7.0501703908115')
+    end
+
+    it 'gives an empty string for null' do
+      expect(render('{{ null|format }}')).to eq('')
+    end
+
+    it 'raises when an argument is missing, like PHP' do
+      expect { render("{{ '%s %s'|format('a') }}") }.to raise_error(
+        Twig::Error::Runtime,
+        'An exception has been thrown during the rendering of a template ' \
+        '("3 arguments are required, 2 given") in "index" at line 1.'
+      )
+    end
+  end
 end

@@ -266,8 +266,9 @@ module Twig
         @timezone ||= Time.zone
       end
 
+      # Like PHP's sprintf, where Kernel#format differs
       def self.sprintf(string, *values)
-        format(string || '', *values)
+        Util::PhpSprintf.call(string || '', *values)
       end
 
       def self.replace(string, from)
