@@ -116,11 +116,22 @@ module Twig
       raise Error::Loader, "Unable to find one of the following templates: \"#{names.join('", "')}\"."
     end
 
+    # Every load initializes the runtime, as in Twig, whether the template
+    # was compiled or came from the cache, so add_global behaves the same
+    # either way
+    #
     # @param [String] cls The class name to load
     # @param [String] name The template name
     # @param [Integer, nil] index Index for embedded templates
     # @return [Twig::Template]
     def load_template(cls, name, index: nil)
+      template = load_template_instance(cls, name, index)
+      extension_set.init_runtime!
+
+      template
+    end
+
+    def load_template_instance(cls, name, index)
       # Template#load passes its own class name, which starts with Twig::
       main_cls = cls.delete_prefix('Twig::')
       cls = index ? "#{main_cls}___#{index}" : main_cls
@@ -189,6 +200,7 @@ module Twig
         @loaded_templates[cls] = Twig.const_get(cls).new(self)
       end
     end
+    private :load_template_instance
 
     # @return [Twig::Template]
     def create_template(template, name = nil)
@@ -323,12 +335,36 @@ module Twig
       extension_set.node_visitors
     end
 
+    # New globals can be added before a template is compiled or rendered;
+    # after that, only the existing ones can be changed, as in Twig.
     def add_global(name, value)
-      @globals[name] = value
+      key = global_key(name)
+
+      if extension_set.initialized? && !globals.key?(key)
+        raise Error::Logic, "Unable to add global \"#{name}\" as the runtime or the extensions " \
+                            'have already been initialized.'
+      end
+
+      if @resolved_globals
+        @resolved_globals[key] = value
+      else
+        @globals[key] = value
+      end
     end
 
+    # The extensions' globals and then the environment's, which win, as in
+    # Twig's array_merge. The keys are Symbols, as in a Runtime::Context, so
+    # 'g' and :g are the same global. They are kept once the extensions are
+    # initialized.
+    #
+    # @return [Hash{Symbol => Object}]
     def globals
-      @resolved_globals ||= extension_set.globals.merge(@globals)
+      return @resolved_globals if @resolved_globals
+
+      resolved = extension_set.globals.transform_keys { |key| global_key(key) }.merge(@globals)
+      @resolved_globals = resolved if extension_set.initialized?
+
+      resolved
     end
 
     # @param [Source] source
@@ -403,6 +439,11 @@ module Twig
 
     # @return [ExtensionSet]
     attr_reader :extension_set
+
+    # A global's name as a Runtime::Context key
+    def global_key(name)
+      name.respond_to?(:to_sym) ? name.to_sym : name
+    end
 
     # @return [RuntimeLoader::Base]
     attr_reader :default_runtime_loader

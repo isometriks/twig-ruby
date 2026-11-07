@@ -502,4 +502,78 @@ RSpec.describe Twig::Environment do
       expect { environment.register_undefined_token_parser_callback }.to raise_error(ArgumentError)
     end
   end
+
+  describe '#add_global' do
+    let(:extension) do
+      Class.new(Twig::Extension::Base) do
+        def globals
+          { g: 'ext', 'k' => 'ext' }
+        end
+      end.new
+    end
+
+    let(:environment) do
+      Twig::Environment.new(
+        Twig::Loader::Hash.new(
+          'index' => '{{ g }}|{{ k }}|{% with {} %}{{ g }}{% endwith %}|{{ include("i") }}',
+          'i' => '{{ g }}'
+        )
+      ).tap { |env| env.add_extension(extension) }
+    end
+
+    it "wins over an extension's global with the other kind of key" do
+      environment.add_global('g', 'env')
+      environment.add_global(:k, 'env')
+
+      expect(environment.load('index').render).to eq('env|env|env|env')
+    end
+
+    it 'changes an existing global after the first render' do
+      environment.add_global('g', 'env')
+      environment.load('index').render
+      environment.add_global('g', 'changed')
+
+      expect(environment.load('index').render).to eq('changed|ext|changed|changed')
+    end
+
+    it 'raises for a new global once a template has been compiled' do
+      environment.load('index')
+
+      expect { environment.add_global('new', 'x') }.
+        to raise_error(
+          Twig::Error::Logic,
+          'Unable to add global "new" as the runtime or the extensions have already been initialized.'
+        )
+    end
+
+    context 'when the template comes from a warm cache' do
+      let(:cache_directory) { Dir.mktmpdir }
+      let(:loader) { Twig::Loader::Hash.new('index' => '{{ g }}') }
+
+      let(:environment) { Twig::Environment.new(loader, cache: cache_directory) }
+
+      before do
+        Twig::Environment.new(loader, cache: cache_directory).load('index').render
+        environment.add_global('g', 'env')
+      end
+
+      after { FileUtils.rm_rf(cache_directory) }
+
+      it 'raises for a new global once a template has been loaded' do
+        expect(environment.load('index').render).to eq('env')
+
+        expect { environment.add_global('new', 'x') }.
+          to raise_error(
+            Twig::Error::Logic,
+            'Unable to add global "new" as the runtime or the extensions have already been initialized.'
+          )
+      end
+
+      it 'keeps the globals once a template has been loaded' do
+        environment.load('index').render
+
+        expect(environment.globals).to equal(environment.globals)
+      end
+    end
+  end
 end

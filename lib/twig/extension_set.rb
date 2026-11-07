@@ -28,6 +28,20 @@ module Twig
       extensions.key?(key(extension))
     end
 
+    # Whether the extensions' filters, functions, tests, token parsers, node
+    # visitors or expression parsers have been read, as a template's
+    # compilation does, or a template has been loaded, as in Twig
+    def initialized?
+      @runtime_initialized ||
+        [@expression_parsers, @filters, @functions, @tests, @token_parsers, @node_visitors].any?
+    end
+
+    # Called each time the environment loads a template, compiled or cached,
+    # like Twig's initRuntime
+    def init_runtime!
+      @runtime_initialized = true
+    end
+
     # @return [Extension::Base]
     def get(extension)
       extensions[key(extension)]
