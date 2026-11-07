@@ -11,7 +11,7 @@ module Twig
 
           unless left.is_a?(Node::Expression::Variable::Context)
             raise Error::Syntax.new(
-              "Function name must be an identifier. got #{left.inspect}",
+              'Function name must be an identifier.',
               line,
               parser.stream.source
             )

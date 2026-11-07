@@ -334,7 +334,7 @@ module Twig
         method = method.to_sym
 
         unless %i[common ceil floor].include?(method)
-          raise Error::Runtime, 'The "round" filter only supports the "common", "ceil", and "floor" methods'
+          raise Error::Runtime, 'The "round" filter only supports the "common", "ceil", and "floor" methods.'
         end
 
         return value unless value.finite?

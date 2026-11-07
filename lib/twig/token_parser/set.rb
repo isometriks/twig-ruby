@@ -24,7 +24,7 @@ module Twig
 
           if names.length != values.length
             raise Error::Syntax.new(
-              'When using set, you must have the same number of variables and assignments',
+              'When using set, you must have the same number of variables and assignments.',
               stream.current.lineno,
               stream.source
             )
@@ -34,7 +34,7 @@ module Twig
 
           if names.length > 1
             raise Error::Syntax.new(
-              'When using set with a block, you cannot have a multi-target',
+              'When using set with a block, you cannot have a multi-target.',
               stream.current.lineno,
               stream.source
             )
