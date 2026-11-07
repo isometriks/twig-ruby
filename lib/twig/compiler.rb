@@ -53,8 +53,9 @@ module Twig
       value = value.to_s
 
       # a string with bytes its encoding doesn't allow, such as "\xff" in a
-      # template, can't be written as is
-      return raw(value.inspect) unless value.valid_encoding?
+      # template, can't be written as is, and Ruby drops a CR before a LF in
+      # source, so "\r\n" would read back as "\n"
+      return raw(value.inspect) if !value.valid_encoding? || value.include?("\r")
 
       @source << "%q[#{value.gsub(/[\[\]\\]/, '[' => '\[', ']' => '\]', '\\' => '\\\\')}]"
 
