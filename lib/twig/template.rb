@@ -96,7 +96,7 @@ module Twig
           end
 
           exception = Error::Runtime.new(
-            "An exception has been thrown during the rendering of a template (#{e})",
+            "An exception has been thrown during the rendering of a template (\"#{e}\").",
             -1,
             template[0].source_context,
             e

@@ -71,6 +71,9 @@ RSpec.describe 'The line of a runtime error' do
       'nested' => "{% macro inner() %}\n{{ boom }}\n{% endmacro %}\n{% macro m() %}\n\n{{ _self.inner() }}\n" \
                   "{% endmacro %}\n{{ _self.m() }}\n",
       'apply' => "{% apply upper %}\n\n{{ boom }}\n{% endapply %}\n",
+      'block' => "{% block b %}\n{% for i in [1] %}\n\n{{ boom }}\n{% endfor %}\n{% endblock %}\n",
+      'child' => "{% extends 'parent' %}\n{% block b %}\n\n{{ boom }}\n{% endblock %}\n",
+      'parent' => "{% block b %}{% endblock %}\n",
     }
   end
 
@@ -79,6 +82,8 @@ RSpec.describe 'The line of a runtime error' do
     'importer' => 'in "importer" at line 8.',
     'nested' => 'in "nested" at line 2.',
     'apply' => 'in "apply" at line 3.',
+    'block' => 'in "block" at line 4.',
+    'child' => 'in "child" at line 4.',
   }.each do |name, location|
     it "is the line that raised in #{name}" do
       environment = Twig::Environment.new(Twig::Loader::Hash.new(templates))
