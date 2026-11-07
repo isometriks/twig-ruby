@@ -21,7 +21,10 @@ module Twig
               raw(callable_method)
 
             # A Twig callable binds a name unpacked from a spread to its parameter, as PHP does
-            compiler.raw(', {}') if attributes.key?(:twig_callable)
+            if attributes.key?(:twig_callable)
+              names = attributes[:twig_callable].argument_names.to_h { |parameter, name| [name.to_s, parameter] }
+              compiler.raw(", #{names.inspect}")
+            end
 
             compiler.raw(').call')
           else

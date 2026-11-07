@@ -212,6 +212,22 @@ RSpec.describe Twig::Runtime::Spread do
     end
   end
 
+  describe 'spreading a name into a Twig callable compares it as Twig compares argument names' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        [
+          "{{ 1234.5|number_format(...{decimalPoint: ','}) }}",
+          "{{ 1234.5|number_format(...{decimal_point: ','}) }}",
+          "{{ 'xax'|trim(...{characterMask: 'x'}) }}",
+          "{{ include('t', ...{withContext: false, ignoreMissing: true}) }}",
+          "{{ [1, 2, 3]|join(...['-'], ...{and: '+'}) }}",
+        ]
+      end
+      let(:outputs) { ['1,235', '1,235', 'a', 'T', '1-2+3'] }
+      let(:templates) { { 't' => 'T' } }
+    end
+  end
+
   context 'when spreading into the constant test' do
     it_behaves_like 'render_and_assert' do
       let(:input) { "{{ constant('Twig::VERSION') is constant(...['Twig::VERSION']) ? 'y' : 'n' }}" }

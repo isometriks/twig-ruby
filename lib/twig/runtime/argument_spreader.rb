@@ -107,8 +107,8 @@ module Twig
           if type == :opt
             raise ArgumentError,
               "Argument \"#{argument_name(filled.find { |i| i > index })}\" could not be assigned because it " \
-              'is mapped to a Ruby callable which cannot determine the default value of optional argument ' \
-              "\"#{gap}\"; use a keyword parameter instead"
+              'is mapped to a Ruby callable which cannot determine default value for optional argument ' \
+              "\"#{gap}\" (use a keyword parameter instead)"
           end
 
           raise ArgumentError, "Argument ##{index + 1} ($#{gap}) not passed"
@@ -122,9 +122,22 @@ module Twig
         end
       end
 
-      # @return [Integer, nil] the slot of the parameter a name binds to
+      # @return [Integer, nil] the slot of the parameter a name binds to,
+      #   compared lowercase without underscores, as Twig compares argument
+      #   names, so both Twig's name and PHP's (decimal_point and
+      #   decimalPoint) reach the same parameter
       def slot_index(name)
-        slot_index_of(@names.fetch(name) { name.to_sym })
+        key = normalize(name)
+
+        slot_parameters.index do |_, parameter|
+          twig_name = @names.key(parameter)
+
+          normalize(parameter) == key || (twig_name && normalize(twig_name) == key)
+        end
+      end
+
+      def normalize(name)
+        name.to_s.downcase.delete('_')
       end
 
       def slot_index_of(parameter)

@@ -2,6 +2,8 @@
 
 module Twig
   module Util
+    # Binds the arguments of a call to the parameters of a Twig callable at
+    # compile time, as Twig's CallableArgumentsExtractor does.
     class CallableArgumentsExtractor
       # @param [Node::Expression::Call] node
       # @param [Callable] twig_callable
@@ -12,158 +14,122 @@ module Twig
         @environment = environment
       end
 
+      # Follows the loop of Twig's extractor: each parameter takes the
+      # argument named after it, compared as Twig compares names (lowercase,
+      # without underscores, so some_value: and someValue: are the same), or
+      # else the next positional argument. A positional argument for a keyword
+      # parameter is passed as that keyword, which is how the core filters
+      # with keyword parameters take positional arguments. Spreads are
+      # unpacked at runtime, by Runtime::ArgumentSpreader, so they go last and
+      # a required argument isn't checked when there is one.
+      #
       # @param [Node::Nodes] arguments
+      # @return [Array(Array<Node::Base>, Hash{Symbol => Node::Base})] the
+      #   positional arguments, with the spreads last, and the keyword arguments
       def extract_arguments(arguments)
-        # Check argument order first
-        found_named = false
-        arguments.nodes.each_key do |key|
-          if key.is_a?(Integer)
-            if found_named
-              raise Error::Syntax.new(
-                "Positional arguments cannot be used after named arguments for #{@twig_callable.type} " \
-                "\"#{@twig_callable.name}\".",
-                @node.lineno,
-                @node.source_context
+        extracted = {}
+        names = {}
+        spreads = []
+        named = false
+
+        arguments.nodes.each do |name, node|
+          if name.is_a?(Integer)
+            if named
+              raise syntax_error(
+                "Positional arguments cannot be used after named arguments for #{callable_type} \"#{callable_name}\"."
               )
             end
+
+            if node.is_a?(Node::Expression::Unary::Spread)
+              spreads << node
+            else
+              extracted[name] = node
+            end
           else
-            found_named = true
+            named = true
+            normalized = normalize(name)
+            extracted[normalized] = node
+            names[normalized] = name
           end
         end
 
-        called_arguments = destination_arguments.keys.to_h { |k| [k, false] }
+        positional = []
+        kwargs = {}
+        parameter_names = []
+        missing = []
+        position = 0
 
-        spreads, arguments = arguments.nodes.partition do |_, node|
-          node.is_a?(Node::Expression::Unary::Spread)
-        end.map(&:to_h)
+        parameters.each do |type, parameter|
+          next if type == :block
 
-        positional, kwargs = arguments.partition do |key, _node|
-          key.is_a?(Integer)
-        end.map(&:to_h)
+          twig_name = twig_callable.argument_name(parameter)
+          parameter_names << twig_name unless %i[* **].include?(parameter)
 
-        positional = positional.values
-        positional_count = positional.length
-
-        kwargs.transform_keys!(&:to_sym)
-        resolved_positional = []
-        resolved_kwargs = {}
-        rest = false
-        keyrest = false
-
-        destination_arguments.each do |name, type|
-          if positional.any?
-            case type
-            when :req, :opt
-              resolved_positional << positional.shift
-            when :keyreq, :key
-              arg = positional.shift
-
-              if arg.is_a?(Node::Expression::Unary::HashSpread)
-                keyrest = true
-                resolved_positional << arg
-              else
-                resolved_kwargs[name] = arg
-              end
-            when :rest
-              resolved_positional += positional
-              positional = []
-              rest = true
-              next
-            when :keyrest
-              arg = positional.shift
-
-              if arg.is_a?(Node::Expression::Unary::HashSpread)
-                keyrest = true
-                resolved_positional << arg
-              else
-                raise Error::Syntax.new(
-                  "Expected a hash spread for argument \"#{name}\" " \
-                  "for #{@twig_callable.type} \"#{@twig_callable.name}\".",
-                  @node.lineno,
-                  @node.source_context
-                )
-              end
-
-              next
-            else
-              raise "Unknown argument type: #{name} #{type}"
+          case type
+          when :rest
+            while extracted.key?(position)
+              positional << extracted.delete(position)
+              position += 1
             end
-          elsif kwargs.key?(name) || (found = kwargs.keys.detect { |key| key.to_s.underscore.to_sym == name })
-            found = name if found.nil?
+          when :keyrest
+            if extracted.key?(position)
+              raise syntax_error(
+                "Expected a hash spread for argument \"#{twig_name}\" for #{callable_type} \"#{callable_name}\"."
+              )
+            end
 
-            if %i[opt req].include?(type)
-              resolved_positional << kwargs.delete(found)
-            else
-              resolved_kwargs[name] = kwargs.delete(found)
+            extracted.each_key.reject { |key| key.is_a?(Integer) }.each do |key|
+              kwargs[names[key].to_sym] = extracted.delete(key)
             end
           else
-            case type
-            when :opt, :key, :rest
-              next
-            when :keyrest
-              keyrest = true
-              resolved_kwargs.merge!(kwargs)
-              kwargs = {}
-              next
-            else
-              # If we have spreads, we just can't know until runtime since we don't know if it's a
-              # positional spread or kwarg spread because both use ...
-              unless spreads.any? || keyrest
-                raise Error::Syntax.new(
-                  "Value for argument \"#{name}\" is required for #{@twig_callable.type} \"#{@twig_callable.name}\".",
-                  @node.lineno,
-                  @node.source_context
+            key = [normalize(twig_name), normalize(parameter)].find { |name| extracted.key?(name) }
+
+            if key
+              if extracted.key?(position)
+                raise syntax_error(
+                  "Argument \"#{twig_name}\" is defined twice for #{callable_type} \"#{callable_name}\"."
                 )
               end
+
+              if %i[req opt].include?(type)
+                raise unknown_default_error(twig_name, parameter_names, missing) if missing.any?
+
+                positional << extracted.delete(key)
+              else
+                kwargs[parameter] = extracted.delete(key)
+              end
+            elsif extracted.key?(position)
+              argument = extracted.delete(position)
+              position += 1
+
+              if %i[req opt].include?(type)
+                positional << argument
+              else
+                kwargs[parameter] = argument
+              end
+            elsif type == :opt
+              # Ruby can't tell its default, so nothing named after it can be passed by position
+              missing << twig_name
+            elsif %i[req keyreq].include?(type) && spreads.empty?
+              raise syntax_error(
+                "Value for argument \"#{snake_case(twig_name)}\" is required for #{callable_type} \"#{callable_name}\"."
+              )
             end
           end
-
-          called_arguments[name] = true
         end
 
-        # If any of our remaining kwargs intersect with called_arguments then we have a duplicate key
-        duplicated = called_arguments.select { |_k, v| v }.keys & kwargs.keys
-        duplicated = duplicated.map(&:to_s)
-        duplicated = duplicated[0] if duplicated.one?
+        unless extracted.empty?
+          unknown = extracted.values.first
 
-        unless duplicated.empty?
           raise Error::Syntax.new(
-            "Argument #{duplicated.inspect} is defined twice for #{@twig_callable.type} " \
-            "\"#{@twig_callable.name}\".",
-            @node.lineno,
-            @node.source_context
+            "Unknown argument#{'s' if extracted.length > 1} \"#{extracted.keys.join('", "')}\" " \
+            "for #{callable_type} \"#{callable_name}(#{parameter_names.join(', ')})\".",
+            unknown.lineno,
+            unknown.source_context
           )
         end
 
-        unexpected_arguments = []
-        unknown_argument = nil
-
-        # If there's no keyrest and any kwargs left, they are extraneous
-        if !keyrest && kwargs.any?
-          unexpected_arguments += kwargs.keys
-          unknown_argument = kwargs.values.first
-        end
-
-        # If there's a rest and any positional left, they are extraneous
-        if !rest && positional.any?
-          unexpected_arguments += [
-            *((positional_count - positional.length)...positional_count),
-          ]
-          unknown_argument = positional.first
-        end
-
-        if unexpected_arguments.any?
-          unknown_argument ||= @node
-
-          raise Error::Syntax.new(
-            "Unknown argument \"#{unexpected_arguments.join(', ')}\" " \
-            "for #{@twig_callable.type} \"#{@twig_callable.name}(#{destination_arguments.keys.join(', ')})\".",
-            unknown_argument.lineno,
-            unknown_argument.source_context
-          )
-        end
-
-        [resolved_positional + spreads.values, resolved_kwargs]
+        [positional + spreads, kwargs]
       end
 
       private
@@ -174,30 +140,50 @@ module Twig
       # @return [Environment]
       attr_reader :environment
 
-      def destination_arguments
-        arguments = callable_method.parameters.to_h { |k, v| [v, k] }
+      def callable_type
+        twig_callable.type
+      end
 
-        if @node.nodes.key?(:node)
-          arguments.shift
-        end
+      def callable_name
+        twig_callable.name
+      end
 
-        if twig_callable.needs_charset?
-          arguments.shift
-        end
+      # As Twig compares argument names
+      def normalize(name)
+        name.to_s.downcase.delete('_')
+      end
 
-        if twig_callable.needs_environment?
-          arguments.shift
-        end
+      def snake_case(name)
+        name.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').gsub(/([a-z0-9])([A-Z])/, '\1_\2').downcase
+      end
 
-        if twig_callable.needs_context?
-          arguments.shift
-        end
+      def syntax_error(message)
+        Error::Syntax.new(message, @node.lineno, @node.source_context)
+      end
 
-        twig_callable.arguments.each do
-          arguments.shift
-        end
+      # Twig raises this for an internal PHP function, which can't tell the
+      # default of an optional argument either
+      def unknown_default_error(name, parameter_names, missing)
+        syntax_error(
+          "Argument \"#{name}\" could not be assigned for #{callable_type} " \
+          "\"#{callable_name}(#{parameter_names.join(', ')})\" because it is mapped to a Ruby callable which " \
+          "cannot determine default value for optional argument#{'s' unless missing.one?} " \
+          "\"#{missing.join('", "')}\" (use #{missing.one? ? 'a keyword parameter' : 'keyword parameters'} instead)."
+        )
+      end
 
-        arguments
+      # @return [Array<Array(Symbol, Symbol)>] the type and name of each
+      #   parameter of the Ruby callable that templates pass
+      def parameters
+        parameters = callable_method.parameters
+
+        skip = twig_callable.arguments.length
+        skip += 1 if @node.nodes.key?(:node)
+        skip += 1 if twig_callable.needs_charset?
+        skip += 1 if twig_callable.needs_environment?
+        skip += 1 if twig_callable.needs_context?
+
+        parameters.drop(skip)
       end
 
       # @return [Method]

@@ -8,6 +8,10 @@ module Twig
     # @param [String] name
     # @param [Proc|Nil] callable
     # @param [Hash] options
+    # @option options [Hash{Symbol => String}] :argument_names the Twig name of
+    #   each Ruby parameter whose name templates can't use as it is, like the
+    #   argument and of join, whose Ruby parameter is and_glue as and is a
+    #   Ruby keyword. The Ruby name keeps working in templates.
     def initialize(name, callable = nil, options = {})
       @name = @dynamic_name = name
       @arguments = []
@@ -18,6 +22,7 @@ module Twig
         needs_charset: false,
         is_variadic: false,
         deprecation_info: nil,
+        argument_names: {},
       }.merge(options)
 
       deprecation_info = @options[:deprecation_info]
@@ -45,6 +50,17 @@ module Twig
 
     def needs_context?
       @options[:needs_context]
+    end
+
+    # @param [Symbol] parameter a parameter of the Ruby callable
+    # @return [String] the name templates give the argument
+    def argument_name(parameter)
+      @options[:argument_names].fetch(parameter, parameter).to_s
+    end
+
+    # @return [Hash{Symbol => String}]
+    def argument_names
+      @options[:argument_names]
     end
 
     def deprecated?

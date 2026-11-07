@@ -129,7 +129,7 @@ module Twig
           TwigFilter.new('slug', static(:slug)),
 
           # array helpers
-          TwigFilter.new('join', static(:join)),
+          TwigFilter.new('join', static(:join), argument_names: { and_glue: 'and' }),
           TwigFilter.new('split', static(:split), needs_charset: true),
           TwigFilter.new('sort', static(:sort)),
           TwigFilter.new('merge', static(:merge)),
