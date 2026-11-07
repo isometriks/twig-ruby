@@ -360,6 +360,49 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the batch filter' do
+    # array_chunk, then the last row filled up
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {% for row in [1, 2, 3]|batch(2, "z", false) %}[{% for k, v in row %}{{ k }}={{ v }} {% endfor %}]{% endfor %}
+          {{ [1, 2, 3]|batch(2)|json_encode|raw }}|{{ [1, 2, 3]|batch(2, "z")|json_encode|raw }}
+          {{ {a: 1, b: 2, c: 3}|batch(2, "z")|json_encode|raw }}|{{ {a: 1, b: 2, c: 3}|batch(2, "z", false)|json_encode|raw }}
+          {{ []|batch(2, "z")|json_encode|raw }}|{{ items|batch(2)|json_encode|raw }}
+          {{ [1, 2, 3]|filter(v => v > 1)|batch(1)|json_encode|raw }}
+        INPUTS
+      end
+
+      let(:outputs) do
+        <<~OUTPUTS
+          [0=1 1=2 ][0=3 1=z ]
+          [[1,2],{"2":3}]|[[1,2],{"2":3,"3":"z"}]
+          [{"a":1,"b":2},{"c":3,"0":"z"}]|[[1,2],[3,"z"]]
+          []|[[1,2],{"2":3}]
+          [{"1":2},{"2":3}]
+        OUTPUTS
+      end
+
+      let(:locals) { { items: [1, 2, 3].each } }
+    end
+
+    pair_sequences.each do |name, pairs|
+      context "with #{name} of pairs" do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) do
+            [
+              '{{ pairs|batch(1)|json_encode|raw }}',
+              '{{ pairs|batch(1, null, false)|json_encode|raw }}',
+              '{{ yielded|batch(1)|json_encode|raw }}',
+            ]
+          end
+          let(:outputs) { ['[[[1,2]],{"1":[3,4]}]', '[[[1,2]],[[3,4]]]', '[{"a":1},{"b":2}]'] }
+          let(:locals) { { pairs:, yielded: } }
+        end
+      end
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do

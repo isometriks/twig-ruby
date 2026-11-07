@@ -632,6 +632,10 @@ module Twig
         first.is_a?(Hash) && !first.instance_of?(Hash) ? first.class[merged] : merged
       end
 
+      # Splits into rows of count items like PHP's array_chunk, which keeps
+      # the keys only with preserve_keys, and fills the last row up to count
+      # items with fill when it is given.
+      #
       # @param [Array, Hash] object
       # @param [Integer, Float] count
       # @param [Object] fill
@@ -640,32 +644,22 @@ module Twig
         return if object.nil?
 
         object = to_array(object)
-        hash = object.is_a?(Array) ? object.each_with_index.to_h { |k, v| [v, k] } : object
+        object = Runtime::EnumerableHash.traversable(object).to_array unless object.is_a?(Array) || object.is_a?(Hash)
         size = count.ceil
-        last_key = 0
 
-        result = hash.each_slice(size).map do |slice|
-          unless preserve_keys
-            slice = [*0...size].zip(slice.to_h.values)
-          end
+        rows = if preserve_keys
+                 pairs = object.is_a?(Hash) ? object.to_a : object.each_with_index.map { |item, index| [index, item] }
+                 pairs.each_slice(size).map { |row| AutoHash[row] }
+               else
+                 (object.is_a?(Hash) ? object.values : object).each_slice(size).to_a
+               end
 
-          sliced_hash = slice.to_h
-          last_key = sliced_hash.keys[-1]
-
-          sliced_hash
+        if !fill.nil? && !rows.empty? && rows[-1].length < size
+          missing = [fill] * (size - rows[-1].length)
+          rows[-1] = rows[-1].is_a?(Array) ? rows[-1] + missing : rows[-1].add(*missing)
         end
 
-        if fill.nil? || result.empty?
-          return result
-        end
-
-        result[-1] = AutoHash.new.merge(result[-1])
-
-        [*0...(size - result[-1].length)].each do
-          result[-1].add(fill)
-        end
-
-        result
+        rows.map { |row| row.is_a?(Hash) ? array_from_hash(row) : row }
       end
 
       def self.column(object, column)
@@ -791,7 +785,7 @@ module Twig
           preserve_keys || !Runtime::MappingKey.integer?(key) ? key : index += 1
         end
 
-        sliced.each_key.with_index.all? { |key, i| key.is_a?(Integer) && key == i } ? sliced.values : sliced
+        array_from_hash(sliced)
       end
 
       # The offset and the number of items that slice takes of size items
@@ -962,6 +956,14 @@ module Twig
         when Hash then preserve_keys ? value : value.values
         else value
         end
+      end
+
+      # A PHP array held in a Hash, as a sequence when its keys are 0, 1, 2...
+      # in order, as PHP calls such an array a list
+      #
+      # @return [Array, Hash]
+      def self.array_from_hash(hash)
+        hash.each_key.with_index.all? { |key, index| key.is_a?(Integer) && key == index } ? hash.values : hash
       end
 
       # What first, last and reverse read of a number, a boolean or a symbol:
