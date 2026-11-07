@@ -553,7 +553,7 @@ module Twig
         value = value.values if value.respond_to?(:values)
         value = value.to_a if value.respond_to?(:to_a)
 
-        return value.join(glue) if and_glue.nil? || and_glue == glue
+        return value.join(glue) if and_glue.nil? || and_glue == glue || value.empty?
         return value[0] if value.length == 1
 
         value[..-2].join(glue) + and_glue.to_s + value[-1].to_s

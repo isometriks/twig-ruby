@@ -526,6 +526,20 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the join filter with an and glue' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          [{{ []|join(", ", " and ") }}]|{{ [1]|join(", ", " and ") }}|{{ [1, 2]|join(", ", " and ") }}
+          {{ {a: 1, b: 2, c: 3}|join(", ", " and ") }}|{{ items|join(",", " + ") }}
+        INPUTS
+      end
+
+      let(:outputs) { ['[]|1|1 and 2', '1, 2 and 3|1,2 + 3'] }
+      let(:locals) { { items: [1, 2, 3].each } }
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do
