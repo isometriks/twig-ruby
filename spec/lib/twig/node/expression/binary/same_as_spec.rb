@@ -42,4 +42,26 @@ RSpec.describe Twig::Node::Expression::Binary::SameAs do
       { object:, same: object, other: Object.new }
     end
   end
+
+  describe 'a sequence and a mapping, which are both PHP arrays' do
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {{ [1, 2] === {0: 1, 1: 2} ? "y" : "n" }}
+          {{ (1..3) === [1, 2, 3] ? "y" : "n" }}
+          {{ ([1, 2, 3]|filter(x => x > 0)) === [1, 2, 3] ? "y" : "n" }}
+          {{ ([1, 2, 3]|filter(x => x > 1)) === {1: 2, 2: 3} ? "y" : "n" }}
+          {{ {a: 1} === {"a": 1} ? "y" : "n" }}
+          {{ {"1": 1} === {1: 1} ? "y" : "n" }}
+          {{ [1, 2] === {1: 2, 0: 1} ? "y" : "n" }}
+          {{ [[1]] === [{0: 1}] ? "y" : "n" }}
+          {{ [1] is same as({0: 1}) ? "y" : "n" }}
+          {{ [1] !== {0: 1} ? "y" : "n" }}
+          {{ {0: 1} === [1.0] ? "y" : "n" }}
+        INPUTS
+      end
+
+      let(:outputs) { %w[y y y y y y n y y n n] }
+    end
+  end
 end
