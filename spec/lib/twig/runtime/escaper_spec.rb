@@ -142,6 +142,34 @@ RSpec.describe Twig::Runtime::Escaper do
     expect(environment.load('index').render({ 'x' => "it's" })).to eq('it&#039;s|it&#039;s|it&#039;s')
   end
 
+  # Like Twig, which uses htmlspecialchars with ENT_SUBSTITUTE
+  it 'replaces an invalid UTF-8 sequence with U+FFFD for html' do
+    expect(escaper.escape("<\xFF'\u00E9", :html)).to eq("&lt;\uFFFD&#039;\u00E9")
+    expect(escaper.escape("a\xFFb", :html)).to eq("a\uFFFDb").and(be_valid_encoding)
+    expect(escaper.escape("a\xE2\x82b", :html)).to eq("a\uFFFDb")
+    expect(escaper.escape("\xC0\xAF", :html)).to eq("\uFFFD\uFFFD")
+    expect(escaper.escape("\xE2\x82\xE2\x82\xAC", :html)).to eq("\uFFFD\u20AC")
+    expect(escaper.escape("\x80\x80", :html)).to eq("\uFFFD\uFFFD")
+  end
+
+  # htmlspecialchars reads a surrogate or a code point above U+10FFFF as one
+  # sequence, where String#scrub replaces each byte
+  it 'replaces a surrogate or a code point above U+10FFFF with a single U+FFFD for html' do
+    expect(escaper.escape("\xED\xA0\x80", :html)).to eq("\uFFFD")
+    expect(escaper.escape("\xF4\x90\x80\x80", :html)).to eq("\uFFFD")
+  end
+
+  it 'reads a binary string as UTF-8 for html' do
+    expect(escaper.escape("\u00E9<".b, :html)).to eq("\u00E9&lt;".b)
+    expect(escaper.escape("\xFF<".b, :html)).to eq("\uFFFD&lt;")
+  end
+
+  it 'replaces an invalid UTF-8 sequence with U+FFFD when autoescaping' do
+    environment = Twig::Environment.new(Twig::Loader::Hash.new({ 'index' => '{{ x }}|{{ "\xed\xa0\x80"|e }}' }))
+
+    expect(environment.load('index').render({ 'x' => "a\xFFb" })).to eq("a\uFFFDb|\uFFFD")
+  end
+
   # Like Twig, which uses rawurlencode (RFC 3986) where CGI.escape gives +
   it 'escapes urls with a space as %20' do
     expect(escaper.escape("a b+c~*'()!/?&=", :url)).to eq('a%20b%2Bc~%2A%27%28%29%21%2F%3F%26%3D')
