@@ -403,6 +403,49 @@ RSpec.describe Twig::Extension::Core do
     end
   end
 
+  describe 'the reverse filter' do
+    # array_reverse, which keeps integer keys only with preserve_keys
+    it_behaves_like 'render_and_assert' do
+      let(:inputs) do
+        <<~INPUTS
+          {% for k, v in [1, 2]|reverse(true) %}{{ k }}={{ v }} {% endfor %}
+          {{ [1, 2, 3]|reverse|json_encode|raw }}|{{ [1, 2, 3]|reverse(true)|json_encode|raw }}
+          {{ {a: 1, 5: 2, b: 3}|reverse|json_encode|raw }}|{{ {a: 1, 5: 2, b: 3}|reverse(true)|json_encode|raw }}
+          {{ [1, 2, 3]|filter(v => v > 1)|reverse|json_encode|raw }}
+          {{ items|reverse|json_encode|raw }}|{{ items|reverse(true)|json_encode|raw }}
+        INPUTS
+      end
+
+      let(:outputs) do
+        [
+          '1=2 0=1 ',
+          '[3,2,1]|{"2":3,"1":2,"0":1}',
+          '{"b":3,"0":2,"a":1}|{"b":3,"5":2,"a":1}',
+          '[3,2]',
+          '[3,2,1]|{"2":3,"1":2,"0":1}',
+        ]
+      end
+
+      let(:locals) { { items: [1, 2, 3].each } }
+    end
+
+    pair_sequences.each do |name, pairs|
+      context "with #{name} of pairs" do
+        it_behaves_like 'render_and_assert' do
+          let(:inputs) do
+            [
+              '{{ pairs|reverse|json_encode|raw }}',
+              '{{ pairs|reverse(true)|json_encode|raw }}',
+              '{{ yielded|reverse|json_encode|raw }}',
+            ]
+          end
+          let(:outputs) { ['[[3,4],[1,2]]', '{"1":[3,4],"0":[1,2]}', '{"b":2,"a":1}'] }
+          let(:locals) { { pairs:, yielded: } }
+        end
+      end
+    end
+  end
+
   describe 'the merge filter' do
     it_behaves_like 'render_and_assert' do
       let(:inputs) do

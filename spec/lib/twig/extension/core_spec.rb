@@ -96,7 +96,7 @@ RSpec.describe Twig::Extension::Core do
           {{ numbers[slice_start:slice_end]|join }}
           {% for i in range(0, 10) if i > 5 %}{{ i }},{% endfor %}
           {% set func = x => 'Hello '~x %}{{ func|invoke('World!') }}
-          {{ [3, 2, 1]|reverse(preserveKeys=true) }}
+          {{ [3, 2, 1]|reverse(preserveKeys=true)|json_encode|raw }}
           {{ asdf ?? 'OK' }}
         INPUTS
       end
@@ -191,7 +191,7 @@ RSpec.describe Twig::Extension::Core do
           234
           6,7,8,9,10,
           Hello World!
-          [1, 2, 3]
+          {"2":1,"1":2,"0":3}
           OK
         OUTPUTS
       end

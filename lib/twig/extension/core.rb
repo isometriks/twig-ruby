@@ -735,6 +735,8 @@ module Twig
         enumerable_function(object, :find, proc)&.dig(1)
       end
 
+      # Reverses like PHP's array_reverse, which keeps string keys, and integer
+      # keys only with preserve_keys, or else the characters of a string
       def self.reverse(object, preserve_keys: false)
         return if object.nil?
 
@@ -742,7 +744,14 @@ module Twig
         # String#reverse raises a bare ArgumentError on invalid bytes
         return split_into_characters(object, 'reverse').reverse.join if object.is_a?(String)
 
-        object.is_a?(Hash) ? object.to_a.reverse.to_h : object.reverse
+        object = Runtime::EnumerableHash.traversable(object).to_array unless object.is_a?(Array) || object.is_a?(Hash)
+        return object.reverse if object.is_a?(Array) && !preserve_keys
+
+        pairs = object.is_a?(Hash) ? object.to_a : object.each_with_index.map { |item, index| [index, item] }
+        index = -1
+        array_from_hash(pairs.reverse.to_h.transform_keys do |key|
+          preserve_keys || !Runtime::MappingKey.integer?(key) ? key : index += 1
+        end)
       end
 
       def self.shuffle(object)
