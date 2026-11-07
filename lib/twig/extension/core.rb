@@ -533,8 +533,25 @@ module Twig
         (string || '').to_s.encode(to, from)
       end
 
+      # Like mb_convert_case with MB_CASE_TITLE: a letter after a cased one is
+      # lower case, any other is title case, and a case-ignorable character
+      # such as ' leaves that as it is. Nothing is removed, where titleize
+      # humanizes the string first.
       def self.title_case(string)
-        string&.titleize
+        title = false
+
+        (string || '').to_s.each_char.map do |char|
+          # A byte that isn't valid in the encoding is kept, as by upper
+          unless char.valid_encoding?
+            title = false
+            next char
+          end
+
+          converted = title ? char.downcase : char.capitalize
+          title = char.match?(/\p{Cased}/) unless char.match?(/\p{Case_Ignorable}/)
+
+          converted
+        end.join
       end
 
       def self.capitalize(string)

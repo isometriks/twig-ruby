@@ -51,4 +51,28 @@ RSpec.describe Twig::Extension::Core do
       expect(render('{{ null|striptags }}')).to eq('')
     end
   end
+
+  describe 'title' do
+    it 'upper-cases the first letter of each word and lower-cases the rest' do
+      expect(render("{{ 'iPhone user'|title }}|{{ 'McDonald x'|title }}|{{ 'hello wORLD'|title }}")).
+        to eq('Iphone User|Mcdonald X|Hello World')
+    end
+
+    it 'keeps underscores and hyphens, and starts a word after them' do
+      expect(render("{{ 'a_b-c'|title }}|{{ 'hello-world foo_bar'|title }}")).to eq('A_B-C|Hello-World Foo_Bar')
+    end
+
+    it 'starts a word after a digit but not after an apostrophe' do
+      expect(render(%q({{ "it's 1st o'neil"|title }}))).to eq('It&#039;s 1St O&#039;neil')
+    end
+
+    it 'title-cases other scripts' do
+      expect(render("{{ 'élan ÉCOLE'|title }}|{{ 'ǆemal straße'|title }}|{{ 'ﬁx'|title }}")).
+        to eq('Élan École|ǅemal Straße|Fix')
+    end
+
+    it 'gives an empty string for null' do
+      expect(render('{{ null|title }}')).to eq('')
+    end
+  end
 end
