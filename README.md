@@ -288,6 +288,12 @@ only `note` is escaped. Twig PHP escapes the whole concatenation instead, so the
 escaped too unless the concatenation itself is marked `|raw`. Either way an unsafe value is
 never printed unescaped.
 
+**What `escape` returns isn't escaped again for its strategy.** `{% set y = x|e %}{{ y }}` and
+`{{ x|e(strategy) }}` print `x` escaped once, like the output of Rails' `h`, and output
+escaped for `html_attr` counts as escaped for `html` too. Twig PHP's `escape` returns a plain
+string, so autoescaping escapes it a second time. Output escaped for another strategy, such
+as `js` in an HTML template, is still escaped for the template's strategy.
+
 **`strict_variables` raises on missing keys.** The Rails config turns it on, so
 `{{ params[:page] }}` raises when there's no `page` param. `??` and `default` are the way
 to allow for it:

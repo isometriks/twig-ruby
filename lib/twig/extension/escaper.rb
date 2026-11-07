@@ -58,15 +58,16 @@ module Twig
         end
       end
 
+      # Like Twig, the output of the escape filter is safe for html without
+      # a strategy, for the strategy it is given as a constant, and for none
+      # when the first argument isn't a constant, such as a variable
+      #
       # @param [Node::Base] filter_args
       def self.escape_filter_is_safe(filter_args)
-        filter_args.nodes.each_value do |arg|
-          if arg.is_a?(Node::Expression::Constant)
-            return [arg.attributes[:value]]
-          end
-        end
+        first = filter_args.nodes.each_value.first
+        return [:html] if first.nil?
 
-        [:html]
+        first.is_a?(Node::Expression::Constant) ? [first.attributes[:value]] : []
       end
     end
   end
