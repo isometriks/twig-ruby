@@ -332,11 +332,14 @@ module Twig
             '{{ y ? :x ? c : d }}',
             '{{ y ? :x and z ? c : d }}',
             '{{ y ? :a : x ? :c : :d }}',
+            '{{ y? :a }}',
+            '{{ a? :x }}',
+            '{{ y? :x ? c : d }}',
           ]
         end
 
         let(:outputs) do
-          %w[y b T y b yes A C D c]
+          %w[y b T y b yes A C D c A A C]
         end
 
         let(:locals) do

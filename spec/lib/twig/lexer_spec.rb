@@ -218,6 +218,13 @@ RSpec.describe Twig::Lexer do
       ],
       # Without a : of its own expression after it, ? : is the alias of ?:
       '{{ x ? :a }}' => ['name(x)', 'operator(? :)', 'name(a)'],
+      '{{ x? :a }}' => ['name(x)', 'operator(? :)', 'name(a)'],
+      '{{ x? :a ? b : c }}' => [
+        'name(x)', 'operator(? :)', 'name(a)', 'operator(?)', 'name(b)', 'punctuation(:)', 'name(c)'
+      ],
+      '{{ c ? x? :a : b }}' => [
+        'name(c)', 'operator(?)', 'name(x)', 'operator(? :)', 'name(a)', 'punctuation(:)', 'name(b)'
+      ],
       # A : that closes a ternary after the symbol isn't one
       '{{ x ? :a ? b : c }}' => [
         'name(x)', 'operator(? :)', 'name(a)', 'operator(?)', 'name(b)', 'punctuation(:)', 'name(c)'

@@ -243,8 +243,9 @@ module Twig
         push_token(Token::NAME_TYPE, name)
         move_cursor(name)
 
-        # x? :a : :b is a ternary with a symbol, not the ? : alias of ?:
-        if @code.match?(/\G\?[[:space:]]+#{REGEX_SYMBOL}/, @cursor)
+        # x? :a : :b is a ternary with a symbol, not the ? : alias of ?:, but
+        # x? :a without a : for the other branch is x ?: a, as x ? :a is
+        if (mark = @code.match(/\G\?[[:space:]]+:/, @cursor)) && symbol_ternary?(mark.end(0))
           push_token(Token::OPERATOR_TYPE, '?')
           move_cursor('?')
         end
